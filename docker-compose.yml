@@ -10,5 +10,23 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  backend:
+    build: services/backend
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/bowlingdb
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build: services/frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+
 volumes:
   postgres_data:

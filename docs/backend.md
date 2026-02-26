@@ -12,12 +12,12 @@ FastAPI application that serves the ball catalog and recommendation endpoint. Us
 
 The app fails to start if `DATABASE_URL` is missing or empty. No other env vars are required for basic run.
 
-**Code:** `backend/app/config.py` loads dotenv and sets `DATABASE_URL`; `backend/app/db.py` uses it to open connections with a dict row factory.
+**Code:** `services/backend/app/config.py` loads dotenv and sets `DATABASE_URL`; `services/backend/app/db.py` uses it to open connections with a dict row factory.
 
 ## Database
 
 - **Driver:** `psycopg` (binary). Connections use a context manager in `db.get_conn()`.
-- **Tables:** `balls` — see [Data collection](data-collection.md). Populated by `backend/scripts/seed_from_csv.py`. `arsenals` and `arsenal_balls` — user-owned ball sets with per-ball game count; create with `python backend/scripts/migrate_arsenals.py` (run after balls exist).
+- **Tables:** `balls` — see [Data collection](data-collection.md). Populated by `services/backend/scripts/seed_from_csv.py`. `arsenals` and `arsenal_balls` — user-owned ball sets with per-ball game count; create with `python services/backend/scripts/migrate_arsenals.py` (run after balls exist).
 
 ## API endpoints
 
@@ -147,7 +147,7 @@ Voronoi-based gap analysis in RG–Differential space (per project spec). Identi
 
 ## Request/response models
 
-Defined in `backend/app/api_models.py`:
+Defined in `services/backend/app/api_models.py`:
 
 - **Ball** — ball_id, name, brand, rg, diff, int_diff, symmetry, coverstock_type, surface_grit, surface_finish, release_date, status.
 - **BallsResponse** — items (list of Ball), count.
@@ -168,8 +168,8 @@ cd backend && uvicorn app.main:app --reload
 - `--reload` enables auto-reload on code changes.
 - Default host/port: `127.0.0.1:8000`. Override with `--host` and `--port` if needed.
 
-**Dependencies:** See `backend/requirements.txt` (fastapi, uvicorn, psycopg[binary], pydantic, python-dotenv, scipy, pytest).
+**Dependencies:** See `services/backend/requirements.txt` (fastapi, uvicorn, psycopg[binary], pydantic, python-dotenv, scipy, pytest).
 
 ## Tests
 
-From `backend/`: `python -m pytest tests/ -v`. Unit tests (gap_engine, degradation, etc.) need no database. Integration tests (gaps, recommendations, arsenals CRUD) are skipped when `DATABASE_URL` is unset; with Postgres and seeded `balls` (and `migrate_arsenals.py` run for arsenal tests) they run automatically. See `backend/tests/README.md` for details.
+From `services/backend/`: `python -m pytest tests/ -v`. Unit tests (gap_engine, degradation, etc.) need no database. Integration tests (gaps, recommendations, arsenals CRUD) are skipped when `DATABASE_URL` is unset; with Postgres and seeded `balls` (and `migrate_arsenals.py` run for arsenal tests) they run automatically. See `services/backend/tests/README.md` for details.

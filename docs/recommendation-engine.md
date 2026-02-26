@@ -10,7 +10,7 @@ The backend recommends bowling balls by **similarity to the user’s current ars
 
 ## Algorithm
 
-**Location:** `backend/app/recommendation_engine.py`
+**Location:** `services/backend/app/recommendation_engine.py`
 
 1. **Distance between two balls**
 
@@ -85,7 +85,7 @@ Interpretation: first ball has the smallest distance to your arsenal (most simil
 
 ## Implementation details
 
-- **Data flow (in `main.py`):** Resolve arsenal from `arsenal_id` (DB) or `arsenal_ball_ids` (+ optional `game_counts`). Apply FR5 degradation when game counts exist (`backend/app/degradation.py`); then load candidates from Postgres and call `recommend(arsenal_rows, candidate_rows, k)`; return the list of (ball, score).
+- **Data flow (in `main.py`):** Resolve arsenal from `arsenal_id` (DB) or `arsenal_ball_ids` (+ optional `game_counts`). Apply FR5 degradation when game counts exist (`services/backend/app/degradation.py`); then load candidates from Postgres and call `recommend(arsenal_rows, candidate_rows, k)`; return the list of (ball, score).
 - **Validation:** Either `arsenal_id` or at least one `arsenal_ball_id`; all referenced ball IDs must exist; otherwise 400 with missing IDs or 404 for unknown arsenal_id.
 - **Performance:** In-memory comparison. Fine for hundreds of balls; for much larger catalogs, consider indexing or precomputation.
 

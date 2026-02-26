@@ -1,0 +1,8 @@
+{
+  "name": "bowling-bowl-grid-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "mkdir -p dist && echo '<!DOCTYPE html><html><head><title>Bowling Bowl Grid</title></head><body><h1>Bowling Bowl Grid</h1><p>ECE 50874</p></body></html>' > dist/index.html"
+  }
+}

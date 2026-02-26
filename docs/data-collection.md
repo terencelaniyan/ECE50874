@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS balls (
 
 ## Loading data (seed script)
 
-**Script:** `backend/scripts/seed_from_csv.py`
+**Script:** `services/backend/scripts/seed_from_csv.py`
 
 **Behavior:**
 
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS balls (
 **Run from repo root:**
 
 ```bash
-cd backend && python -m scripts.seed_from_csv
+cd services/backend && python -m scripts.seed_from_csv
 ```
 
 **Prerequisites:**

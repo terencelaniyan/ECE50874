@@ -7,8 +7,8 @@ This repository contains the code for the **Bowling Bowl Grid** project for **EC
 
 The system is organized into:
 
-- `backend/`: FastAPI backend that exposes HTTP APIs, talks to PostgreSQL, and implements the gap/degradation and recommendation logic.
-- `frontend/`: Frontend application for interacting with the backend (framework-agnostic in this repo; see that directory for details).
+- `services/backend/`: FastAPI backend that exposes HTTP APIs, talks to PostgreSQL, and implements the gap/degradation and recommendation logic.
+- `services/frontend/`: Frontend application for interacting with the backend (framework-agnostic in this repo; see that directory for details).
 - `data/`: Data assets and experiment outputs (often git-ignored in practice).
 - `docs/`: Project documentation (backend architecture, data collection, recommendation engine).
 - `docker-compose.yml`: Local PostgreSQL instance used by the backend.
@@ -22,7 +22,7 @@ Project structure
 
 High-level layout:
 
-- `backend/`
+- `services/backend/`
   - `app/`
     - `main.py` – FastAPI application (`app`) exposing the HTTP API.
     - `api_models.py` – Pydantic models for requests/responses.
@@ -34,7 +34,7 @@ High-level layout:
   - `requirements.txt` – Python backend dependencies.
   - `scripts/` – Backend-related helper scripts (if present).
   - `tests/` – Backend tests (if present).
-- `frontend/` – Frontend code (JS/TS, other framework, or placeholder; see directory for specifics).
+- `services/frontend/` – Frontend code (JS/TS, other framework, or placeholder; see directory for specifics).
 - `data/` – Input data, processed artifacts, and experiment outputs.
 - `docs/`
   - `backend.md` – Backend architecture and API details.
@@ -55,7 +55,7 @@ To run the backend locally:
 - **PostgreSQL**: via Docker (using `docker-compose.yml`) or your own instance
 - **Git**
 
-If you have a JavaScript/TypeScript frontend under `frontend/`, you will typically also need:
+If you have a JavaScript/TypeScript frontend under `services/frontend/`, you will typically also need:
 
 - **Node.js** (LTS) and **npm** or **yarn**
 
@@ -66,14 +66,14 @@ Adjust the frontend instructions below to match your chosen framework and toolin
 Backend – local development
 ---------------------------
 
-Backend code lives under `backend/`.
+Backend code lives under `services/backend/`.
 
 ### 1. Create and activate a virtual environment
 
 From the repo root:
 
 ```bash
-cd backend
+cd services/backend
 
 python -m venv .venv
 source .venv/bin/activate  # macOS/Linux
@@ -89,7 +89,7 @@ pip install -r requirements.txt
 
 ### 3. Configure environment
 
-Create a `.env` file in `backend/` (or wherever `config.py` expects it). At minimum, define:
+Create a `.env` file in `services/backend/` (or wherever `config.py` expects it). At minimum, define:
 
 ```bash
 APP_ENV=development
@@ -124,7 +124,7 @@ docker compose down
 With the virtual environment active and Postgres running:
 
 ```bash
-cd backend
+cd services/backend
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -138,12 +138,12 @@ Then open:
 Frontend – local development (template)
 ---------------------------------------
 
-The `frontend/` directory is reserved for the user interface. This repository does not prescribe a specific frontend framework, so treat the commands below as a template.
+The `services/frontend/` directory is reserved for the user interface. This repository does not prescribe a specific frontend framework, so treat the commands below as a template.
 
 From the repo root:
 
 ```bash
-cd frontend
+cd services/frontend
 ```
 
 If you use a Node-based frontend (React/Vue/Svelte/etc.), a typical flow is:
@@ -162,7 +162,7 @@ yarn dev
 
 Then open the URL printed in the terminal (commonly `http://localhost:3000`).
 
-Update this section once you have a concrete frontend stack and scripts (for example, link to `frontend/package.json` and docs).
+Update this section once you have a concrete frontend stack and scripts (for example, link to `services/frontend/package.json` and docs).
 
 ---
 
@@ -188,9 +188,9 @@ Large or sensitive files should **not** be committed to Git. Use `.gitignore` to
 Testing
 -------
 
-Backend tests (if present) live under `backend/tests/`.
+Backend tests (if present) live under `services/backend/tests/`.
 
-From `backend/` with the virtual environment active:
+From `services/backend/` with the virtual environment active:
 
 ```bash
 pytest
@@ -225,20 +225,20 @@ Development workflow
 
 3. **Set up the backend**
 
-   - Create and activate a virtual environment under `backend/`.
+   - Create and activate a virtual environment under `services/backend/`.
    - Install dependencies with `pip install -r requirements.txt`.
    - Create a `.env` file with `DATABASE_URL` and other settings.
    - Run `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`.
 
 4. **Set up the frontend (optional)**
 
-   - Initialize your chosen frontend framework under `frontend/`.
+   - Initialize your chosen frontend framework under `services/frontend/`.
    - Install dependencies (for example, `npm install`).
    - Run the dev server (for example, `npm run dev`).
 
 5. **Run tests**
 
-   - Backend: `pytest` from `backend/`.
+   - Backend: `pytest` from `services/backend/`.
    - Frontend: project-specific test command once you have one.
 
 ---

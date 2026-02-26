@@ -1,6 +1,6 @@
 """
 Create arsenals and arsenal_balls tables and spec-aligned data model.
-Run from repo root: python backend/scripts/migrate_arsenals.py
+Run from repo root: python services/backend/scripts/migrate_arsenals.py
 """
 from __future__ import annotations
 
