@@ -125,7 +125,11 @@ export function VirtualBag() {
   return (
     <div className="virtual-bag">
       <h2>Virtual Bag</h2>
-      {error && <p className="virtual-bag-error">{error}</p>}
+      {error && (
+        <p className="virtual-bag-error" role="alert">
+          {error}
+        </p>
+      )}
       <ul className="virtual-bag-list">
         {bag.map((e) => (
           <li key={e.ball.ball_id} className="virtual-bag-item">

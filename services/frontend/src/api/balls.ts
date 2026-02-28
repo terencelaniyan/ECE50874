@@ -7,6 +7,8 @@ export interface ListBallsParams {
   symmetry?: string;
   status?: string;
   q?: string;
+  sort?: string;
+  order?: "asc" | "desc";
   limit?: number;
   offset?: number;
 }
@@ -18,6 +20,8 @@ export function listBalls(params: ListBallsParams = {}): Promise<BallsResponse> 
   if (params.symmetry != null) sp.set("symmetry", params.symmetry);
   if (params.status != null) sp.set("status", params.status);
   if (params.q != null) sp.set("q", params.q);
+  if (params.sort != null) sp.set("sort", params.sort);
+  if (params.order != null) sp.set("order", params.order);
   if (params.limit != null) sp.set("limit", String(params.limit));
   if (params.offset != null) sp.set("offset", String(params.offset));
   const qs = sp.toString();

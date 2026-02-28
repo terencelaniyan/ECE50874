@@ -41,8 +41,16 @@ export function RecommendationsPanel() {
       {arsenalBallIds.length === 0 && (
         <p className="recommendations-empty">Add balls to your bag to get recommendations.</p>
       )}
-      {error && <p className="recommendations-error">{error}</p>}
-      {loading && <p className="recommendations-loading">Loading…</p>}
+      {error && (
+        <p className="recommendations-error" role="alert">
+          {error}
+        </p>
+      )}
+      {loading && (
+        <p className="recommendations-loading" aria-live="polite">
+          Loading…
+        </p>
+      )}
       {!loading && items.length > 0 && (
         <ul className="recommendations-list">
           {items.map((item) => (

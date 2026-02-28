@@ -37,19 +37,21 @@ List balls with optional filters and pagination.
 
 **Query parameters:**
 
-| Parameter       | Type   | Default | Description                               |
-| --------------- | ------ | ------- | ----------------------------------------- |
-| brand           | string | —       | Exact match on brand.                     |
-| coverstock_type | string | —       | Exact match on coverstock_type.           |
-| symmetry        | string | —       | Exact match on symmetry.                  |
-| status          | string | —       | Exact match on status.                    |
-| q               | string | —       | Case-insensitive substring match on name. |
-| limit           | int    | 50      | Page size (1–200).                        |
-| offset          | int    | 0       | Skip N rows.                              |
+| Parameter       | Type   | Default      | Description                                                                 |
+| --------------- | ------ | ------------ | --------------------------------------------------------------------------- |
+| brand           | string | —            | Exact match on brand.                                                       |
+| coverstock_type | string | —            | Exact match on coverstock_type.                                             |
+| symmetry        | string | —            | Exact match on symmetry.                                                    |
+| status          | string | —            | Exact match on status.                                                      |
+| q               | string | —            | Case-insensitive substring match on name.                                   |
+| sort            | string | release_date | Sort by: name, brand, release_date, rg, diff, coverstock_type, symmetry, ball_id. |
+| order           | string | desc         | Sort direction: asc or desc.                                                |
+| limit           | int    | 50           | Page size (1–200).                                                          |
+| offset          | int    | 0            | Skip N rows.                                                                |
 
 **Response:** `{"items": [<Ball>, ...], "count": <total matching count>}`
 
-Results are ordered by `release_date DESC NULLS LAST`, then `ball_id ASC`. `count` is the total number of rows matching the filters (ignoring limit/offset).
+Results are ordered by the requested `sort` column and `order`, then by `ball_id ASC` as tiebreaker. `count` is the total number of rows matching the filters (ignoring limit/offset).
 
 ---
 
@@ -162,7 +164,7 @@ Defined in `services/backend/app/api_models.py`:
 From repo root, with virtualenv activated and dependencies installed:
 
 ```bash
-cd backend && uvicorn app.main:app --reload
+cd services/backend && uvicorn app.main:app --reload
 ```
 
 - `--reload` enables auto-reload on code changes.

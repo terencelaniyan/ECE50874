@@ -34,8 +34,16 @@ export function GapsPanel() {
   return (
     <div className="gaps-panel">
       <h2>Gap analysis</h2>
-      {error && <p className="gaps-error">{error}</p>}
-      {loading && <p className="gaps-loading">Loading…</p>}
+      {error && (
+        <p className="gaps-error" role="alert">
+          {error}
+        </p>
+      )}
+      {loading && (
+        <p className="gaps-loading" aria-live="polite">
+          Loading…
+        </p>
+      )}
       {!loading && items.length === 0 && (
         <p className="gaps-empty">No gap suggestions (or catalog empty).</p>
       )}

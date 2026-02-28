@@ -29,37 +29,52 @@ export async function get<T>(path: string): Promise<T> {
 }
 
 export async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(apiUrl(path), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new ApiError(res.status, text || res.statusText);
+  try {
+    const res = await fetch(apiUrl(path), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new ApiError(res.status, text || res.statusText);
+    }
+    if (res.status === 204) return undefined as T;
+    return res.json() as Promise<T>;
+  } catch (e) {
+    if (isNetworkError(e)) throw new ApiError(0, "Network error. Check your connection.");
+    throw e;
   }
-  if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
 }
 
 export async function patch<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(apiUrl(path), {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new ApiError(res.status, text || res.statusText);
+  try {
+    const res = await fetch(apiUrl(path), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new ApiError(res.status, text || res.statusText);
+    }
+    return res.json() as Promise<T>;
+  } catch (e) {
+    if (isNetworkError(e)) throw new ApiError(0, "Network error. Check your connection.");
+    throw e;
   }
-  return res.json() as Promise<T>;
 }
 
 export async function del(path: string): Promise<void> {
-  const res = await fetch(apiUrl(path), { method: "DELETE" });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new ApiError(res.status, text || res.statusText);
+  try {
+    const res = await fetch(apiUrl(path), { method: "DELETE" });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new ApiError(res.status, text || res.statusText);
+    }
+  } catch (e) {
+    if (isNetworkError(e)) throw new ApiError(0, "Network error. Check your connection.");
+    throw e;
   }
 }
 

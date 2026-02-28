@@ -6,6 +6,16 @@ import type { Ball } from "../types/ball";
 
 const PAGE_SIZE = 20;
 
+const SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: "name", label: "Name" },
+  { value: "brand", label: "Brand" },
+  { value: "release_date", label: "Release date" },
+  { value: "rg", label: "RG" },
+  { value: "diff", label: "Differential" },
+  { value: "coverstock_type", label: "Coverstock" },
+  { value: "symmetry", label: "Symmetry" },
+];
+
 export function BallCatalog() {
   const { addToBag, arsenalBallIds } = useBag();
   const [items, setItems] = useState<Ball[]>([]);
@@ -13,6 +23,8 @@ export function BallCatalog() {
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sort, setSort] = useState<string>("release_date");
+  const [order, setOrder] = useState<"asc" | "desc">("desc");
   const [filters, setFilters] = useState<ListBallsParams>({
     limit: PAGE_SIZE,
     offset: 0,
@@ -35,10 +47,12 @@ export function BallCatalog() {
   useEffect(() => {
     fetchBalls({
       ...filters,
+      sort,
+      order,
       limit: PAGE_SIZE,
       offset,
     });
-  }, [offset, filters, fetchBalls]);
+  }, [offset, filters, sort, order, fetchBalls]);
 
   const handlePageNext = () => {
     if (offset + PAGE_SIZE < count) setOffset((o) => o + PAGE_SIZE);
@@ -97,6 +111,36 @@ export function BallCatalog() {
           }}
           className="ball-catalog-input"
         />
+        <label className="ball-catalog-sort">
+          Sort by
+          <select
+            value={sort}
+            onChange={(ev) => {
+              setOffset(0);
+              setSort(ev.target.value);
+            }}
+            className="ball-catalog-input"
+            aria-label="Sort by field"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={order}
+            onChange={(ev) => {
+              setOffset(0);
+              setOrder(ev.target.value as "asc" | "desc");
+            }}
+            className="ball-catalog-input"
+            aria-label="Sort order"
+          >
+            <option value="asc">A–Z / Low–High</option>
+            <option value="desc">Z–A / High–Low</option>
+          </select>
+        </label>
       </div>
       {error && (
         <p className="ball-catalog-error" role="alert">

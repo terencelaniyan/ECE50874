@@ -158,7 +158,16 @@ Then open `http://localhost:5173`. The Vite dev server proxies `/api` to `http:/
 npm run build
 ```
 
-Output is in `dist/`. With Docker Compose, the frontend is built and served on port 3000 (nginx). In that setup, the browser uses `/api`, which nginx proxies to the backend service.
+Output is in `dist/`. With Docker Compose, the frontend is built and served (e.g. via nginx). In that setup, the browser uses `/api`, which nginx proxies to the backend service at `http://backend:8000/`. Ensure the backend is reachable at that host in production.
+
+**Run frontend tests:**
+
+```bash
+cd services/frontend
+npm run test:run
+```
+
+Or `npm test` for watch mode.
 
 ---
 
@@ -199,7 +208,7 @@ pytest tests/test_gap_engine.py
 pytest tests/test_recommendation_engine.py -k "some_test_name"
 ```
 
-If you add frontend tests, document the commands here (for example, `npm test` or `npm run test`).
+Frontend tests (Vitest): from `services/frontend/`, run `npm run test:run` or `npm test` (watch mode).
 
 ---
 

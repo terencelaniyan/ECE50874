@@ -102,6 +102,11 @@ def health():
     return {"status": "ok", "db": row["ok"]}
 
 
+SORT_COLUMNS = frozenset(
+    {"name", "brand", "release_date", "rg", "diff", "coverstock_type", "symmetry", "ball_id"}
+)
+
+
 @app.get("/balls", response_model=BallsResponse)
 def list_balls(
     brand: Optional[str] = None,
@@ -110,6 +115,13 @@ def list_balls(
     status: Optional[str] = None,
     q: Optional[str] = Query(
         default=None, description="Case-insensitive substring match on name"
+    ),
+    sort: str = Query(
+        default="release_date",
+        description="Sort by: name, brand, release_date, rg, diff, etc.",
+    ),
+    order: str = Query(
+        default="desc", description="Sort direction: asc or desc"
     ),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
@@ -141,15 +153,23 @@ def list_balls(
         sql.SQL(" WHERE ") + sql.SQL(" AND ").join(where) if where else sql.SQL("")
     )
 
+    sort_col = sort if sort in SORT_COLUMNS else "release_date"
+    order_dir = (
+        sql.SQL("DESC") if (order or "").lower() == "desc" else sql.SQL("ASC")
+    )
+    order_sql = sql.SQL(
+        " ORDER BY {col} {dir} NULLS LAST, ball_id ASC"
+    ).format(col=sql.Identifier(sort_col), dir=order_dir)
+
     query_items = sql.SQL(
         """
         SELECT *
         FROM balls
         {where}
-        ORDER BY release_date DESC NULLS LAST, ball_id ASC
+        {order}
         LIMIT %(limit)s OFFSET %(offset)s
         """
-    ).format(where=where_sql)
+    ).format(where=where_sql, order=order_sql)
 
     query_count = sql.SQL(
         """

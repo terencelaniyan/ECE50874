@@ -45,6 +45,14 @@ describe("get", () => {
     expect(thrown?.status).toBe(404);
     expect(thrown?.message).toBe("Not found");
   });
+
+  it("throws ApiError with network message when fetch throws (e.g. offline)", async () => {
+    (fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    const e = await get("/balls").catch((err) => err);
+    expect(e).toBeInstanceOf(ApiError);
+    expect((e as ApiError).status).toBe(0);
+    expect((e as ApiError).message).toBe("Network error. Check your connection.");
+  });
 });
 
 describe("post", () => {

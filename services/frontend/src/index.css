@@ -170,6 +170,12 @@ body {
   min-width: 120px;
 }
 
+.ball-catalog-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .ball-catalog-error,
 .ball-catalog-loading,
 .recommendations-error,
