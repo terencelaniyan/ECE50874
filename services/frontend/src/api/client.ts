@@ -14,16 +14,21 @@ function isNetworkError(e: unknown): boolean {
   return false;
 }
 
-export async function get<T>(path: string): Promise<T> {
+const NETWORK_ERROR_MESSAGE =
+  import.meta.env?.DEV && !import.meta.env?.VITE_API_BASE
+    ? "Cannot reach the API. Start the backend (e.g. in services/backend: uvicorn app.main:app --reload --port 8000)."
+    : "Network error. Check your connection.";
+
+export async function get<T>(path: string, options?: { signal?: AbortSignal }): Promise<T> {
   try {
-    const res = await fetch(apiUrl(path));
+    const res = await fetch(apiUrl(path), { signal: options?.signal });
     if (!res.ok) {
       const text = await res.text();
       throw new ApiError(res.status, text || res.statusText);
     }
     return res.json() as Promise<T>;
   } catch (e) {
-    if (isNetworkError(e)) throw new ApiError(0, "Network error. Check your connection.");
+    if (isNetworkError(e)) throw new ApiError(0, NETWORK_ERROR_MESSAGE);
     throw e;
   }
 }
@@ -42,7 +47,7 @@ export async function post<T>(path: string, body: unknown): Promise<T> {
     if (res.status === 204) return undefined as T;
     return res.json() as Promise<T>;
   } catch (e) {
-    if (isNetworkError(e)) throw new ApiError(0, "Network error. Check your connection.");
+    if (isNetworkError(e)) throw new ApiError(0, NETWORK_ERROR_MESSAGE);
     throw e;
   }
 }
@@ -60,7 +65,7 @@ export async function patch<T>(path: string, body: unknown): Promise<T> {
     }
     return res.json() as Promise<T>;
   } catch (e) {
-    if (isNetworkError(e)) throw new ApiError(0, "Network error. Check your connection.");
+    if (isNetworkError(e)) throw new ApiError(0, NETWORK_ERROR_MESSAGE);
     throw e;
   }
 }
@@ -73,7 +78,7 @@ export async function del(path: string): Promise<void> {
       throw new ApiError(res.status, text || res.statusText);
     }
   } catch (e) {
-    if (isNetworkError(e)) throw new ApiError(0, "Network error. Check your connection.");
+    if (isNetworkError(e)) throw new ApiError(0, NETWORK_ERROR_MESSAGE);
     throw e;
   }
 }

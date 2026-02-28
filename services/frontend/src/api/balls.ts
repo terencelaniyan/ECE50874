@@ -13,7 +13,10 @@ export interface ListBallsParams {
   offset?: number;
 }
 
-export function listBalls(params: ListBallsParams = {}): Promise<BallsResponse> {
+export function listBalls(
+  params: ListBallsParams = {},
+  options?: { signal?: AbortSignal }
+): Promise<BallsResponse> {
   const sp = new URLSearchParams();
   if (params.brand != null) sp.set("brand", params.brand);
   if (params.coverstock_type != null) sp.set("coverstock_type", params.coverstock_type);
@@ -25,7 +28,7 @@ export function listBalls(params: ListBallsParams = {}): Promise<BallsResponse> 
   if (params.limit != null) sp.set("limit", String(params.limit));
   if (params.offset != null) sp.set("offset", String(params.offset));
   const qs = sp.toString();
-  return get<BallsResponse>(`/balls${qs ? `?${qs}` : ""}`);
+  return get<BallsResponse>(`/balls${qs ? `?${qs}` : ""}`, options);
 }
 
 export function getBall(ballId: string): Promise<Ball> {

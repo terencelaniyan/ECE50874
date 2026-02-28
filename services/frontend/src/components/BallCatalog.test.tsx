@@ -2,17 +2,19 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { BagProvider } from "../context/BagContext";
 import { BallCatalog } from "./BallCatalog";
-import { listBalls } from "../api/balls";
+import { apiUrl } from "../api/client";
 import { minimalBall, minimalBall2 } from "../test/fixtures";
 
-vi.mock("../api/balls", () => ({
-  listBalls: vi.fn(),
-}));
+const mockFetch = vi.fn();
 
 describe("BallCatalog", () => {
   beforeEach(() => {
-    vi.mocked(listBalls).mockReset();
-    vi.mocked(listBalls).mockResolvedValue({ items: [], count: 0 });
+    mockFetch.mockReset();
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ items: [], count: 0 }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
   });
 
   function renderCatalog() {
@@ -24,9 +26,10 @@ describe("BallCatalog", () => {
   }
 
   it("shows loading initially then count and list when listBalls resolves", async () => {
-    vi.mocked(listBalls).mockResolvedValue({
-      items: [minimalBall, minimalBall2],
-      count: 2,
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({ items: [minimalBall, minimalBall2], count: 2 }),
     });
     renderCatalog();
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
@@ -38,32 +41,65 @@ describe("BallCatalog", () => {
   });
 
   it("shows error when listBalls rejects", async () => {
-    vi.mocked(listBalls).mockRejectedValue(new Error("Network error"));
+    mockFetch.mockRejectedValue(new Error("Server error"));
     renderCatalog();
     await waitFor(() => {
-      expect(screen.getByText("Network error")).toBeInTheDocument();
+      expect(screen.getByText("Server error")).toBeInTheDocument();
     });
   });
 
   it("calls listBalls with q when search input changes", async () => {
-    vi.mocked(listBalls).mockResolvedValue({ items: [], count: 0 });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ items: [], count: 0 }),
+    });
     renderCatalog();
     await waitFor(() => {
-      expect(listBalls).toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining(apiUrl("/balls")),
+        expect.any(Object)
+      );
     });
     const searchInput = screen.getByPlaceholderText(/search name/i);
     fireEvent.change(searchInput, { target: { value: "phantom" } });
-    await waitFor(() => {
-      expect(listBalls).toHaveBeenLastCalledWith(
-        expect.objectContaining({ q: "phantom" })
-      );
+    await waitFor(
+      () => {
+        expect(mockFetch).toHaveBeenCalledWith(
+          expect.stringMatching(/q=phantom/),
+          expect.any(Object)
+        );
+      },
+      { timeout: 500 }
+    );
+  });
+
+  it("calls listBalls with brand when Brand input changes", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ items: [], count: 0 }),
     });
+    renderCatalog();
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalled();
+    });
+    const brandInput = screen.getByPlaceholderText("Brand");
+    fireEvent.change(brandInput, { target: { value: "900" } });
+    await waitFor(
+      () => {
+        expect(mockFetch).toHaveBeenCalledWith(
+          expect.stringMatching(/brand=900/),
+          expect.any(Object)
+        );
+      },
+      { timeout: 500 }
+    );
   });
 
   it("shows pagination with Previous/Next and disables at bounds", async () => {
-    vi.mocked(listBalls).mockResolvedValue({
-      items: [minimalBall],
-      count: 1,
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({ items: [minimalBall], count: 1 }),
     });
     renderCatalog();
     await waitFor(() => {

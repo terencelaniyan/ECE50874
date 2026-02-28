@@ -26,7 +26,7 @@ if not DATABASE_URL:
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CSV_PATH = REPO_ROOT / "data" / "balls.csv"
 
-REQUIRED_COLUMNS = {"ball_id", "name", "brand", "rg", "diff", "int_diff"}
+REQUIRED_COLUMNS = {"name", "brand", "rg", "diff", "int_diff"}
 
 FLOAT_COLUMNS = {"rg", "diff", "int_diff"}
 DATE_COLUMNS = {"release_date"}
@@ -45,8 +45,8 @@ def column_sql_type(name: str, is_first: bool) -> str:
     return "TEXT"
 
 
-def build_create_table(columns: List[str]) -> str:
-    parts = [f"  {c} {column_sql_type(c, i == 0)}" for i, c in enumerate(columns)]
+def build_create_table(table_columns: List[str]) -> str:
+    parts = [f"  {c} {column_sql_type(c, i == 0)}" for i, c in enumerate(table_columns)]
     return "CREATE TABLE IF NOT EXISTS balls (\n" + ",\n".join(parts) + "\n);"
 
 
@@ -110,14 +110,17 @@ def main() -> None:
     if not CSV_PATH.exists():
         raise FileNotFoundError(f"CSV not found: {CSV_PATH}")
 
-    columns, rows = read_header_and_rows(CSV_PATH)
-    create_sql = build_create_table(columns)
+    csv_columns, rows = read_header_and_rows(CSV_PATH)
+    table_columns = ["ball_id"] + csv_columns
+    for i, row in enumerate(rows, start=1):
+        row["ball_id"] = f"B{i:03d}"
 
-    update_cols = [c for c in columns if c != "ball_id"]
+    create_sql = build_create_table(table_columns)
+    update_cols = [c for c in table_columns if c != "ball_id"]
     set_clause = ", ".join(f"{c} = EXCLUDED.{c}" for c in update_cols)
     upsert_sql = f"""
-    INSERT INTO balls ({", ".join(columns)})
-    VALUES ({", ".join([f"%({c})s" for c in columns])})
+    INSERT INTO balls ({", ".join(table_columns)})
+    VALUES ({", ".join([f"%({c})s" for c in table_columns])})
     ON CONFLICT (ball_id)
     DO UPDATE SET {set_clause};
     """
@@ -125,7 +128,7 @@ def main() -> None:
     with psycopg.connect(DATABASE_URL, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
             cur.execute(create_sql)
-            ensure_columns_exist(cur, columns)
+            ensure_columns_exist(cur, table_columns)
 
             batch_size = 200
             for i in range(0, len(rows), batch_size):

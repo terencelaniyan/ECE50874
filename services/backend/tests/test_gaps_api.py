@@ -13,6 +13,22 @@ def client():
     return TestClient(app)
 
 
+def test_gaps_both_arsenal_id_and_ball_ids_returns_400(client):
+    """No DB required: API must reject requests that send both arsenal_id and arsenal_ball_ids."""
+    response = client.post(
+        "/gaps",
+        json={
+            "arsenal_id": "550e8400-e29b-41d4-a716-446655440000",
+            "arsenal_ball_ids": ["B001"],
+            "k": 5,
+        },
+    )
+    assert response.status_code == 400
+    data = response.json()
+    assert "detail" in data
+    assert "either" in data["detail"].lower() or "not both" in data["detail"].lower()
+
+
 @pytest.mark.skipif(
     not os.getenv("DATABASE_URL", "").strip(),
     reason="DATABASE_URL not set; integration tests need a running Postgres with seeded balls",

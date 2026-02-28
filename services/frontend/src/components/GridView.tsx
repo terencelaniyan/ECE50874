@@ -26,14 +26,26 @@ export function GridView() {
   const [hoveredBall, setHoveredBall] = useState<Ball | null>(null);
   const { addToBag, removeFromBag, arsenalBallIds } = useBag();
 
+  const PAGE_SIZE = 200;
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    listBalls({ limit: 500, offset: 0 })
-      .then((res) => {
-        if (!cancelled) setBalls(res.items);
-      })
+    const fetchAll = async () => {
+      const all: Ball[] = [];
+      let offset = 0;
+      let hasMore = true;
+      while (hasMore && !cancelled) {
+        const res = await listBalls({ limit: PAGE_SIZE, offset });
+        if (cancelled) return;
+        all.push(...res.items);
+        hasMore = res.items.length === PAGE_SIZE;
+        offset += PAGE_SIZE;
+      }
+      if (!cancelled) setBalls(all);
+    };
+    fetchAll()
       .catch((e: unknown) => {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load");
       })
@@ -139,11 +151,12 @@ export function GridView() {
   return (
     <div className="grid-view">
       <h2>Grid View (RG vs Differential)</h2>
-      <svg
-        ref={svgRef}
-        width="100%"
-        height={DEFAULT_HEIGHT + MARGIN.top + MARGIN.bottom}
-        viewBox={`0 0 ${width} ${height}`}
+      <div className="grid-view-svg-wrap">
+        <svg
+          ref={svgRef}
+          width="100%"
+          height="100%"
+          viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="xMidYMid meet"
         className="grid-view-svg"
         role="img"
@@ -218,6 +231,7 @@ export function GridView() {
           </g>
         )}
       </svg>
+      </div>
       <p className="grid-view-legend">
         Blue = in bag. Click a point to add/remove from bag.
       </p>

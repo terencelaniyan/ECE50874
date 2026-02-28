@@ -3,31 +3,47 @@
 # ---------------------------------------------------------------------------
 # Database connection helper.
 #
-# Provides a context-manager that yields a psycopg connection configured
-# with `dict_row` so every fetchone/fetchall returns Python dicts instead
-# of tuples.  The connection is automatically closed when the context exits.
+# - get_db(): FastAPI dependency; use with Depends(get_db) in routes. Yields
+#   one connection per request and closes it after the response.
+# - get_conn(): Context manager for non-request usage (e.g. scripts). Same
+#   connection setup (dict_row, DATABASE_URL).
 #
-# Usage:
+# Usage in routes:
+#     def list_balls(db = Depends(get_db)): ...
+# Usage in scripts:
 #     with get_conn() as conn:
-#         with conn.cursor() as cur:
-#             cur.execute("SELECT * FROM balls;")
-#             rows = cur.fetchall()   # list[dict]
+#         with conn.cursor() as cur: ...
 # ===========================================================================
 
 from contextlib import contextmanager
+from typing import Generator
 
 import psycopg
-from psycopg.rows import dict_row  # enables dict-based row access (row["col"])
+from psycopg import Connection
+from psycopg.rows import dict_row
 
-from .config import DATABASE_URL   # resolved connection string from config module
+from .config import DATABASE_URL
+
+
+def _connect() -> Connection:
+    """Open psycopg connection with dict_row; single place for connection config."""
+    return psycopg.connect(DATABASE_URL, row_factory=dict_row)
+
+
+def get_db() -> Generator[Connection, None, None]:
+    """FastAPI dependency: yield one connection per request; closed after response."""
+    conn = _connect()
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 
 @contextmanager
 def get_conn():
-    """Yield a psycopg connection; automatically close it on exit."""
-    # Open a new connection using the project-wide DATABASE_URL
-    conn = psycopg.connect(DATABASE_URL, row_factory=dict_row)
+    """Yield a psycopg connection for use outside request scope (e.g. scripts)."""
+    conn = _connect()
     try:
-        yield conn  # caller uses `with get_conn() as conn: ...`
+        yield conn
     finally:
-        conn.close()  # ensure the connection is released even if an error occurs
+        conn.close()

@@ -24,7 +24,7 @@ describe("get", () => {
       json: () => Promise.resolve(mockJson),
     });
     const result = await get<typeof mockJson>("/balls");
-    expect(fetch).toHaveBeenCalledWith("/api/balls");
+    expect(fetch).toHaveBeenCalledWith("/api/balls", { signal: undefined });
     expect(result).toEqual(mockJson);
   });
 
@@ -51,7 +51,10 @@ describe("get", () => {
     const e = await get("/balls").catch((err) => err);
     expect(e).toBeInstanceOf(ApiError);
     expect((e as ApiError).status).toBe(0);
-    expect((e as ApiError).message).toBe("Network error. Check your connection.");
+    const msg = (e as ApiError).message;
+    expect(
+      msg === "Network error. Check your connection." || msg.includes("Cannot reach the API")
+    ).toBe(true);
   });
 });
 

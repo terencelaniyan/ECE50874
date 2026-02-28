@@ -37,7 +37,6 @@ from pathlib import Path
 from typing import Optional
 
 CSV_COLUMNS = [
-    "ball_id",
     "name",
     "brand",
     "rg",
@@ -53,24 +52,6 @@ CSV_COLUMNS = [
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CSV_PATH = REPO_ROOT / "data" / "balls.csv"
-
-
-def _next_ball_id() -> str:
-    """Read existing CSV and return the next sequential ball_id."""
-    if not CSV_PATH.exists():
-        return "B001"
-    with CSV_PATH.open("r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        max_id = 0
-        for row in reader:
-            bid = row.get("ball_id", "")
-            if bid.startswith("B"):
-                try:
-                    num = int(bid[1:])
-                    max_id = max(max_id, num)
-                except ValueError:
-                    pass
-    return f"B{max_id + 1:03d}"
 
 
 def _prompt(label: str, *, required: bool = False, default: str = "") -> str:
@@ -98,8 +79,6 @@ def _prompt_float(label: str, *, required: bool = False, default: float = 0.0) -
 def interactive_entry() -> dict:
     """Prompt the user for a single bowling ball record."""
     print("\n── New bowling ball entry ──")
-    ball_id = _next_ball_id()
-    print(f"  ball_id: {ball_id}  (auto)")
 
     name = _prompt("name", required=True)
     brand = _prompt("brand", required=True)
@@ -114,7 +93,6 @@ def interactive_entry() -> dict:
     status = _prompt("status", default="Active")
 
     return {
-        "ball_id": ball_id,
         "name": name,
         "brand": brand,
         "rg": rg,
@@ -151,11 +129,9 @@ def batch_from_json(path: str) -> None:
         sys.exit(1)
 
     rows: list[dict] = []
-    for i, rec in enumerate(records):
-        ball_id = _next_ball_id()
+    for rec in records:
         int_diff = float(rec.get("int_diff", 0))
         row = {
-            "ball_id": ball_id,
             "name": rec["name"],
             "brand": rec["brand"],
             "rg": float(rec["rg"]),
@@ -169,7 +145,6 @@ def batch_from_json(path: str) -> None:
             "status": rec.get("status", "Active"),
         }
         rows.append(row)
-        # Update the CSV so _next_ball_id() sees the new row
         append_rows([row])
 
     print(f"[manual_entry] Imported {len(rows)} records from {path}")
@@ -196,7 +171,7 @@ def main() -> None:
         while True:
             row = interactive_entry()
             append_rows([row])
-            print(f"  ✓ Saved {row['ball_id']}: {row['brand']} {row['name']}")
+            print(f"  ✓ Saved: {row['brand']} {row['name']}")
     except (KeyboardInterrupt, EOFError):
         print("\nDone.")
 

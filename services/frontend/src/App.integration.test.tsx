@@ -1,19 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import App from "./App";
-import { listBalls } from "./api/balls";
 import { minimalBall } from "./test/fixtures";
 
-vi.mock("./api/balls", () => ({
-  listBalls: vi.fn(),
-}));
+const mockFetch = vi.fn();
 
 describe("App integration", () => {
   beforeEach(() => {
-    vi.mocked(listBalls).mockResolvedValue({
-      items: [minimalBall],
-      count: 1,
+    mockFetch.mockReset();
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          items: [minimalBall],
+          count: 1,
+        }),
     });
+    vi.stubGlobal("fetch", mockFetch);
   });
 
   it("add ball from catalog to bag shows ball in VirtualBag sidebar", async () => {

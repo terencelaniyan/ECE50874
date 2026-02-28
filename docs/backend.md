@@ -39,14 +39,14 @@ List balls with optional filters and pagination.
 
 | Parameter       | Type   | Default      | Description                                                                 |
 | --------------- | ------ | ------------ | --------------------------------------------------------------------------- |
-| brand           | string | —            | Exact match on brand.                                                       |
-| coverstock_type | string | —            | Exact match on coverstock_type.                                             |
-| symmetry        | string | —            | Exact match on symmetry.                                                    |
+| brand           | string | —            | Case-insensitive substring match on brand.                                  |
+| coverstock_type | string | —            | Case-insensitive substring match on coverstock_type.                        |
+| symmetry        | string | —            | Case-insensitive substring match on symmetry.                               |
 | status          | string | —            | Exact match on status.                                                      |
-| q               | string | —            | Case-insensitive substring match on name.                                   |
+| q               | string | —            | Case-insensitive substring match on name, brand, or coverstock_type.         |
 | sort            | string | release_date | Sort by: name, brand, release_date, rg, diff, coverstock_type, symmetry, ball_id. |
 | order           | string | desc         | Sort direction: asc or desc.                                                |
-| limit           | int    | 50           | Page size (1–200).                                                          |
+| limit           | int    | 50           | Page size (1–5000).                                                         |
 | offset          | int    | 0            | Skip N rows.                                                                |
 
 **Response:** `{"items": [<Ball>, ...], "count": <total matching count>}`

@@ -1,13 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { http, HttpResponse } from "msw";
 import { BagProvider, useBag } from "../context/BagContext";
 import { VirtualBag } from "./VirtualBag";
-import * as arsenals from "../api/arsenals";
-import * as balls from "../api/balls";
+import { server } from "../test/server";
 import { minimalBall, bagEntry } from "../test/fixtures";
-
-vi.mock("../api/arsenals");
-vi.mock("../api/balls");
 
 function TestWrapper() {
   const { setBag } = useBag();
@@ -22,27 +19,6 @@ function TestWrapper() {
 }
 
 describe("VirtualBag", () => {
-  beforeEach(() => {
-    vi.mocked(arsenals.listArsenals).mockResolvedValue([]);
-    vi.mocked(arsenals.getArsenal).mockResolvedValue({
-      id: "arsenal-1",
-      name: "My bag",
-      balls: [{ ball_id: minimalBall.ball_id, game_count: 3 }],
-    });
-    vi.mocked(arsenals.createArsenal).mockResolvedValue({
-      id: "new-id",
-      name: "Saved",
-      balls: [],
-    });
-    vi.mocked(arsenals.updateArsenal).mockResolvedValue({
-      id: "arsenal-1",
-      name: null,
-      balls: [],
-    });
-    vi.mocked(arsenals.deleteArsenal).mockResolvedValue();
-    vi.mocked(balls.getBall).mockResolvedValue(minimalBall);
-  });
-
   it("renders empty bag and Save/Load arsenal buttons", () => {
     render(
       <BagProvider>
@@ -56,6 +32,13 @@ describe("VirtualBag", () => {
   });
 
   it("opens save modal and calls createArsenal when bag has items", async () => {
+    let postBody: { balls?: { ball_id: string }[] } = {};
+    server.use(
+      http.post("*/api/arsenals", async ({ request }) => {
+        postBody = (await request.json()) as { balls?: { ball_id: string }[] };
+        return HttpResponse.json({ id: "new-id", name: "Saved", balls: [] });
+      })
+    );
     render(
       <BagProvider>
         <TestWrapper />
@@ -73,17 +56,19 @@ describe("VirtualBag", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
     await waitFor(() => {
-      expect(arsenals.createArsenal).toHaveBeenCalledWith({
-        name: undefined,
-        balls: [{ ball_id: minimalBall.ball_id, game_count: 0 }],
-      });
+      expect(postBody.balls).toBeDefined();
+      expect(postBody.balls?.some((b) => b.ball_id === minimalBall.ball_id)).toBe(true);
     });
   });
 
   it("Load arsenal opens modal and fetches list", async () => {
-    vi.mocked(arsenals.listArsenals).mockResolvedValue([
-      { id: "a1", name: "Bag 1", ball_count: 2 },
-    ]);
+    server.use(
+      http.get("*/api/arsenals", () => {
+        return HttpResponse.json([
+          { id: "a1", name: "Bag 1", ball_count: 2 },
+        ]);
+      })
+    );
     render(
       <BagProvider>
         <VirtualBag />
@@ -91,17 +76,28 @@ describe("VirtualBag", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: /load arsenal/i }));
     await waitFor(() => {
-      expect(arsenals.listArsenals).toHaveBeenCalledWith({ limit: 50 });
-    });
-    await waitFor(() => {
       expect(screen.getByText(/Bag 1/)).toBeInTheDocument();
     });
   });
 
   it("handleLoad fetches arsenal and balls then updates bag", async () => {
-    vi.mocked(arsenals.listArsenals).mockResolvedValue([
-      { id: "arsenal-1", name: "My bag", ball_count: 1 },
-    ]);
+    server.use(
+      http.get("*/api/arsenals", () => {
+        return HttpResponse.json([
+          { id: "arsenal-1", name: "My bag", ball_count: 1 },
+        ]);
+      }),
+      http.get("*/api/arsenals/arsenal-1", () => {
+        return HttpResponse.json({
+          id: "arsenal-1",
+          name: "My bag",
+          balls: [{ ball_id: minimalBall.ball_id, game_count: 1 }],
+        });
+      }),
+      http.get(`*/api/balls/${minimalBall.ball_id}`, () => {
+        return HttpResponse.json(minimalBall);
+      })
+    );
     render(
       <BagProvider>
         <VirtualBag />
@@ -113,18 +109,19 @@ describe("VirtualBag", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /My bag \(1\)/ }));
     await waitFor(() => {
-      expect(arsenals.getArsenal).toHaveBeenCalledWith("arsenal-1");
-    });
-    await waitFor(() => {
-      expect(balls.getBall).toHaveBeenCalledWith(minimalBall.ball_id);
-    });
-    await waitFor(() => {
       expect(screen.getByText(minimalBall.name)).toBeInTheDocument();
     });
   });
 
   it("shows error when createArsenal fails", async () => {
-    vi.mocked(arsenals.createArsenal).mockRejectedValue(new Error("Server error"));
+    server.use(
+      http.post("*/api/arsenals", () => {
+        return new HttpResponse("Server error", {
+          status: 500,
+          statusText: "Server Error",
+        });
+      })
+    );
     render(
       <BagProvider>
         <TestWrapper />

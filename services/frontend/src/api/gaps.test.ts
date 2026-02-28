@@ -1,17 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import * as client from "./client";
 import { getGaps } from "./gaps";
+import { apiUrl } from "./client";
 
-vi.mock("./client");
+const mockFetch = vi.fn();
 
 describe("getGaps", () => {
   beforeEach(() => {
-    vi.mocked(client.post).mockResolvedValue({ items: [] });
+    mockFetch.mockReset();
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ items: [] }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
   });
 
-  it("calls post with /gaps and request body", async () => {
+  it("calls fetch POST with /api/gaps and request body", async () => {
     const body = { arsenal_ball_ids: ["b1"], k: 10 };
     await getGaps(body);
-    expect(client.post).toHaveBeenCalledWith("/gaps", body);
+    expect(mockFetch).toHaveBeenCalledWith(
+      apiUrl("/gaps"),
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+    );
   });
 });
