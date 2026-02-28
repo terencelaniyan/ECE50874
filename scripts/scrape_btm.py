@@ -102,7 +102,6 @@ def safe_float(val: str, default: float = 0.0) -> float:
 # ---------------------------------------------------------------------------
 
 CSV_COLUMNS = [
-    "ball_id",
     "name",
     "brand",
     "rg",
@@ -250,16 +249,12 @@ def scrape(*, limit: int | None = None, dry_run: bool = False) -> list[dict]:
     if limit:
         unique_rows = unique_rows[:limit]
 
-    # Assign ball_id
-    for i, r in enumerate(unique_rows, start=1):
-        r["ball_id"] = f"B{i:03d}"
-
     print(f"\n[scrape_btm] {len(unique_rows)} unique balls after deduplication.")
 
     if dry_run:
         print("[scrape_btm] --dry-run: not writing CSV. First 5 rows:")
         for r in unique_rows[:5]:
-            print(f"  {r['ball_id']}  {r['brand']:15s}  {r['name']:30s}  "
+            print(f"  {r['brand']:15s}  {r['name']:30s}  "
                   f"RG={r['rg']}  diff={r['diff']}  int_diff={r['int_diff']}")
         return unique_rows
 
