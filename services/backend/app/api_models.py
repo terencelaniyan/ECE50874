@@ -104,6 +104,13 @@ class RecommendRequest(BaseModel):
     arsenal_id: Optional[str] = None                           # or reference a saved arsenal
     game_counts: Optional[Dict[str, int]] = None               # ball_id -> game count for degradation
     k: int = Field(default=5, ge=1, le=50)                     # number of results to return
+    w_rg: float = Field(default=1.0, ge=0.1, le=10.0)          # weight for RG in similarity
+    w_diff: float = Field(default=1.0, ge=0.1, le=10.0)        # weight for differential
+    w_int: float = Field(default=1.0, ge=0.1, le=10.0)         # weight for intermediate differential
+    brand: Optional[str] = None                                 # filter candidates by brand (substring)
+    coverstock_type: Optional[str] = None                       # filter candidates by coverstock (substring)
+    status: Optional[str] = None                                # filter candidates by status (exact)
+    diversity_min_distance: float = Field(default=0.0, ge=0.0, le=1.0)  # min spec distance between picks (0=off)
 
 
 class RecommendationItem(BaseModel):

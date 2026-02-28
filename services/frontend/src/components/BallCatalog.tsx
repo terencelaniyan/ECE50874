@@ -99,12 +99,30 @@ export function BallCatalog() {
     if (offset > 0) setOffset((o) => Math.max(0, o - PAGE_SIZE));
   };
 
+  const retryFetch = useCallback(() => {
+    const params: ListBallsParams = {
+      limit: PAGE_SIZE,
+      offset,
+      sort,
+      order,
+      brand: (debouncedFilters.brand ?? "").trim() || undefined,
+      coverstock_type: (debouncedFilters.coverstock_type ?? "").trim() || undefined,
+      symmetry: (debouncedFilters.symmetry ?? "").trim() || undefined,
+      q: (debouncedFilters.q ?? "").trim() || undefined,
+    };
+    fetchBalls(params);
+  }, [offset, sort, order, debouncedFilters, fetchBalls]);
+
   return (
-    <div className="ball-catalog">
-      <h2>Ball Catalog</h2>
-      <div className="ball-catalog-filters">
+    <section
+      className="ball-catalog"
+      aria-labelledby="catalog-heading"
+      aria-busy={loading}
+    >
+      <h2 id="catalog-heading">Ball Catalog</h2>
+      <div className="ball-catalog-filters" role="search" aria-label="Filter catalog">
         <input
-          type="text"
+          type="search"
           placeholder="Search name, brand, or coverstock"
           value={filters.q ?? ""}
           onChange={(ev) => {
@@ -112,6 +130,7 @@ export function BallCatalog() {
             setFilters((f) => ({ ...f, q: ev.target.value || undefined }));
           }}
           className="ball-catalog-input"
+          aria-label="Search by name, brand, or coverstock"
         />
         <input
           type="text"
@@ -122,6 +141,7 @@ export function BallCatalog() {
             setFilters((f) => ({ ...f, brand: ev.target.value || undefined }));
           }}
           className="ball-catalog-input"
+          aria-label="Filter by brand"
         />
         <input
           type="text"
@@ -135,6 +155,7 @@ export function BallCatalog() {
             }));
           }}
           className="ball-catalog-input"
+          aria-label="Filter by coverstock type"
         />
         <input
           type="text"
@@ -148,6 +169,7 @@ export function BallCatalog() {
             }));
           }}
           className="ball-catalog-input"
+          aria-label="Filter by symmetry"
         />
         <span className="ball-catalog-sort" role="group" aria-label="Sort options">
           <label htmlFor="catalog-sort-by">
@@ -192,6 +214,14 @@ export function BallCatalog() {
       {error && (
         <p className="ball-catalog-error" role="alert">
           {error}
+          <button
+            type="button"
+            onClick={retryFetch}
+            className="ball-catalog-retry"
+            aria-label="Retry loading catalog"
+          >
+            Try again
+          </button>
         </p>
       )}
       {loading ? (
@@ -214,16 +244,20 @@ export function BallCatalog() {
               </li>
             ))}
           </ul>
-          <div className="ball-catalog-pagination">
+          <nav
+            className="ball-catalog-pagination"
+            aria-label="Catalog pagination"
+          >
             <button
               type="button"
               onClick={handlePagePrev}
               disabled={offset === 0}
               className="ball-catalog-page-btn"
+              aria-label="Previous page"
             >
               Previous
             </button>
-            <span className="ball-catalog-page-info">
+            <span className="ball-catalog-page-info" aria-live="polite">
               {offset + 1}–{Math.min(offset + PAGE_SIZE, count)} of {count}
             </span>
             <button
@@ -231,12 +265,13 @@ export function BallCatalog() {
               onClick={handlePageNext}
               disabled={offset + PAGE_SIZE >= count}
               className="ball-catalog-page-btn"
+              aria-label="Next page"
             >
               Next
             </button>
-          </div>
+          </nav>
         </>
       )}
-    </div>
+    </section>
   );
 }

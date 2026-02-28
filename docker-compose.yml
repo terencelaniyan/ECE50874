@@ -19,13 +19,10 @@ services:
     image: postgres:16-alpine                # lightweight Alpine-based Postgres
     environment:
       POSTGRES_USER: postgres                # default superuser
-      POSTGRES_PASSWORD: postgres            # default password (dev only)
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: bowlingdb                 # auto-created database name
-    ports:
-      - "5433:5432"                          # host:container – avoids clash with local Postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data  # persist data across restarts
-
   # ── FastAPI Backend ──────────────────────────────────────────────────────
   # Exposes /balls, /arsenals, /recommendations, /gaps endpoints on port 8000.
   # Connects to the postgres service via internal Docker network.
@@ -33,7 +30,9 @@ services:
     build: services/backend                  # Dockerfile in services/backend/
     environment:
       # Internal Docker hostname "postgres" resolves to the postgres container.
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/bowlingdb
+      DATABASE_URL: ${DATABASE_URL}
+      APP_ENV: ${APP_ENV}
+      ADMIN_KEY: ${ADMIN_KEY}
     depends_on:
       - postgres                             # ensure DB starts before backend
     ports:
@@ -50,6 +49,20 @@ services:
       - "3000:80"                            # serve SPA on localhost:3000
     restart: unless-stopped
 
+  # ── Caddy (HTTPS reverse proxy) ───────────────────────────────────────────
+  # Public entry in production. Replace yourdomain.com in Caddyfile with your domain.
+  caddy:
+    image: caddy:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+    depends_on:
+      - frontend
+
 # Named volume for Postgres data persistence
 volumes:
   postgres_data:
+  caddy_data:

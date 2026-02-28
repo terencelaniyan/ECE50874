@@ -48,6 +48,10 @@ def recommend(
     arsenal_rows: List[Dict],
     candidate_rows: List[Dict],
     k: int,
+    w_rg: float = 1.0,
+    w_diff: float = 1.0,
+    w_int: float = 1.0,
+    diversity_min_distance: float = 0.0,
 ) -> List[Tuple[Dict, float]]:
     """
     Recommend the top-k candidate balls most similar to the user's arsenal.
@@ -66,6 +70,10 @@ def recommend(
         All catalog balls NOT in the user's arsenal.
     k : int
         Number of recommendations to return.
+    w_rg, w_diff, w_int : float
+        Per-dimension weights for distance (default 1.0).
+    diversity_min_distance : float
+        If > 0, selected balls must be at least this far apart in spec space (default 0 = off).
 
     Returns
     -------
@@ -82,11 +90,39 @@ def recommend(
         # Find the smallest distance from this candidate to any arsenal ball
         best = None
         for a in arsenal_rows:
-            d = dist(cand, a)
+            d = dist(cand, a, w_rg=w_rg, w_diff=w_diff, w_int=w_int)
             if best is None or d < best:
                 best = d
         scored.append((cand, float(best)))
 
     # Sort by distance ascending → closest (most similar) balls first
     scored.sort(key=lambda t: t[1])
-    return scored[:k]  # return only the top-k results
+    return _apply_diversity(scored, k, w_rg, w_diff, w_int, diversity_min_distance)
+
+
+def _apply_diversity(
+    scored: List[Tuple[Dict, float]],
+    k: int,
+    w_rg: float,
+    w_diff: float,
+    w_int: float,
+    min_distance: float,
+) -> List[Tuple[Dict, float]]:
+    """
+    From scored list (sorted by similarity), take up to k items so that no two
+    selected balls are within min_distance of each other in spec space.
+    If min_distance <= 0, returns first k (no diversity filter).
+    """
+    if min_distance <= 0 or not scored:
+        return scored[:k]
+    selected: List[Tuple[Dict, float]] = []
+    for ball, score in scored:
+        if len(selected) >= k:
+            break
+        too_close = any(
+            dist(ball, s[0], w_rg=w_rg, w_diff=w_diff, w_int=w_int) < min_distance
+            for s in selected
+        )
+        if not too_close:
+            selected.append((ball, score))
+    return selected

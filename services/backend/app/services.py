@@ -332,6 +332,13 @@ def get_recommendations(
     arsenal_ball_ids: List[str],
     game_counts: Optional[dict],
     k: int,
+    w_rg: float = 1.0,
+    w_diff: float = 1.0,
+    w_int: float = 1.0,
+    brand: Optional[str] = None,
+    coverstock_type: Optional[str] = None,
+    status: Optional[str] = None,
+    diversity_min_distance: float = 0.0,
 ) -> List[Tuple[dict, float]]:
     """Return [(ball, score)] for top-k. Caller must pass arsenal_id or ball_ids."""
     arsenal_rows, arsenal_ids = resolve_arsenal_rows(
@@ -339,18 +346,36 @@ def get_recommendations(
     )
     if arsenal_id and not arsenal_ids:
         return []
+    brand = (brand or "").strip() or None
+    coverstock_type = (coverstock_type or "").strip() or None
+    status = (status or "").strip() or None
     with conn.cursor() as cur:
         if not arsenal_id and arsenal_ball_ids:
             validate_ball_ids(cur, arsenal_ball_ids)
-        cur.execute(
-            "SELECT * FROM balls WHERE ball_id <> ALL(%s);",
-            (arsenal_ids,),
+        where = [sql.SQL("ball_id <> ALL(%(arsenal_ids)s)")]
+        params: dict = {"arsenal_ids": arsenal_ids}
+        if brand:
+            where.append(sql.SQL("brand ILIKE %(brand)s"))
+            params["brand"] = f"%{brand}%"
+        if coverstock_type:
+            where.append(sql.SQL("coverstock_type ILIKE %(coverstock_type)s"))
+            params["coverstock_type"] = f"%{coverstock_type}%"
+        if status:
+            where.append(sql.SQL("status = %(status)s"))
+            params["status"] = status
+        query = sql.SQL("SELECT * FROM balls WHERE {}").format(
+            sql.SQL(" AND ").join(where)
         )
+        cur.execute(query, params)
         candidate_rows = cur.fetchall()
     return recommend(
         arsenal_rows=arsenal_rows,
         candidate_rows=candidate_rows,
         k=k,
+        w_rg=w_rg,
+        w_diff=w_diff,
+        w_int=w_int,
+        diversity_min_distance=diversity_min_distance,
     )
 
 

@@ -1,0 +1,5 @@
+# Replace yourdomain.com with your actual domain.
+# Caddy will obtain a Let's Encrypt certificate automatically (port 80 must be reachable for ACME).
+yourdomain.com {
+	reverse_proxy frontend:80
+}

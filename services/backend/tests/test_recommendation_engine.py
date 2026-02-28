@@ -84,3 +84,41 @@ def test_recommend_score_is_min_distance_to_arsenal():
     d1 = dist(candidate, arsenal[0])
     d2 = dist(candidate, arsenal[1])
     assert score == pytest.approx(min(d1, d2), rel=1e-5)
+
+
+def test_recommend_with_weights_changes_ordering():
+    arsenal = [_ball("A", 2.50, 0.040, 0.020)]
+    # B closer in rg (0.01), C closer in diff (0.001); equal weights favor B
+    candidates = [
+        _ball("B", 2.51, 0.050, 0.020),  # rg 0.01, diff 0.01
+        _ball("C", 2.55, 0.041, 0.020),  # rg 0.05, diff 0.001
+    ]
+    result_default = recommend(arsenal_rows=arsenal, candidate_rows=candidates, k=2)
+    result_favor_diff = recommend(
+        arsenal_rows=arsenal, candidate_rows=candidates, k=2, w_rg=0.1, w_diff=10.0
+    )
+    assert result_default[0][0]["ball_id"] == "B"
+    assert result_favor_diff[0][0]["ball_id"] == "C"
+
+
+def test_recommend_diversity_excludes_very_similar():
+    arsenal = [_ball("A", 2.50, 0.040)]
+    # B1, B2 almost identical; B3 farther
+    candidates = [
+        _ball("B1", 2.501, 0.0401, 0.020),
+        _ball("B2", 2.502, 0.0402, 0.020),
+        _ball("B3", 2.55, 0.050, 0.025),
+    ]
+    without = recommend(arsenal_rows=arsenal, candidate_rows=candidates, k=3)
+    with_diversity = recommend(
+        arsenal_rows=arsenal,
+        candidate_rows=candidates,
+        k=3,
+        diversity_min_distance=0.02,
+    )
+    assert len(without) == 3
+    assert len(with_diversity) == 2  # B1 and B3; B2 too close to B1
+    ids_diverse = [r[0]["ball_id"] for r in with_diversity]
+    assert "B1" in ids_diverse
+    assert "B3" in ids_diverse
+    assert "B2" not in ids_diverse

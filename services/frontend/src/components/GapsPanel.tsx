@@ -45,11 +45,23 @@ export function GapsPanel() {
   }, [fetchGaps]);
 
   return (
-    <div className="gaps-panel">
-      <h2>Gap analysis</h2>
+    <section
+      className="gaps-panel"
+      aria-labelledby="gaps-heading"
+      aria-busy={loading}
+    >
+      <h2 id="gaps-heading">Gap analysis</h2>
       {error && (
         <p className="gaps-error" role="alert">
           {error}
+          <button
+            type="button"
+            onClick={fetchGaps}
+            className="gaps-retry"
+            aria-label="Retry loading gap analysis"
+          >
+            Try again
+          </button>
         </p>
       )}
       {loading && (
@@ -75,6 +87,7 @@ export function GapsPanel() {
             type="button"
             className="gaps-clear-compare"
             onClick={() => setCompareItems([])}
+            aria-label="Clear comparison table"
           >
             Clear comparison
           </button>
@@ -109,6 +122,12 @@ export function GapsPanel() {
                         className="gaps-add-to-compare"
                         onClick={() => toggleCompare(item)}
                         disabled={!inCompare && compareItems.length >= MAX_COMPARE}
+                        aria-pressed={inCompare}
+                        aria-label={
+                          inCompare
+                            ? `Remove ${item.ball.name} from comparison`
+                            : `Add ${item.ball.name} to comparison`
+                        }
                       >
                         {inCompare ? "Remove from compare" : "Add to compare"}
                       </button>
@@ -120,6 +139,6 @@ export function GapsPanel() {
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }

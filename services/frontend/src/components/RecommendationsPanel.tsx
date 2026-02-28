@@ -49,14 +49,26 @@ export function RecommendationsPanel() {
   }, [fetchRecs]);
 
   return (
-    <div className="recommendations-panel">
-      <h2>Recommendations</h2>
+    <section
+      className="recommendations-panel"
+      aria-labelledby="recommendations-heading"
+      aria-busy={loading}
+    >
+      <h2 id="recommendations-heading">Recommendations</h2>
       {arsenalBallIds.length === 0 && (
         <p className="recommendations-empty">Add balls to your bag to get recommendations.</p>
       )}
       {error && (
         <p className="recommendations-error" role="alert">
           {error}
+          <button
+            type="button"
+            onClick={fetchRecs}
+            className="recommendations-retry"
+            aria-label="Retry loading recommendations"
+          >
+            Try again
+          </button>
         </p>
       )}
       {loading && (
@@ -76,6 +88,7 @@ export function RecommendationsPanel() {
             type="button"
             className="recommendations-clear-compare"
             onClick={() => setCompareItems([])}
+            aria-label="Clear comparison table"
           >
             Clear comparison
           </button>
@@ -100,6 +113,12 @@ export function RecommendationsPanel() {
                   className="recommendations-add-to-compare"
                   onClick={() => toggleCompare(item)}
                   disabled={!inCompare && compareItems.length >= MAX_COMPARE}
+                  aria-pressed={inCompare}
+                  aria-label={
+                    inCompare
+                      ? `Remove ${item.ball.name} from comparison`
+                      : `Add ${item.ball.name} to comparison`
+                  }
                 >
                   {inCompare ? "Remove from compare" : "Add to compare"}
                 </button>
@@ -108,6 +127,6 @@ export function RecommendationsPanel() {
           })}
         </ul>
       )}
-    </div>
+    </section>
   );
 }

@@ -215,6 +215,14 @@ body {
   margin: 0.5rem 0;
 }
 
+.ball-catalog-retry,
+.recommendations-retry,
+.gaps-retry {
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+}
+
 .ball-catalog-count {
   margin: 0 0 0.5rem;
   font-size: 0.875rem;

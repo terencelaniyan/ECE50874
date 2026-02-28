@@ -36,6 +36,14 @@ if not os.getenv("DATABASE_URL", "").strip():
 # Final resolved connection string for PostgreSQL
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
+# Environment: development | production. Drives CORS and other behavior.
+APP_ENV = os.getenv("APP_ENV", "development")
+
+# Production CORS origin (used when APP_ENV != "development").
+ALLOWED_ORIGIN = os.getenv(
+    "ALLOWED_ORIGIN", "https://yourdomain.com"
+)
+
 # Fail fast if no database connection string is available
 if not DATABASE_URL:
     raise RuntimeError(

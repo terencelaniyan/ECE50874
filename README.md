@@ -44,6 +44,8 @@ High-level layout:
 
 For deeper technical details, start with the documents under `docs/`.
 
+**Production (single-server):** See [docs/deploy.md](docs/deploy.md) for .env checklist, Caddyfile domain, and the one-off seed command.
+
 ---
 
 Prerequisites
@@ -106,12 +108,7 @@ From the repo root:
 docker compose up -d
 ```
 
-This will start a local Postgres 16 instance named `bowlingdb` with:
-
-- user: `postgres`
-- password: `postgres`
-- database: `bowlingdb`
-- port: `5432` on your host
+This will start a local Postgres 16 instance named `bowlingdb` with user `postgres`, database `bowlingdb`. The default compose does not expose Postgres on the host. For local development with host access (e.g. running migrations from your machine), add a `docker-compose.override.yml` that sets `ports: ["5433:5432"]` on the postgres service and use `DATABASE_URL=...@localhost:5433/...` in your `.env`.
 
 You can stop it later with:
 
