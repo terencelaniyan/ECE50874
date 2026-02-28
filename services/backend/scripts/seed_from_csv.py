@@ -1,13 +1,17 @@
 # backend/scripts/seed_from_csv.py
+"""
+Seed balls table from data/balls.csv. CSV header is the source of truth for columns.
+"""
 from __future__ import annotations
 
 import csv
 import os
 from datetime import date
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import psycopg
+from psycopg import sql
 from psycopg.rows import dict_row
 from dotenv import load_dotenv
 
@@ -19,44 +23,31 @@ if not DATABASE_URL:
         "DATABASE_URL is not set. Create .env at repo root with DATABASE_URL=postgresql://..."
     )
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 CSV_PATH = REPO_ROOT / "data" / "balls.csv"
 
-CREATE_TABLE_SQL = """
-CREATE TABLE IF NOT EXISTS balls (
-  ball_id            TEXT PRIMARY KEY,
-  name               TEXT NOT NULL,
-  brand              TEXT NOT NULL,
+REQUIRED_COLUMNS = {"ball_id", "name", "brand", "rg", "diff", "int_diff"}
 
-  rg                 DOUBLE PRECISION NOT NULL,
-  diff               DOUBLE PRECISION NOT NULL,
-  int_diff           DOUBLE PRECISION NOT NULL,
+FLOAT_COLUMNS = {"rg", "diff", "int_diff"}
+DATE_COLUMNS = {"release_date"}
+NULLABLE_TEXT_COLUMNS = {"symmetry", "coverstock_type", "surface_grit", "surface_finish", "status"}
 
-  symmetry           TEXT,
-  coverstock_type    TEXT,
 
-  surface_grit       TEXT,
-  surface_finish     TEXT,
+def column_sql_type(name: str, is_first: bool) -> str:
+    if name == "ball_id":
+        return "TEXT PRIMARY KEY"
+    if name in FLOAT_COLUMNS:
+        return "DOUBLE PRECISION NOT NULL"
+    if name in DATE_COLUMNS:
+        return "DATE"
+    if name in ("name", "brand"):
+        return "TEXT NOT NULL"
+    return "TEXT"
 
-  release_date       DATE,
-  status             TEXT
-);
-"""
 
-COLUMNS = [
-    "ball_id",
-    "name",
-    "brand",
-    "rg",
-    "diff",
-    "int_diff",
-    "symmetry",
-    "coverstock_type",
-    "surface_grit",
-    "surface_finish",
-    "release_date",
-    "status",
-]
+def build_create_table(columns: List[str]) -> str:
+    parts = [f"  {c} {column_sql_type(c, i == 0)}" for i, c in enumerate(columns)]
+    return "CREATE TABLE IF NOT EXISTS balls (\n" + ",\n".join(parts) + "\n);"
 
 
 def parse_date(s: str) -> Optional[date]:
@@ -73,60 +64,72 @@ def parse_float(s: str) -> float:
     return float(s)
 
 
+def read_header_and_rows(csv_path: Path) -> tuple[List[str], List[dict]]:
+    with csv_path.open("r", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        columns = reader.fieldnames or []
+        missing = REQUIRED_COLUMNS - set(columns)
+        if missing:
+            raise ValueError(f"CSV missing required columns: {sorted(missing)}")
+        rows = []
+        for r in reader:
+            row = {}
+            for k in columns:
+                val = (r.get(k) or "").strip()
+                if k in FLOAT_COLUMNS:
+                    row[k] = parse_float(val)
+                elif k in DATE_COLUMNS:
+                    row[k] = parse_date(val)
+                elif k in NULLABLE_TEXT_COLUMNS and val == "":
+                    row[k] = None
+                else:
+                    row[k] = val if val else None
+            rows.append(row)
+        return columns, rows
+
+
+def ensure_columns_exist(cur, columns: List[str]) -> None:
+    cur.execute(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'balls';
+        """
+    )
+    existing = {r["column_name"] for r in cur.fetchall()}
+    for col in columns:
+        if col not in existing:
+            cur.execute(
+                sql.SQL("ALTER TABLE balls ADD COLUMN {} TEXT").format(
+                    sql.Identifier(col)
+                )
+            )
+
+
 def main() -> None:
     if not CSV_PATH.exists():
         raise FileNotFoundError(f"CSV not found: {CSV_PATH}")
 
-    rows = []
-    with CSV_PATH.open("r", newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for r in reader:
-            row = {k: (r.get(k) or "").strip() for k in COLUMNS}
+    columns, rows = read_header_and_rows(CSV_PATH)
+    create_sql = build_create_table(columns)
 
-            row["rg"] = parse_float(row["rg"])
-            row["diff"] = parse_float(row["diff"])
-            row["int_diff"] = parse_float(row["int_diff"])
-
-            row["release_date"] = parse_date(row["release_date"])
-
-            for k in [
-                "symmetry",
-                "coverstock_type",
-                "surface_grit",
-                "surface_finish",
-                "status",
-            ]:
-                if row[k] == "":
-                    row[k] = None
-
-            rows.append(row)
-
+    update_cols = [c for c in columns if c != "ball_id"]
+    set_clause = ", ".join(f"{c} = EXCLUDED.{c}" for c in update_cols)
     upsert_sql = f"""
-    INSERT INTO balls ({", ".join(COLUMNS)})
-    VALUES ({", ".join([f"%({c})s" for c in COLUMNS])})
+    INSERT INTO balls ({", ".join(columns)})
+    VALUES ({", ".join([f"%({c})s" for c in columns])})
     ON CONFLICT (ball_id)
-    DO UPDATE SET
-      name = EXCLUDED.name,
-      brand = EXCLUDED.brand,
-      rg = EXCLUDED.rg,
-      diff = EXCLUDED.diff,
-      int_diff = EXCLUDED.int_diff,
-      symmetry = EXCLUDED.symmetry,
-      coverstock_type = EXCLUDED.coverstock_type,
-      surface_grit = EXCLUDED.surface_grit,
-      surface_finish = EXCLUDED.surface_finish,
-      release_date = EXCLUDED.release_date,
-      status = EXCLUDED.status
-    ;
+    DO UPDATE SET {set_clause};
     """
 
     with psycopg.connect(DATABASE_URL, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
-            cur.execute(CREATE_TABLE_SQL)
+            cur.execute(create_sql)
+            ensure_columns_exist(cur, columns)
 
             batch_size = 200
             for i in range(0, len(rows), batch_size):
-                batch = rows[i:i + batch_size]
+                batch = rows[i : i + batch_size]
                 cur.executemany(upsert_sql, batch)
 
         conn.commit()

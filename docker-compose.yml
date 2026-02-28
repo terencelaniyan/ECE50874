@@ -1,32 +1,55 @@
-services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: bowlingdb
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+# ===========================================================================
+# Docker Compose – Bowling Ball Recommendation Platform
+# ---------------------------------------------------------------------------
+# Orchestrates three services:
+#   1. postgres  – PostgreSQL 16 database storing bowling ball specs & arsenals
+#   2. backend   – FastAPI app serving REST endpoints for balls, arsenals,
+#                  recommendations, and gap analysis
+#   3. frontend  – Static SPA served by nginx
+#
+# Quick start:
+#   docker compose up --build
+# ===========================================================================
 
-  backend:
-    build: services/backend
+services:
+  # ── PostgreSQL Database ──────────────────────────────────────────────────
+  # Stores the `balls`, `arsenals`, and `arsenal_balls` tables.
+  # Data is persisted in a named Docker volume (`postgres_data`).
+  postgres:
+    image: postgres:16-alpine                # lightweight Alpine-based Postgres
     environment:
+      POSTGRES_USER: postgres                # default superuser
+      POSTGRES_PASSWORD: postgres            # default password (dev only)
+      POSTGRES_DB: bowlingdb                 # auto-created database name
+    ports:
+      - "5433:5432"                          # host:container – avoids clash with local Postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # persist data across restarts
+
+  # ── FastAPI Backend ──────────────────────────────────────────────────────
+  # Exposes /balls, /arsenals, /recommendations, /gaps endpoints on port 8000.
+  # Connects to the postgres service via internal Docker network.
+  backend:
+    build: services/backend                  # Dockerfile in services/backend/
+    environment:
+      # Internal Docker hostname "postgres" resolves to the postgres container.
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/bowlingdb
     depends_on:
-      - postgres
+      - postgres                             # ensure DB starts before backend
     ports:
-      - "8000:8000"
-    restart: unless-stopped
+      - "8000:8000"                          # expose API on localhost:8000
+    restart: unless-stopped                  # auto-restart on crash
 
+  # ── Frontend (Nginx SPA) ─────────────────────────────────────────────────
+  # Multi-stage build: Node builds the static assets, nginx serves them.
   frontend:
-    build: services/frontend
+    build: services/frontend                 # Dockerfile in services/frontend/
     depends_on:
-      - backend
+      - backend                              # ensure API is available
     ports:
-      - "3000:80"
+      - "3000:80"                            # serve SPA on localhost:3000
     restart: unless-stopped
 
+# Named volume for Postgres data persistence
 volumes:
   postgres_data:

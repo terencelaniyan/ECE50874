@@ -84,3 +84,53 @@ cd services/backend && python -m scripts.seed_from_csv
 **Output:** `Seeded N rows into Postgres from <path>/data/balls.csv`
 
 Re-running the script is safe: it upserts, so updated CSV rows overwrite existing rows by `ball_id`.
+
+## Scraping (automated collection)
+
+**Script:** `scripts/scrape_btm.py`
+
+**Source:** Bowling This Month ball comparison table (1,360+ entries).  
+**robots.txt:** Only `/wp-admin/` is blocked — product/review pages are allowed.
+
+**Dependencies:**
+
+```bash
+pip install playwright python-dateutil
+playwright install chromium
+```
+
+**Usage:**
+
+```bash
+python scripts/scrape_btm.py            # scrape all balls → data/balls.csv
+python scripts/scrape_btm.py --limit 300 # stop after 300 records
+python scripts/scrape_btm.py --dry-run   # preview without writing
+```
+
+**Field mapping (BTM → CSV):**
+
+| BTM Column | CSV Column | Notes |
+|-----------|-----------|-------|
+| Company | `brand` | Direct |
+| Ball Name | `name` | Direct |
+| Issue | `release_date` | "February 2026" → `2026-02-01` |
+| Cover | `coverstock_type` | `R Sol` → `Solid Reactive`, etc. |
+| Box Finish | `surface_grit`, `surface_finish` | Same value for both |
+| RG | `rg` | Float |
+| Diff | `diff` | Float |
+| Int | `int_diff` | Float (0 if blank) |
+
+`symmetry` is derived: `int_diff > 0` → Asymmetric, else Symmetric.
+
+## Manual entry (fallback)
+
+**Script:** `scripts/manual_entry.py`
+
+Use when scraping is blocked or for balls not in BTM's database.
+
+```bash
+python scripts/manual_entry.py                        # interactive prompt
+python scripts/manual_entry.py --from-json input.json  # batch import
+```
+
+JSON batch format: array of objects with `name`, `brand`, `rg`, `diff`, and optional `int_diff`, `coverstock_type`, `surface_grit`, `release_date`.
