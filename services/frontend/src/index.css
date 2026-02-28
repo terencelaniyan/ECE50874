@@ -1,0 +1,299 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  color: #1a1a1a;
+  background: #f5f5f5;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.layout-header {
+  padding: 0.75rem 1rem;
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.layout-header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.layout-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.layout-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  padding: 1rem;
+  background: #e8e8e8;
+  border-right: 1px solid #ccc;
+  overflow-y: auto;
+}
+
+.layout-main {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.tabs button {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #999;
+  background: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.tabs button.active {
+  background: #0a7ea4;
+  color: #fff;
+  border-color: #0a7ea4;
+}
+
+.virtual-bag h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.virtual-bag-error {
+  color: #c00;
+  font-size: 0.875rem;
+  margin: 0.25rem 0;
+}
+
+.virtual-bag-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem;
+}
+
+.virtual-bag-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #ccc;
+  font-size: 0.875rem;
+}
+
+.virtual-bag-name {
+  flex: 1 1 100%;
+  font-weight: 500;
+}
+
+.virtual-bag-games {
+  width: 4rem;
+  padding: 0.2rem;
+}
+
+.virtual-bag-remove {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.virtual-bag-saved {
+  font-size: 0.875rem;
+  margin: 0.5rem 0;
+}
+
+.virtual-bag-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.virtual-bag-btn {
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.virtual-bag-modal {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #fff;
+  border: 1px solid #999;
+  border-radius: 4px;
+}
+
+.virtual-bag-input {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  padding: 0.35rem;
+}
+
+.ball-catalog h2,
+.recommendations-panel h2,
+.gaps-panel h2,
+.grid-view h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.125rem;
+}
+
+.ball-catalog-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ball-catalog-input {
+  padding: 0.35rem 0.5rem;
+  min-width: 120px;
+}
+
+.ball-catalog-error,
+.ball-catalog-loading,
+.recommendations-error,
+.recommendations-loading,
+.gaps-error,
+.gaps-loading,
+.grid-view-error {
+  color: #c00;
+  margin: 0.5rem 0;
+}
+
+.ball-catalog-count {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  color: #555;
+}
+
+.ball-catalog-list,
+.recommendations-list,
+.gaps-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.ball-catalog-item,
+.recommendations-item,
+.gaps-item {
+  margin: 0;
+}
+
+.ball-card {
+  padding: 0.75rem;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.ball-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.ball-card-brand {
+  font-size: 0.875rem;
+  color: #555;
+}
+
+.ball-card-specs {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  margin: 0 0 0.5rem;
+}
+
+.ball-card-specs dt {
+  margin: 0;
+  color: #555;
+}
+
+.ball-card-coverstock {
+  font-size: 0.75rem;
+  color: #666;
+  margin: 0 0 0.5rem;
+}
+
+.ball-card-add {
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.ball-card-add:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.ball-catalog-pagination {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.ball-catalog-page-btn {
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+}
+
+.ball-catalog-page-info {
+  font-size: 0.875rem;
+  color: #555;
+}
+
+.recommendations-empty,
+.gaps-empty {
+  color: #555;
+  margin: 0.5rem 0;
+}
+
+.recommendations-score,
+.gaps-score {
+  display: block;
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.grid-view-svg {
+  display: block;
+  max-width: 100%;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.grid-view-legend {
+  font-size: 0.875rem;
+  color: #555;
+  margin: 0.5rem 0 0;
+}

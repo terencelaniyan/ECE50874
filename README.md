@@ -135,34 +135,30 @@ Then open:
 
 ---
 
-Frontend – local development (template)
----------------------------------------
+Frontend – local development
+---------------------------
 
-The `services/frontend/` directory is reserved for the user interface. This repository does not prescribe a specific frontend framework, so treat the commands below as a template.
+The frontend is a React + TypeScript SPA built with Vite. It talks to the backend for balls, arsenals, recommendations, and gap analysis.
+
+**Prerequisites:** Node.js (LTS) and npm.
 
 From the repo root:
 
 ```bash
 cd services/frontend
+npm install
+npm run dev
 ```
 
-If you use a Node-based frontend (React/Vue/Svelte/etc.), a typical flow is:
+Then open `http://localhost:5173`. The Vite dev server proxies `/api` to `http://localhost:8000`, so the backend must be running (see above). To use a different API URL, set `VITE_API_BASE` (e.g. `VITE_API_BASE=http://localhost:8000`).
+
+**Build for production:**
 
 ```bash
-# Install dependencies (once)
-npm install
-# or
-yarn install
-
-# Start dev server
-npm run dev
-# or
-yarn dev
+npm run build
 ```
 
-Then open the URL printed in the terminal (commonly `http://localhost:3000`).
-
-Update this section once you have a concrete frontend stack and scripts (for example, link to `services/frontend/package.json` and docs).
+Output is in `dist/`. With Docker Compose, the frontend is built and served on port 3000 (nginx). In that setup, the browser uses `/api`, which nginx proxies to the backend service.
 
 ---
 
