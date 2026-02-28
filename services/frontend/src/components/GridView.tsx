@@ -88,7 +88,7 @@ export function GridView() {
       k: 10,
     })
       .then((res) => {
-        if (!cancelled) setGapItems(res.items);
+        if (!cancelled) setGapItems(res.zones.flatMap((z) => z.balls));
       })
       .catch(() => {
         if (!cancelled) setGapItems([]);

@@ -56,6 +56,13 @@ export interface GapItem {
   gap_score: number;
 }
 
+export interface GapZone {
+  center: [number, number];
+  label: string;
+  description: string;
+  balls: GapItem[];
+}
+
 export interface GapResponse {
-  items: GapItem[];
+  zones: GapZone[];
 }

@@ -4,9 +4,10 @@ interface BallCardProps {
   ball: Ball;
   onAddToBag: () => void;
   inBag: boolean;
+  gapScore?: number;
 }
 
-export function BallCard({ ball, onAddToBag, inBag }: BallCardProps) {
+export function BallCard({ ball, onAddToBag, inBag, gapScore }: BallCardProps) {
   return (
     <div className="ball-card">
       <div className="ball-card-header">
@@ -21,6 +22,11 @@ export function BallCard({ ball, onAddToBag, inBag }: BallCardProps) {
         <dt>Int diff</dt>
         <dd>{ball.int_diff}</dd>
       </dl>
+      {gapScore !== undefined && (
+        <div className="ball-card-gap-priority">
+          Coverage Priority: {(gapScore * 100).toFixed(0)}%
+        </div>
+      )}
       {ball.coverstock_type && (
         <p className="ball-card-coverstock">{ball.coverstock_type}</p>
       )}

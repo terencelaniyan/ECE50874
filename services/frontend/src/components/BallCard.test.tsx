@@ -43,4 +43,16 @@ describe("BallCard", () => {
     const btn = screen.getByRole("button", { name: /in bag/i });
     expect(btn).toBeDisabled();
   });
+
+  it("shows Coverage Priority when gapScore is provided", () => {
+    render(
+      <BallCard
+        ball={minimalBall}
+        onAddToBag={() => {}}
+        inBag={false}
+        gapScore={0.091}
+      />
+    );
+    expect(screen.getByText(/Coverage Priority: 9%/)).toBeInTheDocument();
+  });
 });

@@ -3,13 +3,13 @@ import { useBag } from "../context/BagContext";
 import { getGaps } from "../api/gaps";
 import { BallCard } from "./BallCard";
 import { BallComparisonTable } from "./BallComparisonTable";
-import type { GapItem } from "../types/ball";
+import type { GapItem, GapZone } from "../types/ball";
 
 const MAX_COMPARE = 5;
 
 export function GapsPanel() {
   const { arsenalBallIds, gameCounts, addToBag } = useBag();
-  const [items, setItems] = useState<GapItem[]>([]);
+  const [zones, setZones] = useState<GapZone[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [compareItems, setCompareItems] = useState<GapItem[]>([]);
@@ -32,7 +32,7 @@ export function GapsPanel() {
         game_counts: Object.keys(gameCounts).length ? gameCounts : undefined,
         k: 10,
       });
-      setItems(res.items);
+      setZones(res.zones);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load gaps");
     } finally {
@@ -57,7 +57,7 @@ export function GapsPanel() {
           Loading…
         </p>
       )}
-      {!loading && items.length === 0 && (
+      {!loading && zones.length === 0 && (
         <p className="gaps-empty">No gap suggestions (or catalog empty).</p>
       )}
       {compareItems.length >= 2 && (
@@ -80,32 +80,45 @@ export function GapsPanel() {
           </button>
         </div>
       )}
-      {!loading && items.length > 0 && (
-        <ul className="gaps-list">
-          {items.map((item) => {
-            const inCompare = compareItems.some(
-              (c) => c.ball.ball_id === item.ball.ball_id
-            );
-            return (
-              <li key={item.ball.ball_id} className="gaps-item">
-                <BallCard
-                  ball={item.ball}
-                  onAddToBag={() => addToBag(item.ball)}
-                  inBag={arsenalBallIds.includes(item.ball.ball_id)}
-                />
-                <span className="gaps-score">Gap score: {item.gap_score.toFixed(4)}</span>
-                <button
-                  type="button"
-                  className="gaps-add-to-compare"
-                  onClick={() => toggleCompare(item)}
-                  disabled={!inCompare && compareItems.length >= MAX_COMPARE}
-                >
-                  {inCompare ? "Remove from compare" : "Add to compare"}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+      {!loading && zones.length > 0 && (
+        <div className="gap-recommendations">
+          {zones.map((zone, i) => (
+            <div key={i} className="zone-card">
+              <h3 className="zone-title">
+                Gap Zone {i + 1}: {zone.label}
+              </h3>
+              <p className="zone-description">{zone.description}</p>
+              <div className="zone-balls">
+                {zone.balls.map((item) => {
+                  const inCompare = compareItems.some(
+                    (c) => c.ball.ball_id === item.ball.ball_id
+                  );
+                  return (
+                    <div key={item.ball.ball_id} className="gaps-item">
+                      <BallCard
+                        ball={item.ball}
+                        onAddToBag={() => addToBag(item.ball)}
+                        inBag={arsenalBallIds.includes(item.ball.ball_id)}
+                        gapScore={item.gap_score}
+                      />
+                      <span className="gaps-score">
+                        Gap score: {item.gap_score.toFixed(4)}
+                      </span>
+                      <button
+                        type="button"
+                        className="gaps-add-to-compare"
+                        onClick={() => toggleCompare(item)}
+                        disabled={!inCompare && compareItems.length >= MAX_COMPARE}
+                      >
+                        {inCompare ? "Remove from compare" : "Add to compare"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

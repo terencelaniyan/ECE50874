@@ -119,7 +119,23 @@ You can stop it later with:
 docker compose down
 ```
 
-### 5. Run the backend server
+### 5. Apply database schema
+
+Run these scripts **in order** from the repo root. Running them in the wrong order will fail because `arsenal_balls` references `balls(ball_id)`.
+
+1. **seed_from_csv.py** — creates and fills the `balls` table (requires `data/balls.csv`).
+2. **migrate_arsenals.py** — creates `arsenals` and `arsenal_balls`; must run after balls exist.
+
+From the repo root:
+
+```bash
+python services/backend/scripts/seed_from_csv.py
+python services/backend/scripts/migrate_arsenals.py
+```
+
+Alternatively, run `python services/backend/scripts/setup_db.py` once to run both in the correct order.
+
+### 6. Run the backend server
 
 With the virtual environment active and Postgres running:
 
@@ -233,6 +249,7 @@ Development workflow
    - Create and activate a virtual environment under `services/backend/`.
    - Install dependencies with `pip install -r requirements.txt`.
    - Create a `.env` file with `DATABASE_URL` and other settings.
+   - Apply the database schema (run `python services/backend/scripts/setup_db.py` or the two scripts in order: `seed_from_csv.py` then `migrate_arsenals.py`).
    - Run `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`.
 
 4. **Set up the frontend (optional)**

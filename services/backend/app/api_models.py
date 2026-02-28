@@ -127,6 +127,7 @@ class GapRequest(BaseModel):
     arsenal_id: Optional[str] = None                           # or reference a saved arsenal
     game_counts: Optional[Dict[str, int]] = None               # ball_id -> game count for degradation
     k: int = Field(default=10, ge=1, le=50)                    # number of results
+    zone_threshold: float = 0.05                                # (rg, diff) distance to group into same zone
 
 
 class GapItem(BaseModel):
@@ -135,6 +136,14 @@ class GapItem(BaseModel):
     gap_score: float     # Voronoi distance score (higher = bigger coverage hole)
 
 
+class GapZone(BaseModel):
+    """One zone of clustered gap balls in (rg, diff) space."""
+    center: List[float]   # [rg, diff], length 2
+    label: str            # e.g. "Mid RG / High Differential"
+    description: str      # short bowling description
+    balls: List[GapItem]  # balls in this zone
+
+
 class GapResponse(BaseModel):
     """Response for POST /gaps."""
-    items: List[GapItem]  # top-k gaps sorted by gap_score descending
+    zones: List[GapZone]  # zones sorted by first ball's gap_score descending

@@ -33,12 +33,19 @@ def test_gaps_both_arsenal_id_and_ball_ids_returns_400(client):
     not os.getenv("DATABASE_URL", "").strip(),
     reason="DATABASE_URL not set; integration tests need a running Postgres with seeded balls",
 )
-def test_gaps_empty_arsenal_returns_200_and_items(client):
+def test_gaps_empty_arsenal_returns_200_and_zones(client):
     response = client.post("/gaps", json={"arsenal_ball_ids": [], "k": 5})
     assert response.status_code == 200
     data = response.json()
-    assert "items" in data
-    assert isinstance(data["items"], list)
+    assert "zones" in data
+    assert isinstance(data["zones"], list)
+    for zone in data["zones"]:
+        assert "center" in zone
+        assert "label" in zone
+        assert "description" in zone
+        assert "balls" in zone
+        assert len(zone["center"]) == 2
+        assert isinstance(zone["balls"], list)
 
 
 @pytest.mark.skipif(

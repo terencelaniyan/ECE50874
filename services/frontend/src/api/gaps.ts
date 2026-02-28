@@ -6,6 +6,7 @@ export interface GapRequest {
   arsenal_id?: string | null;
   game_counts?: Record<string, number> | null;
   k?: number;
+  zone_threshold?: number;
 }
 
 export function getGaps(body: GapRequest): Promise<GapResponse> {

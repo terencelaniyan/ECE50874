@@ -13,6 +13,12 @@ from typing import List, Optional, Set, Tuple
 # Tiny jitter to avoid degenerate Voronoi when two balls share (rg, diff).
 JITTER_EPS = 1e-9
 
+# Zone labeling breakpoints (rg, diff) for label_zone / zone_description.
+RG_LOW_MID = 2.50
+RG_MID_HIGH = 2.54
+DIFF_LOW_MID = 0.040
+DIFF_MID_HIGH = 0.050
+
 
 def _points_with_jitter(catalog_rows: List[dict]) -> Tuple[np.ndarray, List[dict]]:
     """
@@ -132,3 +138,71 @@ def compute_gaps(
 
     gap_scores.sort(key=lambda t: (t[1], t[0]["ball_id"]), reverse=True)
     return gap_scores[:k]
+
+
+def group_gaps_by_zone(
+    gap_items: List[Tuple[dict, float]],
+    threshold: float = 0.05,
+) -> List[dict]:
+    """
+    Cluster gap items in (rg, diff) space by distance threshold.
+    Zone center is the first point that created the zone (no centroid update).
+    Returns list of {"center": [rg, diff], "balls": [{"ball": ..., "gap_score": ...}, ...]}.
+    """
+    zones: List[dict] = []
+
+    for ball, score in gap_items:
+        pt = np.array([float(ball["rg"]), float(ball["diff"])])
+        placed = False
+
+        for zone in zones:
+            zone_center = np.array(zone["center"])
+            dist = float(np.linalg.norm(pt - zone_center))
+            if dist < threshold:
+                zone["balls"].append({"ball": ball, "gap_score": score})
+                placed = True
+                break
+
+        if not placed:
+            zones.append({
+                "center": [float(ball["rg"]), float(ball["diff"])],
+                "balls": [{"ball": ball, "gap_score": score}],
+            })
+
+    return zones
+
+
+def label_zone(center_rg: float, center_diff: float) -> str:
+    """Return human-readable label for a zone from its center (rg, diff)."""
+    if center_rg < RG_LOW_MID:
+        rg_label = "Low RG"
+    elif center_rg < RG_MID_HIGH:
+        rg_label = "Mid RG"
+    else:
+        rg_label = "High RG"
+
+    if center_diff < DIFF_LOW_MID:
+        diff_label = "Low Differential"
+    elif center_diff < DIFF_MID_HIGH:
+        diff_label = "Mid Differential"
+    else:
+        diff_label = "High Differential"
+
+    return f"{rg_label} / {diff_label}"
+
+
+def zone_description(center_rg: float, center_diff: float) -> str:
+    """Return short bowling description for a zone from its center (rg, diff)."""
+    label = label_zone(center_rg, center_diff)
+    descriptions = {
+        "Low RG / High Differential": "Strong asymmetrical, heavy oil.",
+        "Low RG / Mid Differential": "Strong hook, early roll.",
+        "Low RG / Low Differential": "Smooth symmetrical, medium-heavy oil.",
+        "Mid RG / High Differential": "Angular backend, medium oil.",
+        "Mid RG / Mid Differential": "Benchmark, versatile.",
+        "Mid RG / Low Differential": "Controlled mid-lane.",
+        "High RG / High Differential": "Angular backend, medium oil.",
+        "High RG / Mid Differential": "Length with backend.",
+        "High RG / Low Differential": "Control ball, light oil or dry lanes.",
+    }
+    return descriptions.get(label, "Covers a gap in your arsenal.")

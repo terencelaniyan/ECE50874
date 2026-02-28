@@ -1,7 +1,12 @@
-"""Unit tests for gap_engine.compute_gaps (no database)."""
+"""Unit tests for gap_engine (compute_gaps, group_gaps_by_zone, label_zone, zone_description)."""
 import pytest
 
-from app.gap_engine import compute_gaps
+from app.gap_engine import (
+    compute_gaps,
+    group_gaps_by_zone,
+    label_zone,
+    zone_description,
+)
 
 
 def _ball(ball_id: str, rg: float, diff: float):
@@ -117,3 +122,109 @@ def test_arsenal_effective_rows_used_for_scoring():
     assert set(ids) == {"B", "C", "D"}
     scores = [r[1] for r in result]
     assert scores == sorted(scores, reverse=True)
+
+
+# --- group_gaps_by_zone ---
+
+
+def test_group_gaps_by_zone_empty_returns_empty():
+    assert group_gaps_by_zone([]) == []
+    assert group_gaps_by_zone([], threshold=0.05) == []
+
+
+def test_group_gaps_by_zone_one_item_one_zone():
+    gap_items = [(_ball("A", 2.51, 0.048), 0.09)]
+    zones = group_gaps_by_zone(gap_items)
+    assert len(zones) == 1
+    assert zones[0]["center"] == [2.51, 0.048]
+    assert len(zones[0]["balls"]) == 1
+    assert zones[0]["balls"][0]["ball"]["ball_id"] == "A"
+    assert zones[0]["balls"][0]["gap_score"] == 0.09
+
+
+def test_group_gaps_by_zone_two_within_threshold_one_zone():
+    gap_items = [
+        (_ball("A", 2.51, 0.048), 0.09),
+        (_ball("B", 2.52, 0.047), 0.07),
+    ]
+    zones = group_gaps_by_zone(gap_items, threshold=0.05)
+    assert len(zones) == 1
+    assert zones[0]["center"] == [2.51, 0.048]
+    assert len(zones[0]["balls"]) == 2
+    ids = [b["ball"]["ball_id"] for b in zones[0]["balls"]]
+    assert set(ids) == {"A", "B"}
+
+
+def test_group_gaps_by_zone_two_beyond_threshold_two_zones():
+    gap_items = [
+        (_ball("A", 2.51, 0.048), 0.09),
+        (_ball("B", 2.60, 0.060), 0.07),
+    ]
+    zones = group_gaps_by_zone(gap_items, threshold=0.05)
+    assert len(zones) == 2
+    assert zones[0]["center"] == [2.51, 0.048]
+    assert zones[1]["center"] == [2.60, 0.060]
+    assert len(zones[0]["balls"]) == 1
+    assert len(zones[1]["balls"]) == 1
+
+
+def test_group_gaps_by_zone_threshold_boundary():
+    gap_items = [
+        (_ball("A", 2.50, 0.040), 0.09),
+        (_ball("B", 2.50 + 0.03, 0.040 + 0.03), 0.07),
+    ]
+    zones_small = group_gaps_by_zone(gap_items, threshold=0.04)
+    zones_large = group_gaps_by_zone(gap_items, threshold=0.05)
+    assert len(zones_small) == 2
+    assert len(zones_large) == 1
+
+
+# --- label_zone ---
+
+
+def test_label_zone_low_rg():
+    assert "Low RG" in label_zone(2.49, 0.050)
+    assert "Low RG" in label_zone(2.50 - 1e-6, 0.040)
+
+
+def test_label_zone_mid_rg():
+    assert "Mid RG" in label_zone(2.51, 0.050)
+    assert "Mid RG" in label_zone(2.50, 0.040)
+    assert "Mid RG" in label_zone(2.54 - 1e-6, 0.040)
+
+
+def test_label_zone_high_rg():
+    assert "High RG" in label_zone(2.54, 0.050)
+    assert "High RG" in label_zone(2.56, 0.040)
+
+
+def test_label_zone_low_mid_high_diff():
+    assert "Low Differential" in label_zone(2.52, 0.039)
+    assert "Mid Differential" in label_zone(2.52, 0.044)
+    assert "High Differential" in label_zone(2.52, 0.051)
+
+
+def test_label_zone_combos():
+    assert label_zone(2.49, 0.055) == "Low RG / High Differential"
+    assert label_zone(2.56, 0.038) == "High RG / Low Differential"
+    assert label_zone(2.52, 0.045) == "Mid RG / Mid Differential"
+
+
+# --- zone_description ---
+
+
+def test_zone_description_non_empty_for_known_labels():
+    combos = [
+        (2.49, 0.055),
+        (2.52, 0.045),
+        (2.56, 0.038),
+    ]
+    for rg, diff in combos:
+        desc = zone_description(rg, diff)
+        assert isinstance(desc, str)
+        assert len(desc) > 0
+
+
+def test_zone_description_always_non_empty():
+    desc = zone_description(2.50, 0.040)
+    assert isinstance(desc, str) and len(desc) > 0

@@ -13,7 +13,7 @@ from psycopg import sql
 
 from .degradation import apply_degradation
 from .exceptions import NotFoundError, ValidationError
-from .gap_engine import compute_gaps
+from .gap_engine import compute_gaps, group_gaps_by_zone, label_zone, zone_description
 from .recommendation_engine import recommend
 
 SORT_COLUMNS = frozenset({
@@ -360,8 +360,9 @@ def get_gaps(
     arsenal_ball_ids: List[str],
     game_counts: Optional[dict],
     k: int,
-) -> List[Tuple[dict, float]]:
-    """Return [(ball, gap_score)] for top-k. Caller passes arsenal_id or ball_ids."""
+    zone_threshold: float = 0.05,
+) -> List[dict]:
+    """Return list of zones: [{center, label, description, balls: [GapItem-like]}, ...]."""
     arsenal_rows, arsenal_ids = resolve_arsenal_rows(
         conn, arsenal_id, arsenal_ball_ids, game_counts
     )
@@ -371,9 +372,15 @@ def get_gaps(
         if not arsenal_id and arsenal_ids:
             validate_ball_ids(cur, arsenal_ids)
     arsenal_effective_rows = arsenal_rows if arsenal_rows else None
-    return compute_gaps(
+    top = compute_gaps(
         catalog_rows,
         set(arsenal_ids),
         k=k,
         arsenal_effective_rows=arsenal_effective_rows,
     )
+    zones = group_gaps_by_zone(top, threshold=zone_threshold)
+    for zone in zones:
+        c = zone["center"]
+        zone["label"] = label_zone(c[0], c[1])
+        zone["description"] = zone_description(c[0], c[1])
+    return zones

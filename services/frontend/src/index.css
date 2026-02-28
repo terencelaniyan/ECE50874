@@ -351,6 +351,42 @@ body {
   opacity: 0.6;
 }
 
+.gap-recommendations {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.zone-card {
+  padding: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.zone-title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.zone-description {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: #555;
+}
+
+.zone-balls {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.ball-card-gap-priority {
+  font-size: 0.8rem;
+  color: #444;
+  margin-bottom: 0.35rem;
+}
+
 .recommendations-compare {
   margin-bottom: 1rem;
 }

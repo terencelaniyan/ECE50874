@@ -201,16 +201,17 @@ def gaps(req: GapRequest, db=Depends(get_db)):
             detail="Provide either arsenal_id or arsenal_ball_ids, not both",
         )
     try:
-        top = svc_get_gaps(
+        zones = svc_get_gaps(
             db,
             arsenal_id=req.arsenal_id,
             arsenal_ball_ids=req.arsenal_ball_ids,
             game_counts=req.game_counts,
             k=req.k,
+            zone_threshold=req.zone_threshold,
         )
     except ValidationError as e:
         raise HTTPException(
             status_code=400,
             detail={"message": e.message, **e.detail},
         )
-    return {"items": [{"ball": ball, "gap_score": score} for (ball, score) in top]}
+    return GapResponse(zones=zones)

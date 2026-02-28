@@ -18,6 +18,7 @@ The app fails to start if `DATABASE_URL` is missing or empty. No other env vars 
 
 - **Driver:** `psycopg` (binary). Connections use a context manager in `db.get_conn()`.
 - **Tables:** `balls` — see [Data collection](data-collection.md). Populated by `services/backend/scripts/seed_from_csv.py`. `arsenals` and `arsenal_balls` — user-owned ball sets with per-ball game count; create with `python services/backend/scripts/migrate_arsenals.py` (run after balls exist).
+- **Schema setup order:** (1) Run `seed_from_csv.py` to create and fill `balls`. (2) Run `migrate_arsenals.py` to create `arsenals` and `arsenal_balls`. Running them in the wrong order causes the `arsenal_balls` foreign key to `balls(ball_id)` to fail.
 
 ## API endpoints
 
