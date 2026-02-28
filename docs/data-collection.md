@@ -17,11 +17,10 @@ Data collection (scraping or manual export from BTM / Excel) is done outside thi
 
 **Encoding:** UTF-8. Header row, comma-separated.
 
-**Columns:**
+**Columns:** The CSV does not include `ball_id`. The seed script generates it (B001, B002, …) from row order when loading into the database.
 
 | Column | Type | Required | Description |
 |--------|------|----------|-------------|
-| ball_id | text | yes | Unique identifier (e.g. B001, B002). Primary key in DB. |
 | name | text | yes | Ball name. |
 | brand | text | yes | Manufacturer (e.g. Brunswick, Storm, Hammer). |
 | rg | number | yes | Radius of gyration. |
@@ -38,7 +37,7 @@ Data collection (scraping or manual export from BTM / Excel) is done outside thi
 
 ## Database schema
 
-The seed script creates a single table, `balls`, matching the CSV columns:
+The seed script creates a single table, `balls`, with `ball_id` as primary key (generated from row order) plus the CSV columns:
 
 ```sql
 CREATE TABLE IF NOT EXISTS balls (
@@ -66,7 +65,7 @@ CREATE TABLE IF NOT EXISTS balls (
 1. Reads `DATABASE_URL` from environment (`.env` at repo root).
 2. Reads `data/balls.csv` (path relative to repo root).
 3. Creates `balls` table if it does not exist.
-4. For each row: parses `rg`, `diff`, `int_diff` as floats; `release_date` as date (or null); empty optional text fields as null.
+4. For each row: assigns `ball_id` as B001, B002, … from row order; parses `rg`, `diff`, `int_diff` as floats; `release_date` as date (or null); empty optional text fields as null.
 5. Upserts into `balls` by `ball_id` (INSERT with ON CONFLICT DO UPDATE).
 
 **Run from repo root:**
@@ -83,7 +82,7 @@ cd services/backend && python -m scripts.seed_from_csv
 
 **Output:** `Seeded N rows into Postgres from <path>/data/balls.csv`
 
-Re-running the script is safe: it upserts, so updated CSV rows overwrite existing rows by `ball_id`.
+Re-running the script is safe: it upserts by generated `ball_id` (row index), so CSV row order determines identity; reordering the CSV will change which DB row is updated.
 
 ## Scraping (automated collection)
 

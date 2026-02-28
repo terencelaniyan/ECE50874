@@ -2,7 +2,9 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Delaunay } from "d3-delaunay";
 import { useBag } from "../context/BagContext";
 import { listBalls } from "../api/balls";
+import { getGaps } from "../api/gaps";
 import type { Ball } from "../types/ball";
+import type { GapItem } from "../types/ball";
 
 const MARGIN = { top: 20, right: 20, bottom: 40, left: 50 };
 const DEFAULT_WIDTH = 800;
@@ -24,7 +26,8 @@ export function GridView() {
   const [error, setError] = useState<string | null>(null);
   const [size, setSize] = useState({ w: DEFAULT_WIDTH, h: DEFAULT_HEIGHT });
   const [hoveredBall, setHoveredBall] = useState<Ball | null>(null);
-  const { addToBag, removeFromBag, arsenalBallIds } = useBag();
+  const { addToBag, removeFromBag, arsenalBallIds, gameCounts } = useBag();
+  const [gapItems, setGapItems] = useState<GapItem[]>([]);
 
   const PAGE_SIZE = 200;
 
@@ -72,6 +75,28 @@ export function GridView() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (arsenalBallIds.length === 0) {
+      setGapItems([]);
+      return;
+    }
+    let cancelled = false;
+    getGaps({
+      arsenal_ball_ids: arsenalBallIds,
+      game_counts: Object.keys(gameCounts).length ? gameCounts : undefined,
+      k: 10,
+    })
+      .then((res) => {
+        if (!cancelled) setGapItems(res.items);
+      })
+      .catch(() => {
+        if (!cancelled) setGapItems([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [arsenalBallIds, gameCounts]);
 
   const width = size.w + MARGIN.left + MARGIN.right;
   const height = size.h + MARGIN.top + MARGIN.bottom;
@@ -167,13 +192,17 @@ export function GridView() {
             const cx = xScale(ball.rg);
             const cy = yScale(ball.diff);
             const inBag = arsenalBallIds.includes(ball.ball_id);
+            const isGapCell = !arsenalBallIds.includes(balls[i].ball_id);
+            const isGapFiller = gapItems.some((g) => g.ball.ball_id === ball.ball_id);
+            const pointRadius = inBag ? 6 : isGapFiller ? 5 : 4;
+            const pointFill = inBag ? "#0a7ea4" : isGapFiller ? "#e09500" : "#333";
             return (
               <g key={ball.ball_id}>
                 <path
                   d={voronoi.renderCell(i)}
-                  fill="none"
-                  stroke="#ccc"
-                  strokeWidth={0.5}
+                  fill={isGapCell ? "rgba(255, 180, 0, 0.12)" : "none"}
+                  stroke={isGapCell ? "#e09500" : "#ccc"}
+                  strokeWidth={isGapCell ? 0.8 : 0.5}
                   className="grid-view-cell"
                 />
                 <g
@@ -189,8 +218,8 @@ export function GridView() {
                   <circle
                     cx={cx}
                     cy={cy}
-                    r={inBag ? 6 : 4}
-                    fill={inBag ? "#0a7ea4" : "#333"}
+                    r={pointRadius}
+                    fill={pointFill}
                     stroke={hoveredBall?.ball_id === ball.ball_id ? "#f90" : "none"}
                     strokeWidth={2}
                   />
@@ -233,7 +262,8 @@ export function GridView() {
       </svg>
       </div>
       <p className="grid-view-legend">
-        Blue = in bag. Click a point to add/remove from bag.
+        Blue = in bag. Shaded region = gap (no ball in bag in this region).
+        Orange = suggested to fill a gap. Click a point to add/remove from bag.
       </p>
     </div>
   );

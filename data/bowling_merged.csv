@@ -1,201 +1,201 @@
-﻿ball_id,name,brand,rg,diff,int_diff,symmetry,coverstock_type,surface_grit,surface_finish,release_date,status
-B001,Dark Side Curse,DV8,2.48,0.036,0,Symmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2026-02-01,Active
-B002,Evoke Mayhem,Motiv,2.48,0.05,0.015,Asymmetric,Solid Reactive,2K Grit LSS,2K Grit LSS,2026-02-01,Active
-B003,Outer Limits Black Hole,Radical,2.499,0.051,0.014,Asymmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2026-02-01,Active
-B004,Vengeance,900 Global,2.47,0.055,0,Symmetric,Solid Reactive,2K Abralon,2K Abralon,2026-01-01,Active
-B005,Crown 78U,Brunswick,2.549,0.046,0,Symmetric,Urethane,500 / 1K SiaAir,500 / 1K SiaAir,2026-01-01,Active
-B006,Danger Zone Purple Ice,Brunswick,2.501,0.048,0,Symmetric,Pearl Reactive,500 SiaAir / Crown Factory Compound / Crown Factory Polish,500 SiaAir / Crown Factory Compound / Crown Factory Polish,2026-01-01,Active
-B007,Street Rally,Columbia 300,2.478,0.05,0.015,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2026-01-01,Active
-B008,Spartan,Ebonite,2.473,0.053,0.019,Asymmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2026-01-01,Active
-B009,Black Widow 3.0 Dynasty,Hammer,2.5,0.058,0.016,Asymmetric,Solid Reactive,500 / 1K / 2K SiaAir,500 / 1K / 2K SiaAir,2026-01-01,Active
-B010,Hammerhead Pearl,Hammer,2.481,0.048,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2026-01-01,Active
-B011,Apex Jackal,Motiv,2.52,0.055,0.02,Asymmetric,Pearl Reactive,5000 Grit LSS,5000 Grit LSS,2026-01-01,Active
-B012,Transformer,Roto Grip,2.51,0.051,0.015,Asymmetric,Solid Reactive,4K Abralon,4K Abralon,2026-01-01,Active
-B013,Next Factor,Storm,2.56,0.051,0.017,Asymmetric,Pearl Reactive,Power Edge,Power Edge,2026-01-01,Active
-B014,Danger Zone,Brunswick,2.501,0.048,0,Symmetric,Solid Reactive,500 / 1K / 2K SiaAir / Crown Factory Compound,500 / 1K / 2K SiaAir / Crown Factory Compound,2025-12-01,Active
-B015,Heckler Hybrid,DV8,2.504,0.051,0.01,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-12-01,Active
-B016,Entity Pearl,Ebonite,2.515,0.052,0.02,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-12-01,Active
-B017,NU 2.0,Hammer,2.586,0.027,0,Symmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-12-01,Active
-B018,Zero Mercy Pearl,Hammer,2.524,0.053,0.02,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-12-01,Active
-B019,Zero Mercy Solid,Hammer,2.524,0.053,0.02,Asymmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2025-12-01,Active
-B020,Nebula,Motiv,2.5,0.045,0,Symmetric,Pearl Reactive,5500 Grit LSP,5500 Grit LSP,2025-12-01,Active
-B021,Phaze II Pearl,Storm,2.48,0.051,0,Symmetric,Pearl Reactive,Power Edge,Power Edge,2025-12-01,Active
-B022,Viking,900 Global,2.51,0.052,0.016,Asymmetric,Hybrid Reactive,Power Edge,Power Edge,2025-11-01,Active
-B023,Alert,Brunswick,2.478,0.037,0,Symmetric,Solid Reactive,500 / 1K / 2K SiaAir,500 / 1K / 2K SiaAir,2025-11-01,Active
-B024,Energize,Brunswick,2.478,0.048,0.017,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2025-11-01,Active
-B025,Ricochet Return,Columbia 300,2.488,0.054,0,Symmetric,Hybrid Reactive,500 SiaAir / Factory Compound / Factory Polish,500 SiaAir / Factory Compound / Factory Polish,2025-11-01,Active
-B026,Shadow Tank,Motiv,2.57,0.015,0,Symmetric,Urethane,1K Grit LSS,1K Grit LSS,2025-11-01,Active
-B027,Criterion Inverse,Track,2.496,0.047,0.016,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-11-01,Active
-B028,Mantra Solid,DV8,2.498,0.047,0.011,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-10-01,Active
-B029,The One Ovation,Ebonite,2.466,0.056,0.027,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-10-01,Active
-B030,Raptor Reign,Motiv,2.48,0.055,0,Symmetric,Solid Reactive,2K Grit LSS,2K Grit LSS,2025-10-01,Active
-B031,Evil Eye,Radical,2.495,0.046,0,Symmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2025-10-01,Active
-B032,Intel Recon,Radical,2.483,0.032,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-10-01,Active
-B033,Rockstar Amped,Roto Grip,2.48,0.05,0,Symmetric,Pearl Reactive,Power Edge,Power Edge,2025-10-01,Active
-B034,EquinoX Solid,Storm,2.48,0.054,0.018,Asymmetric,Solid Reactive,2K Abralon,2K Abralon,2025-10-01,Active
-B035,Pulse,Columbia 300,2.468,0.045,0,Symmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2025-09-01,Active
-B036,Black Widow Tour V1,Hammer,2.5,0.034,0.016,Asymmetric,Hybrid Reactive,500 / 1K / 3K SiaAir,500 / 1K / 3K SiaAir,2025-09-01,Active
-B037,Maximum Effect,Hammer,2.47,0.05,0.017,Asymmetric,Hybrid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2025-09-01,Active
-B038,Primal Ghost,Motiv,2.55,0.05,0,Symmetric,Solid Reactive,3K Grit LSS,3K Grit LSS,2025-09-01,Active
-B039,Steel Forge,Motiv,2.47,0.055,0,Symmetric,Pearl Reactive,5000 Grit LSS,5000 Grit LSS,2025-09-01,Active
-B040,RST Hyperdrive Pearl,Roto Grip,2.52,0.055,0.017,Asymmetric,Pearl Reactive,Power Edge,Power Edge,2025-09-01,Active
-B041,Theorem Solid,Track,2.473,0.046,0.017,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-09-01,Active
-B042,Cove,900 Global,2.49,0.044,0,Symmetric,Hybrid Reactive,4K Abralon,4K Abralon,2025-08-01,Active
-B043,Ember,900 Global,2.49,0.044,0,Symmetric,Pearl Reactive,Power Edge,Power Edge,2025-08-01,Active
-B044,Combat,Brunswick,2.502,0.051,0.019,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2025-08-01,Active
-B045,Infinity Quest,Brunswick,2.521,0.051,0.01,Asymmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2025-08-01,Active
-B046,Severe Collision,DV8,2.462,0.052,0.019,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-08-01,Active
-B047,Entity,Ebonite,2.515,0.052,0.02,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-08-01,Active
-B048,Supra Clutch,Motiv,2.55,0.043,0,Symmetric,Hybrid Reactive,5500 Grit LSP,5500 Grit LSP,2025-08-01,Active
-B049,Guru Oracle,Radical,2.503,0.044,0.018,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-08-01,Active
-B050,Snapshot Hybrid,Radical,2.523,0.05,0,Symmetric,Hybrid Reactive,500 / 3K SiaAir,500 / 3K SiaAir,2025-08-01,Active
-B051,Gremlin,Roto Grip,2.5,0.058,0.01,Asymmetric,Pearl Reactive,Power Edge,Power Edge,2025-08-01,Active
-B052,Ethos Solid,Brunswick,2.481,0.053,0,Symmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-07-01,Active
-B053,Super Cuda PowerCOR Pearl,Columbia 300,2.501,0.047,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-07-01,Active
-B054,Anger Solid,Hammer,2.567,0.049,0,Symmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-07-01,Active
-B055,Bubblegum Vibe,Hammer,2.51,0.042,0,Symmetric,Pearl Reactive,500 / 1K / 2K SiaAir / Factory Compound,500 / 1K / 2K SiaAir / Factory Compound,2025-07-01,Active
-B056,No Doubt Solid,Radical,2.485,0.051,0,Symmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-07-01,Active
-B057,Paragon Shadow,Track,2.486,0.056,0.015,Asymmetric,Hybrid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2025-07-01,Active
-B058,Power Hitter,Radical,2.488,0.053,0.015,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-06-01,Active
-B059,Ultimate Wrecker,Roto Grip,2.54,0.045,0,Symmetric,Hybrid Reactive,Power Edge,Power Edge,2025-06-01,Active
-B060,Hy-Road 40,Storm,2.57,0.046,0,Symmetric,Pearl Reactive,Power Edge,Power Edge,2025-06-01,Active
-B061,Ion Pro Solid,Storm,2.47,0.035,0.014,Asymmetric,Solid Reactive,Power Edge,Power Edge,2025-06-01,Active
-B062,Origin EX,900 Global,2.48,0.05,0.02,Asymmetric,Solid Reactive,2K Abralon,2K Abralon,2025-05-01,Active
-B063,Crown Victory,Brunswick,2.54,0.045,0,Symmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2025-05-01,Active
-B064,Hater Pearl,DV8,2.539,0.054,0.024,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-05-01,Active
-B065,Turbo X,Ebonite,2.517,0.04,0,Symmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-05-01,Active
-B066,Hazmat Pearl,Hammer,2.479,0.055,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-05-01,Active
-B067,Max Thrill Hybrid,Motiv,2.55,0.037,0,Symmetric,Hybrid Reactive,5500 Grit LSP,5500 Grit LSP,2025-05-01,Active
-B068,Cypher Pearl,Track,2.54,0.047,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-05-01,Active
-B069,Rally,Columbia 300,2.478,0.05,0.015,Asymmetric,Hybrid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-04-01,Active
-B070,Dark Side,DV8,2.48,0.036,0,Symmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-04-01,Active
-B071,Game Breaker 5 Pearl,Ebonite,2.48,0.048,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-04-01,Active
-B072,Hammerhead,Hammer,2.481,0.048,0,Symmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-04-01,Active
-B073,Special Effect,Hammer,2.47,0.05,0.017,Asymmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-04-01,Active
-B074,Evoke Hysteria,Motiv,2.48,0.05,0.015,Asymmetric,Pearl Reactive,4K Grit LSS,4K Grit LSS,2025-04-01,Active
-B075,Torpedo,Radical,2.482,0.054,0.017,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-04-01,Active
-B076,Torpedo Direct Hit,Radical,2.482,0.054,0.017,Asymmetric,Pearl Reactive,500 / 1K / 2K SiaAir / Factory Compound / Factory Polish,500 / 1K / 2K SiaAir / Factory Compound / Factory Polish,2025-04-01,Active
-B077,Hypnotize,Brunswick,2.51,0.056,0.017,Asymmetric,Hybrid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-03-01,Active
-B078,Rockstar,Roto Grip,2.48,0.05,0,Symmetric,Solid Reactive,2K Abralon,2K Abralon,2025-03-01,Active
-B079,RST Hyperdrive,Roto Grip,2.52,0.055,0.017,Asymmetric,Solid Reactive,2K Abralon,2K Abralon,2025-03-01,Active
-B080,IQ Tour AI,Storm,2.48,0.031,0,Symmetric,Hybrid Reactive,Power Edge,Power Edge,2025-03-01,Active
-B081,Criterion Hybrid,Track,2.5,0.052,0.018,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-03-01,Active
-B082,Stealth Mode,Track,2.482,0.056,0,Symmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2025-03-01,Active
-B083,Piranha PowerCOR Pearl,Columbia 300,2.518,0.055,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-02-01,Active
-B084,Trouble Maker Solid,DV8,2.496,0.045,0,Symmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2025-02-01,Active
-B085,Crusher Hybrid,Ebonite,2.489,0.056,0.016,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-02-01,Active
-B086,Lethal Venom,Motiv,2.47,0.036,0.013,Asymmetric,Solid Reactive,3K Grit LSS,3K Grit LSS,2025-02-01,Active
-B087,Outer Limits Solid,Radical,2.499,0.051,0.014,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-02-01,Active
-B088,Snapshot,Radical,2.523,0.05,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-02-01,Active
-B089,EquinoX,Storm,2.48,0.054,0.018,Asymmetric,Pearl Reactive,Power Edge,Power Edge,2025-02-01,Active
-B090,Zen 25,900 Global,2.48,0.053,0,Symmetric,Pearl Reactive,Power Edge,Power Edge,2025-01-01,Active
-B091,Heckler,DV8,2.504,0.051,0.01,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-01-01,Active
-B092,Real Time,Ebonite,2.508,0.054,0,Symmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-01-01,Active
-B093,3-D Offset Assault,Hammer,2.489,0.053,0.008,Asymmetric,Hybrid Reactive,500 / 1K / 2K SiaAir,500 / 1K / 2K SiaAir,2025-01-01,Active
-B094,Black Widow Mania,Hammer,2.5,0.058,0.016,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-01-01,Active
-B095,Jackal Onyx,Motiv,2.47,0.054,0.015,Asymmetric,Solid Reactive,1K Grit LSS,1K Grit LSS,2025-01-01,Active
-B096,Level,Storm,2.59,0.027,0,Symmetric,Solid Reactive,1K Abralon,1K Abralon,2025-01-01,Active
-B097,Ricochet Pearl,Columbia 300,2.488,0.054,0,Symmetric,Pearl Reactive,500 SiaAir / Factory Compound / Factory Polish,500 SiaAir / Factory Compound / Factory Polish,2024-12-01,Active
-B098,Anger,Hammer,2.567,0.049,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-12-01,Active
-B099,Effect Tour,Hammer,2.472,0.036,0.012,Asymmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2024-12-01,Active
-B100,Primal Rage Evolution,Motiv,2.55,0.05,0,Symmetric,Pearl Reactive,5500 Grit LSP,5500 Grit LSP,2024-12-01,Active
-B101,PhysiX Blackout,Storm,2.47,0.055,0.018,Asymmetric,Pearl Reactive,2K Abralon,2K Abralon,2024-12-01,Active
-B102,Theorem Pearl,Track,2.473,0.046,0.017,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-12-01,Active
-B103,Origin,900 Global,2.48,0.05,0.02,Asymmetric,Hybrid Reactive,Power Edge,Power Edge,2024-11-01,Active
-B104,Ethos Hybrid,Brunswick,2.481,0.053,0,Symmetric,Hybrid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-11-01,Active
-B105,Ivory Rhino Pro,Brunswick,2.568,0.032,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2024-11-01,Active
-B106,No Doubt,Radical,2.485,0.051,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-11-01,Active
-B107,ZigZag Solid,Radical,2.501,0.045,0.015,Asymmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2024-11-01,Active
-B108,Attention Star S2,Roto Grip,2.48,0.049,0.017,Asymmetric,Hybrid Reactive,2K Abralon,2K Abralon,2024-11-01,Active
-B109,Road Warrior,Storm,2.55,0.045,0,Symmetric,Pearl Reactive,Power Edge,Power Edge,2024-11-01,Active
-B110,Criterion,Track,2.5,0.052,0.018,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-11-01,Active
-B111,Super Cuda PowerCOR,Columbia 300,2.501,0.047,0,Symmetric,Hybrid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-10-01,Active
-B112,Mantra,DV8,2.498,0.047,0.011,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-10-01,Active
-B113,Crusher,Ebonite,2.489,0.056,0.016,Asymmetric,Hybrid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-10-01,Active
-B114,The One Reverb,Ebonite,2.466,0.056,0.027,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-10-01,Active
-B115,Pure Envy,Hammer,2.505,0.055,0.021,Asymmetric,Hybrid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-10-01,Active
-B116,Raptor Rush,Motiv,2.48,0.055,0,Symmetric,Pearl Reactive,5000 Grit LSS,5000 Grit LSS,2024-10-01,Active
-B117,Phaze AI,Storm,2.47,0.053,0,Symmetric,Pearl Reactive,Power Edge,Power Edge,2024-10-01,Active
-B118,Sublime Focus,900 Global,2.47,0.056,0,Symmetric,Solid Reactive,2K Abralon,2K Abralon,2024-09-01,Active
-B119,Atlas Hybrid,Columbia 300,2.52,0.054,0.018,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-09-01,Active
-B120,Subzero Forge,Motiv,2.47,0.055,0,Symmetric,Solid Reactive,2K Grit LSS,2K Grit LSS,2024-09-01,Active
-B121,Optimum Idol Pearl,Roto Grip,2.47,0.056,0,Symmetric,Pearl Reactive,Reacta Gloss,Reacta Gloss,2024-09-01,Active
-B122,Ion Max,Storm,2.47,0.055,0.014,Asymmetric,Solid Reactive,2K Abralon,2K Abralon,2024-09-01,Active
-B123,Summit Ascent,Storm,2.46,0.056,0,Symmetric,Solid Reactive,4K Abralon,4K Abralon,2024-09-01,Active
-B124,Stealth Hybrid,Track,2.482,0.056,0,Symmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-09-01,Active
-B125,Harsh Reality Pearl,900 Global,2.48,0.054,0.019,Asymmetric,Pearl Reactive,Reacta Gloss,Reacta Gloss,2024-08-01,Active
-B126,Mesmerize,Brunswick,2.51,0.056,0.017,Asymmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2024-08-01,Active
-B127,Vaporize,Brunswick,2.478,0.048,0.017,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2024-08-01,Active
-B128,Wicked Collision,DV8,2.462,0.052,0.019,Asymmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-08-01,Active
-B129,Pride Liberty,Motiv,2.5,0.042,0.01,Asymmetric,Hybrid Reactive,4K Grit LSS,4K Grit LSS,2024-08-01,Active
-B130,Rattler Big Bite,Radical,2.48,0.035,0,Symmetric,Hybrid Reactive,500 / 1.5K / 3K SiaAir,500 / 1.5K / 3K SiaAir,2024-08-01,Active
-B131,The Hitter Pearl,Radical,2.488,0.053,0.015,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-08-01,Active
-B132,Hazmat Solid,Hammer,2.479,0.055,0,Symmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-07-01,Active
-B133,Scorpion Strike,Hammer,2.485,0.045,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-07-01,Active
-B134,Max Thrill Pearl,Motiv,2.55,0.037,0,Symmetric,Pearl Reactive,5500 Grit LSP,5500 Grit LSP,2024-07-01,Active
-B135,Max Thrill Solid,Motiv,2.55,0.037,0,Symmetric,Solid Reactive,5000 Grit LSS,5000 Grit LSS,2024-07-01,Active
-B136,Supra GT,Motiv,2.57,0.04,0,Symmetric,Pearl Reactive,5500 Grit LSP,5500 Grit LSP,2024-07-01,Active
-B137,Intense Mindset,Brunswick,2.487,0.05,0.021,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2024-06-01,Active
-B138,Messenger PowerCOR Black/Gold Pearl,Columbia 300,2.515,0.04,0,Symmetric,Pearl Reactive,500 / 1K / 2K SiaAir / Factory Compound,500 / 1K / 2K SiaAir / Factory Compound,2024-06-01,Active
-B139,Max Bias,Radical,2.494,0.05,0.03,Asymmetric,Hybrid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2024-06-01,Active
-B140,Rattler NU,Radical,2.48,0.035,0,Symmetric,Solid Reactive,500 / 1K SiaAir,500 / 1K SiaAir,2024-06-01,Active
-B141,X-Cell,Roto Grip,2.5,0.056,0.019,Asymmetric,Solid Reactive,2K Abralon,2K Abralon,2024-06-01,Active
-B142,Ion Pro,Storm,2.47,0.035,0.014,Asymmetric,Hybrid Reactive,4K Abralon,4K Abralon,2024-06-01,Active
-B143,Tundra Blue Fire,Track,2.561,0.03,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-06-01,Active
-B144,Chill Pearl,DV8,2.495,0.051,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-05-01,Active
-B145,Fireball Purple/Gold,Ebonite,2.519,0.039,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-05-01,Active
-B146,Arctic Vibe,Hammer,2.51,0.042,0,Symmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-05-01,Active
-B147,Lightning Blackout,Storm,2.53,0.029,0,Symmetric,Pearl Reactive,Reacta Gloss,Reacta Gloss,2024-05-01,Active
-B148,The Road,Storm,2.55,0.045,0,Symmetric,Hybrid Reactive,Reacta Gloss,Reacta Gloss,2024-05-01,Active
-B149,Beyond Infinity,Brunswick,2.521,0.051,0.01,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2024-04-01,Active
-B150,Kaboom,Columbia 300,2.529,0.046,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-04-01,Active
-B151,Hater,DV8,2.539,0.054,0.024,Asymmetric,Hybrid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2024-04-01,Active
-B152,Game Breaker 5,Ebonite,2.48,0.048,0,Symmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2024-04-01,Active
-B153,Black Pearl Urethane,Hammer,2.65,0.015,0,Symmetric,Urethane,500 SiaAir,500 SiaAir,2024-04-01,Active
-B154,Outer Limits Pearl,Radical,2.499,0.051,0.014,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-04-01,Active
-B155,Cypher,Track,2.54,0.047,0,Symmetric,Solid Reactive,500 / 1K / 2K SiaAir,500 / 1K / 2K SiaAir,2024-04-01,Active
-B156,Endeavor,Brunswick,2.54,0.045,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2024-03-01,Active
-B157,Ultimate Defender,Brunswick,2.473,0.054,0.015,Asymmetric,Hybrid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-03-01,Active
-B158,Pure Madness,Columbia 300,2.495,0.048,0.012,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-03-01,Active
-B159,Effect,Hammer,2.47,0.05,0.017,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-03-01,Active
-B160,Hyper Venom,Motiv,2.48,0.034,0,Symmetric,Pearl Reactive,5500 Grit LSP,5500 Grit LSP,2024-03-01,Active
-B161,Radical Conspiracy,Radical,2.487,0.056,0.021,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-03-01,Active
-B162,Optimum Idol,Roto Grip,2.47,0.056,0,Symmetric,Solid Reactive,2K Abralon,2K Abralon,2024-03-01,Active
-B163,DNA Coil,Storm,2.47,0.053,0.023,Asymmetric,Pearl Reactive,Reacta Gloss,Reacta Gloss,2024-03-01,Active
-B164,Archetype Hybrid,Track,2.518,0.053,0.02,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-03-01,Active
-B165,Harsh Reality,900 Global,2.48,0.054,0.019,Asymmetric,Solid Reactive,2K Abralon,2K Abralon,2024-02-01,Active
-B166,Xponent Pearl,900 Global,2.48,0.042,0,Symmetric,Pearl Reactive,Reacta Gloss,Reacta Gloss,2024-02-01,Active
-B167,Trouble Maker Pearl,DV8,2.496,0.045,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-02-01,Active
-B168,Emerge Hybrid,Ebonite,2.51,0.053,0.021,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-02-01,Active
-B169,Evoke,Motiv,2.48,0.05,0.015,Asymmetric,Solid Reactive,2K Grit LSS,2K Grit LSS,2024-02-01,Active
-B170,Tank Rampage Pearl,Motiv,2.55,0.02,0,Symmetric,Urethane,1K Grit LSS,1K Grit LSS,2024-02-01,Active
-B171,Breakaway,Radical,2.528,0.041,0,Symmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-02-01,Active
-B172,Attention Star,Roto Grip,2.48,0.049,0.017,Asymmetric,Pearl Reactive,Reacta Gloss,Reacta Gloss,2024-02-01,Active
-B173,Sublime,900 Global,2.47,0.056,0,Symmetric,Hybrid Reactive,Reacta Gloss,Reacta Gloss,2024-01-01,Active
-B174,Black Widow 3.0,Hammer,2.5,0.058,0.016,Asymmetric,Solid Reactive,500 / 1K / 2K SiaAir,500 / 1K / 2K SiaAir,2024-01-01,Active
-B175,Scorpion Low Flare,Hammer,2.474,0.031,0,Symmetric,Hybrid Reactive,500 / 1K / 2K SiaAir,500 / 1K / 2K SiaAir,2024-01-01,Active
-B176,Crimson Jackal,Motiv,2.47,0.054,0.015,Asymmetric,Pearl Reactive,5000 Grit LSS,5000 Grit LSS,2024-01-01,Active
-B177,Absolute Power,Storm,2.48,0.05,0.021,Asymmetric,Solid Reactive,4K Abralon,4K Abralon,2024-01-01,Active
-B178,Summit Peak,Storm,2.46,0.056,0,Symmetric,Pearl Reactive,Reacta Gloss,Reacta Gloss,2024-01-01,Active
-B179,Piranha PowerCOR,Columbia 300,2.518,0.055,0,Symmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2023-12-01,Active
-B180,Violent Collision,DV8,2.462,0.052,0.019,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-12-01,Active
-B181,Big Time Special Edition,Ebonite,2.508,0.054,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir,500 / 1K / 1.5K SiaAir,2023-12-01,Active
-B182,Hazmat,Hammer,2.479,0.055,0,Symmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-12-01,Active
-B183,ZigZag,Radical,2.501,0.045,0.015,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-12-01,Active
-B184,IQ Tour 78/U,Storm,2.49,0.029,0,Symmetric,Urethane,500 Abralon,500 Abralon,2023-12-01,Active
-B185,Journey,Storm,2.52,0.053,0,Symmetric,Pearl Reactive,Reacta Gloss,Reacta Gloss,2023-12-01,Active
-B186,Theorem,Track,2.473,0.046,0.017,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-12-01,Active
-B187,Ethos,Brunswick,2.481,0.053,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2023-11-01,Active
-B188,Perfect Mindset,Brunswick,2.487,0.05,0.021,Asymmetric,Hybrid Reactive,500 / 1.5K / 3K SiaAir,500 / 1.5K / 3K SiaAir,2023-11-01,Active
-B189,Verge Hybrid,DV8,2.476,0.049,0,Symmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-11-01,Active
-B190,NU Blue Hammer,Hammer,2.586,0.027,0,Symmetric,Solid Reactive,500 / 1K SiaAir,500 / 1K SiaAir,2023-11-01,Active
-B191,Raptor Fury,Motiv,2.48,0.055,0,Symmetric,Solid Reactive,2K Grit LSS,2K Grit LSS,2023-11-01,Active
-B192,Deadly Rattler,Radical,2.48,0.035,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-11-01,Active
-B193,The Hitter,Radical,2.488,0.053,0.015,Asymmetric,Solid Reactive,500 / 1K / 2K SiaAir,500 / 1K / 2K SiaAir,2023-11-01,Active
-B194,Magic Gem,Roto Grip,2.47,0.053,0.016,Asymmetric,Hybrid Reactive,2K Abralon,2K Abralon,2023-11-01,Active
-B195,TNT Infused,Roto Grip,2.47,0.052,0,Symmetric,Hybrid Reactive,Reacta Gloss,Reacta Gloss,2023-11-01,Active
-B196,High Speed,Columbia 300,2.478,0.05,0.015,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-10-01,Active
-B197,Fireball,Ebonite,2.519,0.039,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-10-01,Active
-B198,The One Encore,Ebonite,2.466,0.056,0.027,Asymmetric,Hybrid Reactive,500 / 1.5K / 4K SiaAir,500 / 1.5K / 4K SiaAir,2023-10-01,Active
-B199,Envy Tour Pearl,Hammer,2.469,0.034,0.013,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-10-01,Active
-B200,Nuclear Forge,Motiv,2.47,0.055,0,Symmetric,Pearl Reactive,5000 Grit LSS,5000 Grit LSS,2023-10-01,Active
+name,brand,rg,diff,int_diff,symmetry,coverstock_type,surface_grit,surface_finish,release_date,status
+Dark Side Curse,DV8,2.48,0.036,0,Symmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2026-02-01,Active
+Evoke Mayhem,Motiv,2.48,0.05,0.015,Asymmetric,Solid Reactive,2K Grit LSS,2K Grit LSS,2026-02-01,Active
+Outer Limits Black Hole,Radical,2.499,0.051,0.014,Asymmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2026-02-01,Active
+Vengeance,900 Global,2.47,0.055,0,Symmetric,Solid Reactive,2K Abralon,2K Abralon,2026-01-01,Active
+Crown 78U,Brunswick,2.549,0.046,0,Symmetric,Urethane,500 / 1K SiaAir,500 / 1K SiaAir,2026-01-01,Active
+Danger Zone Purple Ice,Brunswick,2.501,0.048,0,Symmetric,Pearl Reactive,500 SiaAir / Crown Factory Compound / Crown Factory Polish,500 SiaAir / Crown Factory Compound / Crown Factory Polish,2026-01-01,Active
+Street Rally,Columbia 300,2.478,0.05,0.015,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2026-01-01,Active
+Spartan,Ebonite,2.473,0.053,0.019,Asymmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2026-01-01,Active
+Black Widow 3.0 Dynasty,Hammer,2.5,0.058,0.016,Asymmetric,Solid Reactive,500 / 1K / 2K SiaAir,500 / 1K / 2K SiaAir,2026-01-01,Active
+Hammerhead Pearl,Hammer,2.481,0.048,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2026-01-01,Active
+Apex Jackal,Motiv,2.52,0.055,0.02,Asymmetric,Pearl Reactive,5000 Grit LSS,5000 Grit LSS,2026-01-01,Active
+Transformer,Roto Grip,2.51,0.051,0.015,Asymmetric,Solid Reactive,4K Abralon,4K Abralon,2026-01-01,Active
+Next Factor,Storm,2.56,0.051,0.017,Asymmetric,Pearl Reactive,Power Edge,Power Edge,2026-01-01,Active
+Danger Zone,Brunswick,2.501,0.048,0,Symmetric,Solid Reactive,500 / 1K / 2K SiaAir / Crown Factory Compound,500 / 1K / 2K SiaAir / Crown Factory Compound,2025-12-01,Active
+Heckler Hybrid,DV8,2.504,0.051,0.01,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-12-01,Active
+Entity Pearl,Ebonite,2.515,0.052,0.02,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-12-01,Active
+NU 2.0,Hammer,2.586,0.027,0,Symmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-12-01,Active
+Zero Mercy Pearl,Hammer,2.524,0.053,0.02,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-12-01,Active
+Zero Mercy Solid,Hammer,2.524,0.053,0.02,Asymmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2025-12-01,Active
+Nebula,Motiv,2.5,0.045,0,Symmetric,Pearl Reactive,5500 Grit LSP,5500 Grit LSP,2025-12-01,Active
+Phaze II Pearl,Storm,2.48,0.051,0,Symmetric,Pearl Reactive,Power Edge,Power Edge,2025-12-01,Active
+Viking,900 Global,2.51,0.052,0.016,Asymmetric,Hybrid Reactive,Power Edge,Power Edge,2025-11-01,Active
+Alert,Brunswick,2.478,0.037,0,Symmetric,Solid Reactive,500 / 1K / 2K SiaAir,500 / 1K / 2K SiaAir,2025-11-01,Active
+Energize,Brunswick,2.478,0.048,0.017,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2025-11-01,Active
+Ricochet Return,Columbia 300,2.488,0.054,0,Symmetric,Hybrid Reactive,500 SiaAir / Factory Compound / Factory Polish,500 SiaAir / Factory Compound / Factory Polish,2025-11-01,Active
+Shadow Tank,Motiv,2.57,0.015,0,Symmetric,Urethane,1K Grit LSS,1K Grit LSS,2025-11-01,Active
+Criterion Inverse,Track,2.496,0.047,0.016,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-11-01,Active
+Mantra Solid,DV8,2.498,0.047,0.011,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-10-01,Active
+The One Ovation,Ebonite,2.466,0.056,0.027,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-10-01,Active
+Raptor Reign,Motiv,2.48,0.055,0,Symmetric,Solid Reactive,2K Grit LSS,2K Grit LSS,2025-10-01,Active
+Evil Eye,Radical,2.495,0.046,0,Symmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2025-10-01,Active
+Intel Recon,Radical,2.483,0.032,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-10-01,Active
+Rockstar Amped,Roto Grip,2.48,0.05,0,Symmetric,Pearl Reactive,Power Edge,Power Edge,2025-10-01,Active
+EquinoX Solid,Storm,2.48,0.054,0.018,Asymmetric,Solid Reactive,2K Abralon,2K Abralon,2025-10-01,Active
+Pulse,Columbia 300,2.468,0.045,0,Symmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2025-09-01,Active
+Black Widow Tour V1,Hammer,2.5,0.034,0.016,Asymmetric,Hybrid Reactive,500 / 1K / 3K SiaAir,500 / 1K / 3K SiaAir,2025-09-01,Active
+Maximum Effect,Hammer,2.47,0.05,0.017,Asymmetric,Hybrid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2025-09-01,Active
+Primal Ghost,Motiv,2.55,0.05,0,Symmetric,Solid Reactive,3K Grit LSS,3K Grit LSS,2025-09-01,Active
+Steel Forge,Motiv,2.47,0.055,0,Symmetric,Pearl Reactive,5000 Grit LSS,5000 Grit LSS,2025-09-01,Active
+RST Hyperdrive Pearl,Roto Grip,2.52,0.055,0.017,Asymmetric,Pearl Reactive,Power Edge,Power Edge,2025-09-01,Active
+Theorem Solid,Track,2.473,0.046,0.017,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-09-01,Active
+Cove,900 Global,2.49,0.044,0,Symmetric,Hybrid Reactive,4K Abralon,4K Abralon,2025-08-01,Active
+Ember,900 Global,2.49,0.044,0,Symmetric,Pearl Reactive,Power Edge,Power Edge,2025-08-01,Active
+Combat,Brunswick,2.502,0.051,0.019,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2025-08-01,Active
+Infinity Quest,Brunswick,2.521,0.051,0.01,Asymmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2025-08-01,Active
+Severe Collision,DV8,2.462,0.052,0.019,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-08-01,Active
+Entity,Ebonite,2.515,0.052,0.02,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-08-01,Active
+Supra Clutch,Motiv,2.55,0.043,0,Symmetric,Hybrid Reactive,5500 Grit LSP,5500 Grit LSP,2025-08-01,Active
+Guru Oracle,Radical,2.503,0.044,0.018,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-08-01,Active
+Snapshot Hybrid,Radical,2.523,0.05,0,Symmetric,Hybrid Reactive,500 / 3K SiaAir,500 / 3K SiaAir,2025-08-01,Active
+Gremlin,Roto Grip,2.5,0.058,0.01,Asymmetric,Pearl Reactive,Power Edge,Power Edge,2025-08-01,Active
+Ethos Solid,Brunswick,2.481,0.053,0,Symmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-07-01,Active
+Super Cuda PowerCOR Pearl,Columbia 300,2.501,0.047,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-07-01,Active
+Anger Solid,Hammer,2.567,0.049,0,Symmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-07-01,Active
+Bubblegum Vibe,Hammer,2.51,0.042,0,Symmetric,Pearl Reactive,500 / 1K / 2K SiaAir / Factory Compound,500 / 1K / 2K SiaAir / Factory Compound,2025-07-01,Active
+No Doubt Solid,Radical,2.485,0.051,0,Symmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-07-01,Active
+Paragon Shadow,Track,2.486,0.056,0.015,Asymmetric,Hybrid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2025-07-01,Active
+Power Hitter,Radical,2.488,0.053,0.015,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-06-01,Active
+Ultimate Wrecker,Roto Grip,2.54,0.045,0,Symmetric,Hybrid Reactive,Power Edge,Power Edge,2025-06-01,Active
+Hy-Road 40,Storm,2.57,0.046,0,Symmetric,Pearl Reactive,Power Edge,Power Edge,2025-06-01,Active
+Ion Pro Solid,Storm,2.47,0.035,0.014,Asymmetric,Solid Reactive,Power Edge,Power Edge,2025-06-01,Active
+Origin EX,900 Global,2.48,0.05,0.02,Asymmetric,Solid Reactive,2K Abralon,2K Abralon,2025-05-01,Active
+Crown Victory,Brunswick,2.54,0.045,0,Symmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2025-05-01,Active
+Hater Pearl,DV8,2.539,0.054,0.024,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-05-01,Active
+Turbo X,Ebonite,2.517,0.04,0,Symmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-05-01,Active
+Hazmat Pearl,Hammer,2.479,0.055,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-05-01,Active
+Max Thrill Hybrid,Motiv,2.55,0.037,0,Symmetric,Hybrid Reactive,5500 Grit LSP,5500 Grit LSP,2025-05-01,Active
+Cypher Pearl,Track,2.54,0.047,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-05-01,Active
+Rally,Columbia 300,2.478,0.05,0.015,Asymmetric,Hybrid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-04-01,Active
+Dark Side,DV8,2.48,0.036,0,Symmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-04-01,Active
+Game Breaker 5 Pearl,Ebonite,2.48,0.048,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-04-01,Active
+Hammerhead,Hammer,2.481,0.048,0,Symmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-04-01,Active
+Special Effect,Hammer,2.47,0.05,0.017,Asymmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-04-01,Active
+Evoke Hysteria,Motiv,2.48,0.05,0.015,Asymmetric,Pearl Reactive,4K Grit LSS,4K Grit LSS,2025-04-01,Active
+Torpedo,Radical,2.482,0.054,0.017,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-04-01,Active
+Torpedo Direct Hit,Radical,2.482,0.054,0.017,Asymmetric,Pearl Reactive,500 / 1K / 2K SiaAir / Factory Compound / Factory Polish,500 / 1K / 2K SiaAir / Factory Compound / Factory Polish,2025-04-01,Active
+Hypnotize,Brunswick,2.51,0.056,0.017,Asymmetric,Hybrid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-03-01,Active
+Rockstar,Roto Grip,2.48,0.05,0,Symmetric,Solid Reactive,2K Abralon,2K Abralon,2025-03-01,Active
+RST Hyperdrive,Roto Grip,2.52,0.055,0.017,Asymmetric,Solid Reactive,2K Abralon,2K Abralon,2025-03-01,Active
+IQ Tour AI,Storm,2.48,0.031,0,Symmetric,Hybrid Reactive,Power Edge,Power Edge,2025-03-01,Active
+Criterion Hybrid,Track,2.5,0.052,0.018,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-03-01,Active
+Stealth Mode,Track,2.482,0.056,0,Symmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2025-03-01,Active
+Piranha PowerCOR Pearl,Columbia 300,2.518,0.055,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-02-01,Active
+Trouble Maker Solid,DV8,2.496,0.045,0,Symmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2025-02-01,Active
+Crusher Hybrid,Ebonite,2.489,0.056,0.016,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-02-01,Active
+Lethal Venom,Motiv,2.47,0.036,0.013,Asymmetric,Solid Reactive,3K Grit LSS,3K Grit LSS,2025-02-01,Active
+Outer Limits Solid,Radical,2.499,0.051,0.014,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-02-01,Active
+Snapshot,Radical,2.523,0.05,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-02-01,Active
+EquinoX,Storm,2.48,0.054,0.018,Asymmetric,Pearl Reactive,Power Edge,Power Edge,2025-02-01,Active
+Zen 25,900 Global,2.48,0.053,0,Symmetric,Pearl Reactive,Power Edge,Power Edge,2025-01-01,Active
+Heckler,DV8,2.504,0.051,0.01,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2025-01-01,Active
+Real Time,Ebonite,2.508,0.054,0,Symmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-01-01,Active
+3-D Offset Assault,Hammer,2.489,0.053,0.008,Asymmetric,Hybrid Reactive,500 / 1K / 2K SiaAir,500 / 1K / 2K SiaAir,2025-01-01,Active
+Black Widow Mania,Hammer,2.5,0.058,0.016,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2025-01-01,Active
+Jackal Onyx,Motiv,2.47,0.054,0.015,Asymmetric,Solid Reactive,1K Grit LSS,1K Grit LSS,2025-01-01,Active
+Level,Storm,2.59,0.027,0,Symmetric,Solid Reactive,1K Abralon,1K Abralon,2025-01-01,Active
+Ricochet Pearl,Columbia 300,2.488,0.054,0,Symmetric,Pearl Reactive,500 SiaAir / Factory Compound / Factory Polish,500 SiaAir / Factory Compound / Factory Polish,2024-12-01,Active
+Anger,Hammer,2.567,0.049,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-12-01,Active
+Effect Tour,Hammer,2.472,0.036,0.012,Asymmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2024-12-01,Active
+Primal Rage Evolution,Motiv,2.55,0.05,0,Symmetric,Pearl Reactive,5500 Grit LSP,5500 Grit LSP,2024-12-01,Active
+PhysiX Blackout,Storm,2.47,0.055,0.018,Asymmetric,Pearl Reactive,2K Abralon,2K Abralon,2024-12-01,Active
+Theorem Pearl,Track,2.473,0.046,0.017,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-12-01,Active
+Origin,900 Global,2.48,0.05,0.02,Asymmetric,Hybrid Reactive,Power Edge,Power Edge,2024-11-01,Active
+Ethos Hybrid,Brunswick,2.481,0.053,0,Symmetric,Hybrid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-11-01,Active
+Ivory Rhino Pro,Brunswick,2.568,0.032,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2024-11-01,Active
+No Doubt,Radical,2.485,0.051,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-11-01,Active
+ZigZag Solid,Radical,2.501,0.045,0.015,Asymmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2024-11-01,Active
+Attention Star S2,Roto Grip,2.48,0.049,0.017,Asymmetric,Hybrid Reactive,2K Abralon,2K Abralon,2024-11-01,Active
+Road Warrior,Storm,2.55,0.045,0,Symmetric,Pearl Reactive,Power Edge,Power Edge,2024-11-01,Active
+Criterion,Track,2.5,0.052,0.018,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-11-01,Active
+Super Cuda PowerCOR,Columbia 300,2.501,0.047,0,Symmetric,Hybrid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-10-01,Active
+Mantra,DV8,2.498,0.047,0.011,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-10-01,Active
+Crusher,Ebonite,2.489,0.056,0.016,Asymmetric,Hybrid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-10-01,Active
+The One Reverb,Ebonite,2.466,0.056,0.027,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-10-01,Active
+Pure Envy,Hammer,2.505,0.055,0.021,Asymmetric,Hybrid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-10-01,Active
+Raptor Rush,Motiv,2.48,0.055,0,Symmetric,Pearl Reactive,5000 Grit LSS,5000 Grit LSS,2024-10-01,Active
+Phaze AI,Storm,2.47,0.053,0,Symmetric,Pearl Reactive,Power Edge,Power Edge,2024-10-01,Active
+Sublime Focus,900 Global,2.47,0.056,0,Symmetric,Solid Reactive,2K Abralon,2K Abralon,2024-09-01,Active
+Atlas Hybrid,Columbia 300,2.52,0.054,0.018,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-09-01,Active
+Subzero Forge,Motiv,2.47,0.055,0,Symmetric,Solid Reactive,2K Grit LSS,2K Grit LSS,2024-09-01,Active
+Optimum Idol Pearl,Roto Grip,2.47,0.056,0,Symmetric,Pearl Reactive,Reacta Gloss,Reacta Gloss,2024-09-01,Active
+Ion Max,Storm,2.47,0.055,0.014,Asymmetric,Solid Reactive,2K Abralon,2K Abralon,2024-09-01,Active
+Summit Ascent,Storm,2.46,0.056,0,Symmetric,Solid Reactive,4K Abralon,4K Abralon,2024-09-01,Active
+Stealth Hybrid,Track,2.482,0.056,0,Symmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-09-01,Active
+Harsh Reality Pearl,900 Global,2.48,0.054,0.019,Asymmetric,Pearl Reactive,Reacta Gloss,Reacta Gloss,2024-08-01,Active
+Mesmerize,Brunswick,2.51,0.056,0.017,Asymmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2024-08-01,Active
+Vaporize,Brunswick,2.478,0.048,0.017,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2024-08-01,Active
+Wicked Collision,DV8,2.462,0.052,0.019,Asymmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-08-01,Active
+Pride Liberty,Motiv,2.5,0.042,0.01,Asymmetric,Hybrid Reactive,4K Grit LSS,4K Grit LSS,2024-08-01,Active
+Rattler Big Bite,Radical,2.48,0.035,0,Symmetric,Hybrid Reactive,500 / 1.5K / 3K SiaAir,500 / 1.5K / 3K SiaAir,2024-08-01,Active
+The Hitter Pearl,Radical,2.488,0.053,0.015,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-08-01,Active
+Hazmat Solid,Hammer,2.479,0.055,0,Symmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-07-01,Active
+Scorpion Strike,Hammer,2.485,0.045,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-07-01,Active
+Max Thrill Pearl,Motiv,2.55,0.037,0,Symmetric,Pearl Reactive,5500 Grit LSP,5500 Grit LSP,2024-07-01,Active
+Max Thrill Solid,Motiv,2.55,0.037,0,Symmetric,Solid Reactive,5000 Grit LSS,5000 Grit LSS,2024-07-01,Active
+Supra GT,Motiv,2.57,0.04,0,Symmetric,Pearl Reactive,5500 Grit LSP,5500 Grit LSP,2024-07-01,Active
+Intense Mindset,Brunswick,2.487,0.05,0.021,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2024-06-01,Active
+Messenger PowerCOR Black/Gold Pearl,Columbia 300,2.515,0.04,0,Symmetric,Pearl Reactive,500 / 1K / 2K SiaAir / Factory Compound,500 / 1K / 2K SiaAir / Factory Compound,2024-06-01,Active
+Max Bias,Radical,2.494,0.05,0.03,Asymmetric,Hybrid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2024-06-01,Active
+Rattler NU,Radical,2.48,0.035,0,Symmetric,Solid Reactive,500 / 1K SiaAir,500 / 1K SiaAir,2024-06-01,Active
+X-Cell,Roto Grip,2.5,0.056,0.019,Asymmetric,Solid Reactive,2K Abralon,2K Abralon,2024-06-01,Active
+Ion Pro,Storm,2.47,0.035,0.014,Asymmetric,Hybrid Reactive,4K Abralon,4K Abralon,2024-06-01,Active
+Tundra Blue Fire,Track,2.561,0.03,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-06-01,Active
+Chill Pearl,DV8,2.495,0.051,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-05-01,Active
+Fireball Purple/Gold,Ebonite,2.519,0.039,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-05-01,Active
+Arctic Vibe,Hammer,2.51,0.042,0,Symmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-05-01,Active
+Lightning Blackout,Storm,2.53,0.029,0,Symmetric,Pearl Reactive,Reacta Gloss,Reacta Gloss,2024-05-01,Active
+The Road,Storm,2.55,0.045,0,Symmetric,Hybrid Reactive,Reacta Gloss,Reacta Gloss,2024-05-01,Active
+Beyond Infinity,Brunswick,2.521,0.051,0.01,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2024-04-01,Active
+Kaboom,Columbia 300,2.529,0.046,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-04-01,Active
+Hater,DV8,2.539,0.054,0.024,Asymmetric,Hybrid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2024-04-01,Active
+Game Breaker 5,Ebonite,2.48,0.048,0,Symmetric,Solid Reactive,500 / 1.5K SiaAir,500 / 1.5K SiaAir,2024-04-01,Active
+Black Pearl Urethane,Hammer,2.65,0.015,0,Symmetric,Urethane,500 SiaAir,500 SiaAir,2024-04-01,Active
+Outer Limits Pearl,Radical,2.499,0.051,0.014,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-04-01,Active
+Cypher,Track,2.54,0.047,0,Symmetric,Solid Reactive,500 / 1K / 2K SiaAir,500 / 1K / 2K SiaAir,2024-04-01,Active
+Endeavor,Brunswick,2.54,0.045,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2024-03-01,Active
+Ultimate Defender,Brunswick,2.473,0.054,0.015,Asymmetric,Hybrid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-03-01,Active
+Pure Madness,Columbia 300,2.495,0.048,0.012,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-03-01,Active
+Effect,Hammer,2.47,0.05,0.017,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-03-01,Active
+Hyper Venom,Motiv,2.48,0.034,0,Symmetric,Pearl Reactive,5500 Grit LSP,5500 Grit LSP,2024-03-01,Active
+Radical Conspiracy,Radical,2.487,0.056,0.021,Asymmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2024-03-01,Active
+Optimum Idol,Roto Grip,2.47,0.056,0,Symmetric,Solid Reactive,2K Abralon,2K Abralon,2024-03-01,Active
+DNA Coil,Storm,2.47,0.053,0.023,Asymmetric,Pearl Reactive,Reacta Gloss,Reacta Gloss,2024-03-01,Active
+Archetype Hybrid,Track,2.518,0.053,0.02,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-03-01,Active
+Harsh Reality,900 Global,2.48,0.054,0.019,Asymmetric,Solid Reactive,2K Abralon,2K Abralon,2024-02-01,Active
+Xponent Pearl,900 Global,2.48,0.042,0,Symmetric,Pearl Reactive,Reacta Gloss,Reacta Gloss,2024-02-01,Active
+Trouble Maker Pearl,DV8,2.496,0.045,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-02-01,Active
+Emerge Hybrid,Ebonite,2.51,0.053,0.021,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-02-01,Active
+Evoke,Motiv,2.48,0.05,0.015,Asymmetric,Solid Reactive,2K Grit LSS,2K Grit LSS,2024-02-01,Active
+Tank Rampage Pearl,Motiv,2.55,0.02,0,Symmetric,Urethane,1K Grit LSS,1K Grit LSS,2024-02-01,Active
+Breakaway,Radical,2.528,0.041,0,Symmetric,Solid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2024-02-01,Active
+Attention Star,Roto Grip,2.48,0.049,0.017,Asymmetric,Pearl Reactive,Reacta Gloss,Reacta Gloss,2024-02-01,Active
+Sublime,900 Global,2.47,0.056,0,Symmetric,Hybrid Reactive,Reacta Gloss,Reacta Gloss,2024-01-01,Active
+Black Widow 3.0,Hammer,2.5,0.058,0.016,Asymmetric,Solid Reactive,500 / 1K / 2K SiaAir,500 / 1K / 2K SiaAir,2024-01-01,Active
+Scorpion Low Flare,Hammer,2.474,0.031,0,Symmetric,Hybrid Reactive,500 / 1K / 2K SiaAir,500 / 1K / 2K SiaAir,2024-01-01,Active
+Crimson Jackal,Motiv,2.47,0.054,0.015,Asymmetric,Pearl Reactive,5000 Grit LSS,5000 Grit LSS,2024-01-01,Active
+Absolute Power,Storm,2.48,0.05,0.021,Asymmetric,Solid Reactive,4K Abralon,4K Abralon,2024-01-01,Active
+Summit Peak,Storm,2.46,0.056,0,Symmetric,Pearl Reactive,Reacta Gloss,Reacta Gloss,2024-01-01,Active
+Piranha PowerCOR,Columbia 300,2.518,0.055,0,Symmetric,Solid Reactive,500 / 2K SiaAir,500 / 2K SiaAir,2023-12-01,Active
+Violent Collision,DV8,2.462,0.052,0.019,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-12-01,Active
+Big Time Special Edition,Ebonite,2.508,0.054,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir,500 / 1K / 1.5K SiaAir,2023-12-01,Active
+Hazmat,Hammer,2.479,0.055,0,Symmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-12-01,Active
+ZigZag,Radical,2.501,0.045,0.015,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-12-01,Active
+IQ Tour 78/U,Storm,2.49,0.029,0,Symmetric,Urethane,500 Abralon,500 Abralon,2023-12-01,Active
+Journey,Storm,2.52,0.053,0,Symmetric,Pearl Reactive,Reacta Gloss,Reacta Gloss,2023-12-01,Active
+Theorem,Track,2.473,0.046,0.017,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-12-01,Active
+Ethos,Brunswick,2.481,0.053,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Crown Factory Compound,500 / 1K / 1.5K SiaAir / Crown Factory Compound,2023-11-01,Active
+Perfect Mindset,Brunswick,2.487,0.05,0.021,Asymmetric,Hybrid Reactive,500 / 1.5K / 3K SiaAir,500 / 1.5K / 3K SiaAir,2023-11-01,Active
+Verge Hybrid,DV8,2.476,0.049,0,Symmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-11-01,Active
+NU Blue Hammer,Hammer,2.586,0.027,0,Symmetric,Solid Reactive,500 / 1K SiaAir,500 / 1K SiaAir,2023-11-01,Active
+Raptor Fury,Motiv,2.48,0.055,0,Symmetric,Solid Reactive,2K Grit LSS,2K Grit LSS,2023-11-01,Active
+Deadly Rattler,Radical,2.48,0.035,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-11-01,Active
+The Hitter,Radical,2.488,0.053,0.015,Asymmetric,Solid Reactive,500 / 1K / 2K SiaAir,500 / 1K / 2K SiaAir,2023-11-01,Active
+Magic Gem,Roto Grip,2.47,0.053,0.016,Asymmetric,Hybrid Reactive,2K Abralon,2K Abralon,2023-11-01,Active
+TNT Infused,Roto Grip,2.47,0.052,0,Symmetric,Hybrid Reactive,Reacta Gloss,Reacta Gloss,2023-11-01,Active
+High Speed,Columbia 300,2.478,0.05,0.015,Asymmetric,Hybrid Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-10-01,Active
+Fireball,Ebonite,2.519,0.039,0,Symmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-10-01,Active
+The One Encore,Ebonite,2.466,0.056,0.027,Asymmetric,Hybrid Reactive,500 / 1.5K / 4K SiaAir,500 / 1.5K / 4K SiaAir,2023-10-01,Active
+Envy Tour Pearl,Hammer,2.469,0.034,0.013,Asymmetric,Pearl Reactive,500 / 1K / 1.5K SiaAir / Factory Compound,500 / 1K / 1.5K SiaAir / Factory Compound,2023-10-01,Active
+Nuclear Forge,Motiv,2.47,0.055,0,Symmetric,Pearl Reactive,5000 Grit LSS,5000 Grit LSS,2023-10-01,Active

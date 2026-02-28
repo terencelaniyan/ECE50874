@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import { BagProvider, useBag } from "./BagContext";
 import { minimalBall, minimalBall2, bagEntry } from "../test/fixtures";
@@ -35,7 +35,19 @@ function Consumer() {
 
 describe("useBag", () => {
   it("throws when used outside BagProvider", () => {
-    expect(() => render(<Consumer />)).toThrow("useBag must be used within BagProvider");
+    const expectedMessage = "useBag must be used within BagProvider";
+    const consoleError = vi.spyOn(console, "error").mockImplementation((msg) => {
+      const s = typeof msg === "string" ? msg : String(msg);
+      if (
+        s.includes(expectedMessage) ||
+        s.includes("The above error occurred") ||
+        s.includes("Consider adding an error boundary")
+      )
+        return;
+      console.warn(msg);
+    });
+    expect(() => render(<Consumer />)).toThrow(expectedMessage);
+    consoleError.mockRestore();
   });
 });
 

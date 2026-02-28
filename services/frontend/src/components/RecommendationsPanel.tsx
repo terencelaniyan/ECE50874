@@ -2,13 +2,26 @@ import { useState, useEffect, useCallback } from "react";
 import { useBag } from "../context/BagContext";
 import { getRecommendations } from "../api/recommendations";
 import { BallCard } from "./BallCard";
+import { BallComparisonTable } from "./BallComparisonTable";
 import type { RecommendationItem } from "../types/ball";
+
+const MAX_COMPARE = 5;
 
 export function RecommendationsPanel() {
   const { arsenalBallIds, gameCounts, addToBag } = useBag();
   const [items, setItems] = useState<RecommendationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [compareItems, setCompareItems] = useState<RecommendationItem[]>([]);
+
+  const toggleCompare = useCallback((item: RecommendationItem) => {
+    setCompareItems((prev) => {
+      const exists = prev.some((p) => p.ball.ball_id === item.ball.ball_id);
+      if (exists) return prev.filter((p) => p.ball.ball_id !== item.ball.ball_id);
+      if (prev.length >= MAX_COMPARE) return prev;
+      return [...prev, item];
+    });
+  }, []);
 
   const fetchRecs = useCallback(async () => {
     if (arsenalBallIds.length === 0) {
@@ -51,18 +64,48 @@ export function RecommendationsPanel() {
           Loading…
         </p>
       )}
+      {compareItems.length >= 2 && (
+        <div className="recommendations-compare">
+          <BallComparisonTable
+            balls={compareItems.map((i) => i.ball)}
+            scoreByBallId={Object.fromEntries(
+              compareItems.map((i) => [i.ball.ball_id, { label: "Score", value: i.score }])
+            )}
+          />
+          <button
+            type="button"
+            className="recommendations-clear-compare"
+            onClick={() => setCompareItems([])}
+          >
+            Clear comparison
+          </button>
+        </div>
+      )}
       {!loading && items.length > 0 && (
         <ul className="recommendations-list">
-          {items.map((item) => (
-            <li key={item.ball.ball_id} className="recommendations-item">
-              <BallCard
-                ball={item.ball}
-                onAddToBag={() => addToBag(item.ball)}
-                inBag={arsenalBallIds.includes(item.ball.ball_id)}
-              />
-              <span className="recommendations-score">Score: {item.score.toFixed(4)}</span>
-            </li>
-          ))}
+          {items.map((item) => {
+            const inCompare = compareItems.some(
+              (c) => c.ball.ball_id === item.ball.ball_id
+            );
+            return (
+              <li key={item.ball.ball_id} className="recommendations-item">
+                <BallCard
+                  ball={item.ball}
+                  onAddToBag={() => addToBag(item.ball)}
+                  inBag={arsenalBallIds.includes(item.ball.ball_id)}
+                />
+                <span className="recommendations-score">Score: {item.score.toFixed(4)}</span>
+                <button
+                  type="button"
+                  className="recommendations-add-to-compare"
+                  onClick={() => toggleCompare(item)}
+                  disabled={!inCompare && compareItems.length >= MAX_COMPARE}
+                >
+                  {inCompare ? "Remove from compare" : "Add to compare"}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

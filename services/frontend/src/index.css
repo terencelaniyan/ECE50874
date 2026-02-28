@@ -326,6 +326,56 @@ body {
   margin-top: 0.25rem;
 }
 
+.gaps-compare {
+  margin-bottom: 1rem;
+}
+
+.gaps-clear-compare,
+.gaps-add-to-compare {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  border: 1px solid #999;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 0.25rem;
+}
+
+.gaps-clear-compare:hover,
+.gaps-add-to-compare:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+
+.gaps-add-to-compare:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.recommendations-compare {
+  margin-bottom: 1rem;
+}
+
+.recommendations-clear-compare,
+.recommendations-add-to-compare {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  border: 1px solid #999;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 0.25rem;
+}
+
+.recommendations-clear-compare:hover,
+.recommendations-add-to-compare:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+
+.recommendations-add-to-compare:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .grid-view-svg-wrap {
   width: 100%;
   height: min(500px, 70vh);
@@ -347,4 +397,42 @@ body {
   font-size: 0.875rem;
   color: #555;
   margin: 0.5rem 0 0;
+}
+
+.ball-comparison-table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 100%;
+  font-size: 0.875rem;
+  margin: 1rem 0;
+}
+
+.ball-comparison-table-caption {
+  text-align: left;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.ball-comparison-table th,
+.ball-comparison-table td {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #ccc;
+  text-align: left;
+}
+
+.ball-comparison-table-row-header {
+  font-weight: 600;
+  background: #e8e8e8;
+  width: 6rem;
+}
+
+.ball-comparison-table-col-header {
+  font-weight: 600;
+  background: #e8e8e8;
+  max-width: 10rem;
+  word-break: break-word;
+}
+
+.ball-comparison-table-cell {
+  vertical-align: top;
 }
