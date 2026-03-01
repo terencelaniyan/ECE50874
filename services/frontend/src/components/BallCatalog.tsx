@@ -121,95 +121,96 @@ export function BallCatalog() {
     >
       <h2 id="catalog-heading">Ball Catalog</h2>
       <div className="ball-catalog-filters" role="search" aria-label="Filter catalog">
-        <input
-          type="search"
-          placeholder="Search name, brand, or coverstock"
-          value={filters.q ?? ""}
-          onChange={(ev) => {
-            setOffset(0);
-            setFilters((f) => ({ ...f, q: ev.target.value || undefined }));
-          }}
-          className="ball-catalog-input"
-          aria-label="Search by name, brand, or coverstock"
-        />
-        <input
-          type="text"
-          placeholder="Brand"
-          value={filters.brand ?? ""}
-          onChange={(ev) => {
-            setOffset(0);
-            setFilters((f) => ({ ...f, brand: ev.target.value || undefined }));
-          }}
-          className="ball-catalog-input"
-          aria-label="Filter by brand"
-        />
-        <input
-          type="text"
-          placeholder="Coverstock"
-          value={filters.coverstock_type ?? ""}
-          onChange={(ev) => {
-            setOffset(0);
-            setFilters((f) => ({
-              ...f,
-              coverstock_type: ev.target.value || undefined,
-            }));
-          }}
-          className="ball-catalog-input"
-          aria-label="Filter by coverstock type"
-        />
-        <input
-          type="text"
-          placeholder="Symmetry"
-          value={filters.symmetry ?? ""}
-          onChange={(ev) => {
-            setOffset(0);
-            setFilters((f) => ({
-              ...f,
-              symmetry: ev.target.value || undefined,
-            }));
-          }}
-          className="ball-catalog-input"
-          aria-label="Filter by symmetry"
-        />
-        <span className="ball-catalog-sort" role="group" aria-label="Sort options">
-          <label htmlFor="catalog-sort-by">
-            Sort by
-          </label>
-          <select
-            id="catalog-sort-by"
-            value={sort}
+        <div className="filter-main">
+          <svg className="filter-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input
+            type="search"
+            placeholder="Search balls, brands, specs..."
+            value={filters.q ?? ""}
             onChange={(ev) => {
               setOffset(0);
-              setSort(ev.target.value);
+              setFilters((f) => ({ ...f, q: ev.target.value || undefined }));
             }}
-            className="ball-catalog-input ball-catalog-select"
-            aria-label="Sort by field"
-            tabIndex={0}
-          >
-            {SORT_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <label htmlFor="catalog-sort-order">
-            Order
-          </label>
-          <select
-            id="catalog-sort-order"
-            value={order}
+            className="ball-catalog-search-input"
+            aria-label="Search balls"
+          />
+        </div>
+        
+        <div className="filter-group">
+          <input
+            type="text"
+            placeholder="Brand"
+            value={filters.brand ?? ""}
             onChange={(ev) => {
               setOffset(0);
-              setOrder(ev.target.value as "asc" | "desc");
+              setFilters((f) => ({ ...f, brand: ev.target.value || undefined }));
             }}
-            className="ball-catalog-input ball-catalog-select"
-            aria-label="Sort order"
-            tabIndex={0}
-          >
-            <option value="asc">A–Z / Low–High</option>
-            <option value="desc">Z–A / High–Low</option>
-          </select>
-        </span>
+            className="ball-catalog-input"
+            aria-label="Filter by brand"
+          />
+          <input
+            type="text"
+            placeholder="Coverstock"
+            value={filters.coverstock_type ?? ""}
+            onChange={(ev) => {
+              setOffset(0);
+              setFilters((f) => ({
+                ...f,
+                coverstock_type: ev.target.value || undefined,
+              }));
+            }}
+            className="ball-catalog-input"
+            aria-label="Filter by coverstock"
+          />
+          <input
+            type="text"
+            placeholder="Symmetry"
+            value={filters.symmetry ?? ""}
+            onChange={(ev) => {
+              setOffset(0);
+              setFilters((f) => ({
+                ...f,
+                symmetry: ev.target.value || undefined,
+              }));
+            }}
+            className="ball-catalog-input"
+            aria-label="Filter by symmetry"
+          />
+        </div>
+
+        <div className="filter-sort-group">
+          <div className="sort-field">
+            <span>Sort by</span>
+            <select
+              value={sort}
+              onChange={(ev) => {
+                setOffset(0);
+                setSort(ev.target.value);
+              }}
+              className="ball-catalog-select"
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="sort-order">
+            <span>Order</span>
+            <select
+              value={order}
+              onChange={(ev) => {
+                setOffset(0);
+                setOrder(ev.target.value as "asc" | "desc");
+              }}
+              className="ball-catalog-select"
+            >
+              <option value="asc">Low to High</option>
+              <option value="desc">High to Low</option>
+            </select>
+          </div>
+        </div>
       </div>
       {error && (
         <p className="ball-catalog-error" role="alert">
@@ -238,7 +239,7 @@ export function BallCatalog() {
               <li key={ball.ball_id} className="ball-catalog-item">
                 <BallCard
                   ball={ball}
-                  onAddToBag={() => addToBag(ball)}
+                  onAdd={() => addToBag(ball)}
                   inBag={arsenalBallIds.includes(ball.ball_id)}
                 />
               </li>

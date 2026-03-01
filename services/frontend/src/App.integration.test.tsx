@@ -19,8 +19,9 @@ describe("App integration", () => {
     vi.stubGlobal("fetch", mockFetch);
   });
 
-  it("add ball from catalog to bag shows ball in VirtualBag sidebar", async () => {
+  it("add ball from catalog to bag shows ball in arsenal on Grid View", async () => {
     render(<App />);
+    fireEvent.click(screen.getByRole("tab", { name: /catalog/i }));
     await waitFor(() => {
       expect(screen.getByText(minimalBall.name)).toBeInTheDocument();
     });
@@ -30,8 +31,12 @@ describe("App integration", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /in bag/i })).toBeInTheDocument();
     });
-    const sidebar = document.querySelector(".layout-sidebar");
-    expect(sidebar).toBeInTheDocument();
-    expect(sidebar!.querySelector(".virtual-bag-name")).toHaveTextContent(minimalBall.name);
+    fireEvent.click(screen.getByRole("tab", { name: /grid view/i }));
+    await waitFor(() => {
+      expect(screen.getByText(minimalBall.name)).toBeInTheDocument();
+    });
+    const arsenalPanel = document.querySelector(".arsenal-panel");
+    expect(arsenalPanel).toBeInTheDocument();
+    expect(arsenalPanel!.querySelector(".arsenal-card-name")).toHaveTextContent(minimalBall.name);
   });
 });

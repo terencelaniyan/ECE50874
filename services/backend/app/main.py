@@ -58,7 +58,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+_resolved = Path(__file__).resolve()
+# In Docker we have .../app/main.py (depth 2 under /app); locally .../services/backend/app/main.py (depth 4 under repo).
+REPO_ROOT = _resolved.parents[3] if len(_resolved.parents) > 3 else _resolved.parents[1]
 
 
 @app.get("/health")

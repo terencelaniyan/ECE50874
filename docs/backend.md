@@ -4,7 +4,7 @@ FastAPI application that serves the ball catalog and recommendation endpoint. Us
 
 ## Configuration
 
-**Environment:** Loaded from a `.env` file at the repository root. Copy `.env.example` to `.env` and start Postgres with `docker compose up -d` for a clone-and-run setup.
+**Environment:** Loaded from a `.env` file at the repository root or `services/backend/`. Copy `.env.template` to `.env` and start Postgres with `docker compose up -d` for a clone-and-run setup.
 
 | Variable     | Required | Description                                                                           |
 | ------------ | -------- | ------------------------------------------------------------------------------------- |
@@ -93,7 +93,7 @@ Persist arsenals (named ball sets with game count per ball) for degradation-awar
 
 ### POST /recommendations
 
-Compute top-k ball recommendations given an arsenal (by ID or by ball IDs). See [Recommendation engine](recommendation-engine.md). Supports **FR5 degradation**: when game counts are provided (via `arsenal_id` or `game_counts`), arsenal ball specs are discounted before similarity scoring.
+Compute top-k ball recommendations given an arsenal (by ID or by ball IDs). See [Recommendation engine](recommendation-engine.md). Supports **FR5 degradation**: when game counts are provided (via `arsenal_id` or `game_counts`), arsenal ball specs are discounted before similarity scoring. Optional similarity weights, candidate filters (brand, coverstock_type, status), and a diversity step are supported.
 
 **Request body:**
 
@@ -102,19 +102,33 @@ Compute top-k ball recommendations given an arsenal (by ID or by ball IDs). See 
   "arsenal_ball_ids": ["B001", "B002"],
   "arsenal_id": null,
   "game_counts": { "B001": 50, "B002": 10 },
-  "k": 5
+  "k": 5,
+  "w_rg": 1.0,
+  "w_diff": 1.0,
+  "w_int": 1.0,
+  "brand": null,
+  "coverstock_type": null,
+  "status": null,
+  "diversity_min_distance": 0.0
 }
 ```
 
-| Field             | Type            | Constraints | Description                                                                                        |
-| ----------------- | --------------- | ----------- | -------------------------------------------------------------------------------------------------- |
-| arsenal_ball_ids  | array of string | —           | Ball IDs (use when not using `arsenal_id`). Provide at least one unless `arsenal_id` is set.      |
-| arsenal_id        | string (UUID)   | optional    | Use a stored arsenal; its balls and game counts are loaded. Mutually exclusive with using list.   |
-| game_counts       | object          | optional    | Map `ball_id` → game count for degradation. Used with `arsenal_ball_ids` only.                    |
-| k                 | int             | 1–50        | Number of recommendations. Default 5.                                                            |
+| Field                    | Type            | Constraints | Description                                                                                        |
+| ------------------------ | --------------- | ----------- | -------------------------------------------------------------------------------------------------- |
+| arsenal_ball_ids         | array of string | —           | Ball IDs (use when not using `arsenal_id`). Provide at least one unless `arsenal_id` is set.      |
+| arsenal_id               | string (UUID)   | optional    | Use a stored arsenal; its balls and game counts are loaded. Mutually exclusive with using list.   |
+| game_counts             | object          | optional    | Map `ball_id` → game count for degradation. Used with `arsenal_ball_ids` only.                    |
+| k                        | int             | 1–50        | Number of recommendations. Default 5.                                                            |
+| w_rg                     | float           | 0.1–10      | Weight for RG in similarity distance. Default 1.0.                                                |
+| w_diff                   | float           | 0.1–10      | Weight for differential. Default 1.0.                                                             |
+| w_int                    | float           | 0.1–10      | Weight for intermediate differential. Default 1.0.                                                |
+| brand                    | string          | optional    | Filter candidates by brand (case-insensitive substring).                                          |
+| coverstock_type         | string          | optional    | Filter candidates by coverstock type (case-insensitive substring).                                 |
+| status                   | string          | optional    | Filter candidates by status (exact match).                                                       |
+| diversity_min_distance  | float           | 0–1         | Min L1 distance in spec space between selected balls (0 = off). Default 0.0.                     |
 
 - Provide **either** `arsenal_id` **or** `arsenal_ball_ids` (not both). If `arsenal_id`, recommendations use that arsenal’s balls and game counts. If `arsenal_ball_ids`, optional `game_counts` apply degradation (effective = catalog × (1 − 0.22 × min(games, 87)/87)).
-- Only balls not in the arsenal are candidates. Lower `score` = more similar (to effective arsenal). Returns up to `k` items.
+- Only balls not in the arsenal are candidates; optional `brand`, `coverstock_type`, and `status` further restrict the candidate set. Lower `score` = more similar (to effective arsenal). If `diversity_min_distance` > 0, selected balls are at least that far apart in (rg, diff, int_diff) space. Returns up to `k` items.
 
 **Errors:** 400 if both/neither of `arsenal_id` and `arsenal_ball_ids` provided, or if any ball ID not found (`"missing": [<ids>]`). 404 if `arsenal_id` not found.
 
@@ -131,7 +145,8 @@ Voronoi-based gap analysis in RG–Differential space (per project spec). Identi
   "arsenal_ball_ids": [],
   "arsenal_id": null,
   "game_counts": null,
-  "k": 10
+  "k": 10,
+  "zone_threshold": 0.05
 }
 ```
 
@@ -141,6 +156,7 @@ Voronoi-based gap analysis in RG–Differential space (per project spec). Identi
 | arsenal_id        | string (UUID)   | optional    | Use a stored arsenal; its balls and game counts used (with degradation).  |
 | game_counts       | object          | optional    | Map `ball_id` → game count; used with `arsenal_ball_ids` for degradation. |
 | k                 | int             | 1–50        | Max number of gap suggestions. Default 10.                               |
+| zone_threshold    | float           | —           | (rg, diff) distance to group gap balls into same zone. Default 0.05.     |
 
 - Provide **either** `arsenal_id` **or** `arsenal_ball_ids` (not both). When game counts are present (via `arsenal_id` or `game_counts`), arsenal (rg, diff) positions are degradation-adjusted before gap scoring.
 - Each item is a ball that “owns” a Voronoi cell not covered by the arsenal. Higher `gap_score` = larger coverage hole.
@@ -155,10 +171,10 @@ Defined in `services/backend/app/api_models.py`:
 - **Ball** — ball_id, name, brand, rg, diff, int_diff, symmetry, coverstock_type, surface_grit, surface_finish, release_date, status.
 - **BallsResponse** — items (list of Ball), count.
 - **ArsenalBallInput** — ball_id, game_count (optional, default 0). **CreateArsenalRequest** — name (optional), balls (list). **UpdateArsenalRequest** — name (optional), balls (optional). **ArsenalResponse** — id, name, balls (ball_id, game_count). **ArsenalSummary** — id, name, ball_count.
-- **RecommendRequest** — arsenal_ball_ids, optional arsenal_id, optional game_counts, k.
+- **RecommendRequest** — arsenal_ball_ids, optional arsenal_id, optional game_counts, k; optional w_rg, w_diff, w_int (similarity weights); optional brand, coverstock_type, status (candidate filters); optional diversity_min_distance.
 - **RecommendationItem** — ball, score. **RecommendResponse** — items.
-- **GapRequest** — arsenal_ball_ids, optional arsenal_id, optional game_counts, k.
-- **GapItem** — ball, gap_score. **GapResponse** — items.
+- **GapRequest** — arsenal_ball_ids, optional arsenal_id, optional game_counts, k, zone_threshold.
+- **GapItem** — ball, gap_score. **GapZone** — center, label, description, balls. **GapResponse** — zones.
 
 ## Running the server
 

@@ -4,7 +4,7 @@ The backend recommends bowling balls by **similarity to the user’s current ars
 
 ## Idea
 
-- **Input:** User’s arsenal (by **arsenal_id** for a stored arsenal, or by **arsenal_ball_ids**) and desired number of recommendations `k`. Optional **game_counts** per ball for degradation (FR5).
+- **Input:** User’s arsenal (by **arsenal_id** for a stored arsenal, or by **arsenal_ball_ids**) and desired number of recommendations `k`. Optional **game_counts** per ball for degradation (FR5). Optional **w_rg**, **w_diff**, **w_int** to weight the similarity dimensions; optional **brand**, **coverstock_type**, **status** to filter candidates; optional **diversity_min_distance** to space out picks.
 - **Output:** Up to `k` balls not in the arsenal, ordered by how similar they are (closest first).
 - **Similarity:** Based only on the numeric core specs: **RG**, **differential**, and **intermediate differential**. When game counts are provided (via `arsenal_id` or `game_counts`), arsenal specs are degraded before scoring (effective = catalog × decay factor). No learning or user history; purely spec-based.
 
@@ -20,7 +20,7 @@ The backend recommends bowling balls by **similarity to the user’s current ars
    dist(a, b) = w_rg * |a.rg - b.rg| + w_diff * |a.diff - b.diff| + w_int * |a.int_diff - b.int_diff|
    ```
 
-   Default weights are 1.0 for all three. The function allows different weights for future tuning.
+   Default weights are 1.0 for all three. The API accepts optional `w_rg`, `w_diff`, `w_int` (0.1–10) so callers can tune importance of each dimension.
 
 2. **Score of a candidate ball**
 
@@ -28,12 +28,16 @@ The backend recommends bowling balls by **similarity to the user’s current ars
 
 3. **Ranking**
 
-   Sort candidates by this score ascending and return the top-k. Lower score means more similar to the arsenal.
+   Sort candidates by this score ascending.
+
+4. **Diversity (optional)**
+
+   If `diversity_min_distance` > 0, a post-pass ensures no two selected balls are closer than that distance in (rg, diff, int_diff) space. Otherwise the first k from the ranked list are returned. Lower score means more similar to the arsenal.
 
 **Edge cases:**
 
 - Empty arsenal: returns an empty list.
-- Candidate set: all balls in the DB except those in the arsenal list. If there are fewer than k candidates, all are returned.
+- Candidate set: all balls in the DB except those in the arsenal list, optionally filtered by `brand`, `coverstock_type`, and `status`. If there are fewer than k candidates (after filtering and diversity), all are returned.
 
 ## API usage
 
@@ -67,6 +71,20 @@ The backend recommends bowling balls by **similarity to the user’s current ars
 }
 ```
 
+**Example with weights, filters, and diversity:**
+
+```json
+{
+  "arsenal_ball_ids": ["B001", "B010"],
+  "k": 5,
+  "w_rg": 1.0,
+  "w_diff": 2.0,
+  "w_int": 1.0,
+  "brand": "Storm",
+  "diversity_min_distance": 0.02
+}
+```
+
 Provide **either** `arsenal_id` **or** `arsenal_ball_ids` (not both). Full request/response details and errors: [Backend – POST /recommendations](backend.md#post-recommendations).
 
 **Example response:**
@@ -85,7 +103,7 @@ Interpretation: first ball has the smallest distance to your arsenal (most simil
 
 ## Implementation details
 
-- **Data flow (in `main.py`):** Resolve arsenal from `arsenal_id` (DB) or `arsenal_ball_ids` (+ optional `game_counts`). Apply FR5 degradation when game counts exist (`services/backend/app/degradation.py`); then load candidates from Postgres and call `recommend(arsenal_rows, candidate_rows, k)`; return the list of (ball, score).
+- **Data flow (in `main.py` and `services.py`):** Resolve arsenal from `arsenal_id` (DB) or `arsenal_ball_ids` (+ optional `game_counts`). Apply FR5 degradation when game counts exist (`services/backend/app/degradation.py`). Load candidates from Postgres, optionally filtered by `brand`, `coverstock_type`, and `status`; then call `recommend(arsenal_rows, candidate_rows, k, w_rg, w_diff, w_int, diversity_min_distance)`; return the list of (ball, score).
 - **Validation:** Either `arsenal_id` or at least one `arsenal_ball_id`; all referenced ball IDs must exist; otherwise 400 with missing IDs or 404 for unknown arsenal_id.
 - **Performance:** In-memory comparison. Fine for hundreds of balls; for much larger catalogs, consider indexing or precomputation.
 
@@ -93,9 +111,12 @@ Interpretation: first ball has the smallest distance to your arsenal (most simil
 
 The backend also exposes **POST /gaps**, which implements Voronoi-based **gap analysis** in RG–Differential space: it partitions the catalog by (rg, diff), finds Voronoi cells not covered by the user’s arsenal, and recommends the “owner” balls of those cells as gap fillers. See [Backend](backend.md#post-gaps) for the API.
 
+## Implemented options
+
+- **Weights:** `w_rg`, `w_diff`, `w_int` are exposed in the request body (default 1.0, range 0.1–10).
+- **Filtering:** Optional `brand`, `coverstock_type`, and `status` restrict the candidate set before scoring.
+- **Diversity:** `diversity_min_distance` (0–1) ensures selected balls are at least that far apart in spec space (0 = off).
+
 ## Possible extensions
 
-- **Weights:** Expose or tune `w_rg`, `w_diff`, `w_int` (e.g. favor matching differential over RG).
-- **Filtering:** Restrict candidates by brand, coverstock_type, or status before scoring.
-- **Diversity:** Avoid returning several very similar balls; add a simple diversity step after ranking.
 - **Scale:** For very large catalogs, precompute approximate nearest neighbors or use a vector index on (rg, diff, int_diff).

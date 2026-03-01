@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS balls (
 
 **Behavior:**
 
-1. Reads `DATABASE_URL` from environment (`.env` at repo root).
+1. Reads `DATABASE_URL` from environment (`.env` at repo root or in `services/backend/`).
 2. Reads `data/balls.csv` (path relative to repo root).
 3. Creates `balls` table if it does not exist.
 4. For each row: assigns `ball_id` as B001, B002, … from row order; parses `rg`, `diff`, `int_diff` as floats; `release_date` as date (or null); empty optional text fields as null.
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS balls (
 **Run from repo root:**
 
 ```bash
-cd services/backend && python -m scripts.seed_from_csv
+python services/backend/scripts/seed_from_csv.py
 ```
 
 **Prerequisites:**

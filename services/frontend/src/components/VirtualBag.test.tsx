@@ -25,7 +25,7 @@ describe("VirtualBag", () => {
         <VirtualBag />
       </BagProvider>
     );
-    expect(screen.getByRole("heading", { name: /virtual bag/i })).toBeInTheDocument();
+    expect(screen.getByText(/MY BAG \(0\/6\)/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /save arsenal/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /load arsenal/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /save arsenal/i })).toBeDisabled();

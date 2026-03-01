@@ -15,7 +15,6 @@ export function VirtualBag() {
     bag,
     savedArsenalId,
     removeFromBag,
-    setGameCount,
     setBag,
     setSavedArsenalId,
   } = useBag();
@@ -122,38 +121,59 @@ export function VirtualBag() {
     }
   }, [savedArsenalId, setSavedArsenalId]);
 
+  const getImage = (brand: string) => {
+    if (brand === "DV8") return "/ball_blue_gold.png";
+    if (brand === "Motiv") return "/ball_black_orange.png";
+    return "/ball_purple_pink.png";
+  };
+
+  const BAG_CAPACITY = 6;
+  const progressPercent = Math.min((bag.length / BAG_CAPACITY) * 100, 100);
+
   return (
     <div className="virtual-bag">
-      <h2>Virtual Bag</h2>
+      <div className="virtual-bag-header">
+        <div className="bag-stat-row">
+          <span className="bag-stat-label">MY BAG ({bag.length}/{BAG_CAPACITY})</span>
+          <span className="bag-stat-percent">{Math.round(progressPercent)}%</span>
+        </div>
+        <div className="bag-progress-container">
+          <div className="bag-progress-bar" style={{ width: `${progressPercent}%` }}></div>
+        </div>
+      </div>
+
       {error && (
         <p className="virtual-bag-error" role="alert">
           {error}
         </p>
       )}
+
       <ul className="virtual-bag-list">
-        {bag.map((e) => (
-          <li key={e.ball.ball_id} className="virtual-bag-item">
-            <span className="virtual-bag-name">{e.ball.name}</span>
-            <input
-              type="number"
-              min={0}
-              value={e.game_count}
-              onChange={(ev) =>
-                setGameCount(e.ball.ball_id, parseInt(ev.target.value, 10) || 0)
-              }
-              className="virtual-bag-games"
-              aria-label={`Games for ${e.ball.name}`}
-            />
-            <button
-              type="button"
-              onClick={() => removeFromBag(e.ball.ball_id)}
-              className="virtual-bag-remove"
-              aria-label={`Remove ${e.ball.name}`}
-            >
-              Remove
-            </button>
+        {bag.length === 0 ? (
+          <li className="virtual-bag-empty-hint" aria-live="polite">
+            Your bag is empty. Add balls from the catalog to get started.
           </li>
-        ))}
+        ) : (
+          bag.map((e) => (
+            <li key={e.ball.ball_id} className="virtual-bag-item">
+              <div className="virtual-bag-thumb-container">
+                <img src={getImage(e.ball.brand)} alt="" className="virtual-bag-thumb" />
+              </div>
+              <div className="virtual-bag-info">
+                <span className="virtual-bag-name">{e.ball.name}</span>
+                <span className="virtual-bag-status">15lb • Active</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeFromBag(e.ball.ball_id)}
+                className="virtual-bag-remove-icon"
+                aria-label={`Remove ${e.ball.name}`}
+              >
+                ⋮
+              </button>
+            </li>
+          ))
+        )}
       </ul>
       {savedArsenalId && (
         <p className="virtual-bag-saved">
