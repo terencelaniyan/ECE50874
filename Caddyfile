@@ -1,5 +1,12 @@
-# Replace yourdomain.com with your actual domain.
-# Caddy will obtain a Let's Encrypt certificate automatically (port 80 must be reachable for ACME).
+# ===========================================================================
+# Caddyfile – HTTPS Reverse Proxy Configuration
+# ---------------------------------------------------------------------------
+# Replace 'yourdomain.com' with your actual domain name. 
+# Caddy will automatically handle TLS certificates via Let's Encrypt/ZeroSSL.
+# Note: Ports 80 and 443 must be open and reachable from the internet.
+# ===========================================================================
+
 yourdomain.com {
-	reverse_proxy frontend:80
+    # Forward all traffic to the 'frontend' service on port 80
+    reverse_proxy frontend:80
 }
