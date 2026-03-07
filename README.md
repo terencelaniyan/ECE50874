@@ -32,9 +32,9 @@ High-level layout:
     - `gap_engine.py` – Gap computation over the catalog/arsenal.
     - `recommendation_engine.py` – Recommendation logic on top of ball catalog and arsenal.
   - `requirements.txt` – Python backend dependencies.
-  - `scripts/` – Backend-related helper scripts (if present).
-  - `tests/` – Backend tests (if present).
-- `services/frontend/` – Frontend code (JS/TS, other framework, or placeholder; see directory for specifics).
+  - `scripts/` – Backend-related helper scripts.
+  - `tests/` – Backend tests.
+- `services/frontend/` – React + TypeScript + Vite SPA (see that directory for details).
 - `data/` – Input data, processed artifacts, and experiment outputs.
 - `docs/`
   - `backend.md` – Backend architecture and API details.
@@ -206,7 +206,7 @@ Large or sensitive files should **not** be committed to Git. Use `.gitignore` to
 Testing
 -------
 
-Backend tests (if present) live under `services/backend/tests/`.
+Backend tests live under `services/backend/tests/`.
 
 From `services/backend/` with the virtual environment active:
 
@@ -251,9 +251,8 @@ Development workflow
 
 4. **Set up the frontend (optional)**
 
-   - Initialize your chosen frontend framework under `services/frontend/`.
-   - Install dependencies (for example, `npm install`).
-   - Run the dev server (for example, `npm run dev`).
+   - The project includes a React + TypeScript + Vite app under `services/frontend/`.
+   - Install dependencies (`npm install`) and run the dev server (`npm run dev`).
 
 5. **Run tests**
 

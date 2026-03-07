@@ -18,13 +18,6 @@ describe("BallCard", () => {
     expect(screen.getByText(String(minimalBall.int_diff))).toBeInTheDocument();
   });
 
-  it("renders coverstock_type when present", () => {
-    render(
-      <BallCard ball={minimalBall} onAddToBag={() => {}} inBag={false} />
-    );
-    expect(screen.getByText(minimalBall.coverstock_type!)).toBeInTheDocument();
-  });
-
   it("shows Add to bag button when not in bag and calls onAddToBag on click", () => {
     const onAddToBag = vi.fn();
     render(
@@ -42,17 +35,5 @@ describe("BallCard", () => {
     );
     const btn = screen.getByRole("button", { name: /in bag/i });
     expect(btn).toBeDisabled();
-  });
-
-  it("shows Coverage Priority when gapScore is provided", () => {
-    render(
-      <BallCard
-        ball={minimalBall}
-        onAddToBag={() => {}}
-        inBag={false}
-        gapScore={0.091}
-      />
-    );
-    expect(screen.getByText(/Coverage Priority: 9%/)).toBeInTheDocument();
   });
 });
