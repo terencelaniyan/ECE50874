@@ -231,7 +231,7 @@ Development workflow
 1. **Clone the repo**
 
    ```bash
-   git clone <YOUR_REPO_URL>
+   git clone https://github.com/terencelaniyan/ECE50874.git
    cd ECE50874
    ```
 
