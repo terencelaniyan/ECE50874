@@ -66,6 +66,10 @@ function ArsenalCard({ entry, slot }: ArsenalCardProps) {
   );
 }
 
+/**
+ * ArsenalPanel component displays the user's current bag with detailed health 
+ * (wear) metrics and provides save/load functionality.
+ */
 export function ArsenalPanel() {
   const { bag, setBag, setSavedArsenalId } = useBag();
   const filledSlots = Math.min(bag.length, BAG_CAPACITY);

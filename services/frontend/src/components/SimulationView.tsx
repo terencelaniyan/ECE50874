@@ -8,6 +8,13 @@ const OIL_OPTIONS = [
   "Sport Shot — Chameleon (41ft)",
 ];
 
+/**
+ * SimulationView component provides a physics-based (simplified) lane 
+ * simulation to predict ball motion.
+ * 
+ * Users can adjust delivery parameters (speed, rev rate, etc.) and oil 
+ * patterns to see how their balls might perform on the lane.
+ */
 export function SimulationView() {
   const { bag } = useBag();
   const [speed, setSpeed] = useState(17);

@@ -10,6 +10,13 @@ interface BallComparisonTableProps {
   scoreByBallId?: Record<string, ScoreEntry>;
 }
 
+/**
+ * BallComparisonTable component renders a side-by-side comparison of multiple 
+ * bowling balls' specifications.
+ * 
+ * It takes an array of balls and an optional mapping of additional scores 
+ * (like gap or similarity scores) to display in the table.
+ */
 export function BallComparisonTable({ balls, scoreByBallId }: BallComparisonTableProps) {
   if (balls.length === 0) return null;
 

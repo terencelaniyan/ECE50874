@@ -10,6 +10,12 @@ import {
 import { getBall } from "../api/balls";
 import type { ArsenalSummary } from "../types/ball";
 
+/**
+ * VirtualBag component manages the user's current collection of balls.
+ * 
+ * It displays the list of balls in the bag, allows removing them, 
+ * and provides functionality for saving and loading arsenals to/from the backend.
+ */
 export function VirtualBag() {
   const {
     bag,

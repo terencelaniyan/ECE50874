@@ -25,8 +25,20 @@ interface BagContextValue {
   gameCounts: Record<string, number>;
 }
 
+/**
+ * Context for managing the user's bowling ball bag (arsenal) state.
+ * 
+ * Includes the current bag entries, the ID of the saved arsenal (if any), 
+ * and functions to modify the bag.
+ */
 const BagContext = createContext<BagContextValue | null>(null);
 
+/**
+ * Provider component that maintains the bag state and provides it to the app.
+ * 
+ * Handles adding/removing balls, updating game counts for wear simulation, 
+ * and exposing memoized helper values like `arsenalBallIds`.
+ */
 export function BagProvider({ children }: { children: ReactNode }) {
   const [bag, setBagState] = useState<BagEntry[]>([]);
   const [savedArsenalId, setSavedArsenalId] = useState<string | null>(null);
@@ -89,6 +101,14 @@ export function BagProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Hook to access the BagContext.
+ * 
+ * Must be used within a BagProvider.
+ * 
+ * @returns {BagContextValue} The current bag state and its modifiers.
+ * @throws {Error} If used outside of a BagProvider.
+ */
 export function useBag() {
   const ctx = useContext(BagContext);
   if (!ctx) throw new Error("useBag must be used within BagProvider");

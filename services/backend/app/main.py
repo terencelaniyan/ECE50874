@@ -65,6 +65,12 @@ REPO_ROOT = _resolved.parents[3] if len(_resolved.parents) > 3 else _resolved.pa
 
 @app.get("/health")
 def health(db=Depends(get_db)):
+    """
+    Check the health of the application and database connectivity.
+    
+    Returns:
+        dict: A status dictionary containing "status" and "db" connectivity flag.
+    """
     return check_health(db)
 
 
@@ -88,6 +94,24 @@ def list_balls(
     limit: int = Query(default=50, ge=1, le=5000),
     offset: int = Query(default=0, ge=0),
 ):
+    """
+    List bowling balls with optional filtering, searching, and pagination.
+    
+    Args:
+        db: Database session.
+        brand: Filter by brand name.
+        coverstock_type: Filter by coverstock type.
+        symmetry: Filter by symmetry (e.g., Symmetric, Asymmetric).
+        status: Filter by status (e.g., Active, Retired).
+        q: Search query for name, brand, or coverstock.
+        sort: Field to sort by.
+        order: Sort direction (asc or desc).
+        limit: Maximum number of items to return.
+        offset: Number of items to skip.
+        
+    Returns:
+        BallsResponse: A paginated list of balls and the total count.
+    """
     rows, count = svc_list_balls(
         db,
         brand=brand,
@@ -105,6 +129,19 @@ def list_balls(
 
 @app.get("/balls/{ball_id}", response_model=Ball)
 def get_ball(ball_id: str, db=Depends(get_db)):
+    """
+    Retrieve details for a specific bowling ball by its ID.
+    
+    Args:
+        ball_id: The unique identifier of the ball.
+        db: Database session.
+        
+    Returns:
+        Ball: The bowling ball details.
+        
+    Raises:
+        HTTPException: 404 if the ball is not found.
+    """
     row = svc_get_ball(db, ball_id)
     if row is None:
         raise HTTPException(status_code=404, detail=f"Ball not found: {ball_id}")
@@ -113,6 +150,19 @@ def get_ball(ball_id: str, db=Depends(get_db)):
 
 @app.post("/arsenals", response_model=ArsenalResponse, status_code=201)
 def create_arsenal(req: CreateArsenalRequest, db=Depends(get_db)):
+    """
+    Create a new bowling ball arsenal.
+    
+    Args:
+        req: Request body containing arsenal name and initial balls.
+        db: Database session.
+        
+    Returns:
+        ArsenalResponse: The created arsenal details.
+        
+    Raises:
+        HTTPException: 400 if validation fails.
+    """
     balls = [{"ball_id": b.ball_id, "game_count": b.game_count} for b in req.balls]
     try:
         data = svc_create_arsenal(db, req.name, balls)
@@ -134,12 +184,36 @@ def list_arsenals(
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ):
+    """
+    List all bowling ball arsenals with pagination.
+    
+    Args:
+        db: Database session.
+        limit: Maximum number of arsenals to return.
+        offset: Number of arsenals to skip.
+        
+    Returns:
+        List[ArsenalSummary]: A list of arsenal summaries including ball counts.
+    """
     rows = svc_list_arsenals(db, limit=limit, offset=offset)
     return [ArsenalSummary(id=r["id"], name=r["name"], ball_count=r["ball_count"]) for r in rows]
 
 
 @app.get("/arsenals/{arsenal_id}", response_model=ArsenalResponse)
 def get_arsenal(arsenal_id: str, db=Depends(get_db)):
+    """
+    Retrieve details for a specific arsenal by its UUID.
+    
+    Args:
+        arsenal_id: The UUID of the arsenal.
+        db: Database session.
+        
+    Returns:
+        ArsenalResponse: The arsenal details including its balls.
+        
+    Raises:
+        HTTPException: 404 if the arsenal is not found.
+    """
     try:
         data = svc_get_arsenal(db, arsenal_id)
     except NotFoundError as e:
@@ -153,6 +227,20 @@ def get_arsenal(arsenal_id: str, db=Depends(get_db)):
 
 @app.patch("/arsenals/{arsenal_id}", response_model=ArsenalResponse)
 def update_arsenal(arsenal_id: str, req: UpdateArsenalRequest, db=Depends(get_db)):
+    """
+    Update an existing arsenal's name or ball list.
+    
+    Args:
+        arsenal_id: The UUID of the arsenal to update.
+        req: Request body with new name and/or ball list.
+        db: Database session.
+        
+    Returns:
+        ArsenalResponse: The updated arsenal details.
+        
+    Raises:
+        HTTPException: 404 if not found, 400 if validation fails.
+    """
     try:
         balls = None
         if req.balls is not None:
@@ -170,6 +258,16 @@ def update_arsenal(arsenal_id: str, req: UpdateArsenalRequest, db=Depends(get_db
 
 @app.delete("/arsenals/{arsenal_id}", status_code=204)
 def delete_arsenal(arsenal_id: str, db=Depends(get_db)):
+    """
+    Delete an arsenal by its UUID.
+    
+    Args:
+        arsenal_id: The UUID of the arsenal to delete.
+        db: Database session.
+        
+    Raises:
+        HTTPException: 404 if the arsenal is not found.
+    """
     try:
         svc_delete_arsenal(db, arsenal_id)
     except NotFoundError as e:
@@ -178,6 +276,22 @@ def delete_arsenal(arsenal_id: str, db=Depends(get_db)):
 
 @app.post("/recommendations", response_model=RecommendResponse)
 def recommendations(req: RecommendRequest, db=Depends(get_db)):
+    """
+    Get bowling ball recommendations based on a user's current arsenal.
+    
+    The engine looks for balls that complement the existing arsenal's specs
+    (RG, differential, etc.) while considering performance degradation.
+    
+    Args:
+        req: Recommendation parameters including arsenal info and weights.
+        db: Database session.
+        
+    Returns:
+        RecommendResponse: A list of recommended balls with similarity scores.
+        
+    Raises:
+        HTTPException: 400 if input parameters are invalid.
+    """
     if req.arsenal_id and req.arsenal_ball_ids:
         raise HTTPException(
             status_code=400,
@@ -213,6 +327,22 @@ def recommendations(req: RecommendRequest, db=Depends(get_db)):
 
 @app.post("/gaps", response_model=GapResponse)
 def gaps(req: GapRequest, db=Depends(get_db)):
+    """
+    Perform gap analysis on a user's arsenal to identify missing ball types.
+    
+    Divides the (RG, differential) space into zones and identifies which
+    zones are underserved by the current collection.
+    
+    Args:
+        req: Gap analysis parameters.
+        db: Database session.
+        
+    Returns:
+        GapResponse: Clustered zones representing coverage gaps.
+        
+    Raises:
+        HTTPException: 400 if input parameters are invalid.
+    """
     if req.arsenal_id and req.arsenal_ball_ids:
         raise HTTPException(
             status_code=400,

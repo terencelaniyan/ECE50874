@@ -13,6 +13,13 @@ export interface ListBallsParams {
   offset?: number;
 }
 
+/**
+ * Fetch a list of bowling balls with optional filtering and pagination.
+ * 
+ * @param params - Search and filter parameters.
+ * @param options - Optional config (e.g., AbortSignal).
+ * @returns Promise resolving to the paginated list of balls.
+ */
 export function listBalls(
   params: ListBallsParams = {},
   options?: { signal?: AbortSignal }
@@ -31,6 +38,12 @@ export function listBalls(
   return get<BallsResponse>(`/balls${qs ? `?${qs}` : ""}`, options);
 }
 
+/**
+ * Fetch specifications for a single bowling ball by its ID.
+ * 
+ * @param ballId - Unique identifier of the ball.
+ * @returns Promise resolving to the ball data.
+ */
 export function getBall(ballId: string): Promise<Ball> {
   return get<Ball>(`/balls/${encodeURIComponent(ballId)}`);
 }

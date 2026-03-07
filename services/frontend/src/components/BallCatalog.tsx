@@ -17,6 +17,12 @@ const SORT_OPTIONS: { value: string; label: string }[] = [
   { value: "symmetry", label: "Symmetry" },
 ];
 
+/**
+ * BallCatalog component provides a searchable, filterable, and paginated list 
+ * of bowling balls from the database.
+ * 
+ * Users can browse balls, filter by various specifications, and add them to their bag.
+ */
 export function BallCatalog() {
   const { addToBag, arsenalBallIds } = useBag();
   const [items, setItems] = useState<Ball[]>([]);

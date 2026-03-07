@@ -22,8 +22,18 @@ DIFF_MID_HIGH = 0.050
 
 def _points_with_jitter(catalog_rows: List[dict]) -> Tuple[np.ndarray, List[dict]]:
     """
-    Build 2D (rg, diff) and dedupe by jitter so each row maps 1:1 to a ball.
-    Returns (points array, list of ball dicts in same order as rows).
+    Extract (RG, differential) points from catalog rows and apply a tiny 
+    jitter to handle duplicate specifications.
+    
+    Duplicates can cause issues with Voronoi tessellation. This function 
+    ensures each ball has a unique point in the 2D space.
+    
+    Args:
+        catalog_rows: List of bowling ball data dictionaries.
+        
+    Returns:
+        Tuple[np.ndarray, List[dict]]: A NumPy array of (rg, diff) points 
+                                     and the corresponding list of ball dictionaries.
     """
     seen = set()
     points_list = []
@@ -44,7 +54,18 @@ def _points_with_jitter(catalog_rows: List[dict]) -> Tuple[np.ndarray, List[dict
 
 
 def _dist_2d(a: np.ndarray, b: np.ndarray) -> float:
-    """L2 distance between two 2D points (rg, diff)."""
+    """
+    Calculate the L2 (Euclidean) distance between two 2D points.
+    
+    Used for measuring proximity in the (RG, differential) spec space.
+    
+    Args:
+        a: First 2D point [rg, diff].
+        b: Second 2D point [rg, diff].
+        
+    Returns:
+        float: Euclidean distance between the points.
+    """
     return float(np.linalg.norm(a - b))
 
 

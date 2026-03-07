@@ -27,6 +27,12 @@ function yearFromDate(release_date: string | null): string {
   return /^\d{4}$/.test(y) ? y : release_date;
 }
 
+/**
+ * BallDatabaseView component displays a detailed tabular view of all bowling balls.
+ * 
+ * Primarily used for administrative or power-user browsing, showing more 
+ * specifications per ball than the standard catalog.
+ */
 export function BallDatabaseView() {
   const [items, setItems] = useState<Ball[]>([]);
   const [count, setCount] = useState(0);

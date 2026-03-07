@@ -49,6 +49,16 @@ interface GridViewProps {
   variant?: GridViewVariant;
 }
 
+/**
+ * GridView component for visualizing bowling balls in spec space.
+ * 
+ * This component renders a scatter plot based on RG and Differential values.
+ * It uses D3-Delaunay for Voronoi tessellation to show coverage areas.
+ * 
+ * In "arsenal" mode, it shows the user's current bag with fixed domains and 
+ * slot-based shading. In "catalog" mode, it shows the entire database and 
+ * allows adding/removing balls.
+ */
 export function GridView({ variant = "catalog" }: GridViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);

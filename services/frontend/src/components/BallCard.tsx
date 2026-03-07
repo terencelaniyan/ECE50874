@@ -8,6 +8,12 @@ interface BallCardProps {
   gapScore?: number;
 }
 
+/**
+ * BallCard component displays summary information for a single bowling ball.
+ * 
+ * Includes an image, name, brand, key specifications (RG/Diff), and 
+ * an "Add to Bag" action.
+ */
 export function BallCard({ ball, onAdd, onAddToBag, inBag }: BallCardProps) {
   const handleAdd = () => {
     if (onAdd) onAdd(ball);

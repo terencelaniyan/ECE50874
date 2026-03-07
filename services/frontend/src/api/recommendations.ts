@@ -8,6 +8,12 @@ export interface RecommendRequest {
   k?: number;
 }
 
+/**
+ * Get bowling ball recommendations based on the user's current arsenal.
+ * 
+ * @param body - The arsenal IDs, game counts, and number of recommendations (k).
+ * @returns Promise resolving to the ranked list of recommended balls.
+ */
 export function getRecommendations(
   body: RecommendRequest
 ): Promise<RecommendResponse> {

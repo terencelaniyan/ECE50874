@@ -3,6 +3,11 @@ const BASE =
     ? import.meta.env.VITE_API_BASE.replace(/\/$/, "")
     : "/api";
 
+/**
+ * Base URL for API requests.
+ * 
+ * Defaults to "/api" unless VITE_API_BASE is set in the environment.
+ */
 export function apiUrl(path: string): string {
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${BASE}${p}`;
@@ -19,6 +24,15 @@ const NETWORK_ERROR_MESSAGE =
     ? "Cannot reach the API. Start the backend (e.g. in services/backend: uvicorn app.main:app --reload --port 8000)."
     : "Network error. Check your connection.";
 
+/**
+ * Perform a GET request to the specified API path.
+ * 
+ * @template T - The expected response type.
+ * @param path - The API endpoint path.
+ * @param options - Optional configuration like AbortSignal.
+ * @returns A promise that resolves to the parsed JSON response.
+ * @throws {ApiError} - If the response is not OK or a network error occurs.
+ */
 export async function get<T>(path: string, options?: { signal?: AbortSignal }): Promise<T> {
   try {
     const res = await fetch(apiUrl(path), { signal: options?.signal });
@@ -33,6 +47,15 @@ export async function get<T>(path: string, options?: { signal?: AbortSignal }): 
   }
 }
 
+/**
+ * Perform a POST request with a JSON body.
+ * 
+ * @template T - The expected response type.
+ * @param path - The API endpoint path.
+ * @param body - The object to be stringified as the request body.
+ * @returns A promise that resolves to the parsed JSON response (or undefined for 204).
+ * @throws {ApiError} - If the response is not OK.
+ */
 export async function post<T>(path: string, body: unknown): Promise<T> {
   try {
     const res = await fetch(apiUrl(path), {

@@ -26,11 +26,17 @@ MIN_FACTOR = 0.01   # floor: don't let factor reach zero (avoids division issues
 def _degradation_factor(game_count: int) -> float:
     """
     Compute the multiplicative degradation factor for a given game count.
-
-    Returns a value in [MIN_FACTOR, 1.0]:
-      - 0 games   → 1.0  (no degradation)
-      - 87 games  → 0.78 (22% degradation)
-      - >87 games → capped at 0.78 (no further decay)
+    
+    The factor represents the remaining performance percentage.
+    - 0 games   → 1.0  (100% of original hook potential)
+    - 87 games  → 0.78 (78% of original hook potential, 22% wear)
+    - >87 games → Caps at 0.78.
+    
+    Args:
+        game_count: Number of games bowled with the ball.
+        
+    Returns:
+        float: Multiplier in the range [MIN_FACTOR, 1.0].
     """
     if game_count <= 0:
         return 1.0  # brand-new ball, no wear
@@ -47,13 +53,17 @@ def _degradation_factor(game_count: int) -> float:
 
 def apply_degradation(ball_row: Dict, game_count: int) -> Dict:
     """
-    Return a *copy* of ball_row with rg, diff, int_diff scaled by
-    the degradation factor.
-
-    - game_count == 0  → returns unchanged copy (no wear).
-    - game_count > 0   → lower effective specs (simulates surface wear).
-
-    The original ball_row is never mutated.
+    Apply surface wear degradation to a ball's specifications.
+    
+    Creates a copy of the ball data with "effective" (degraded) RG, 
+    differential, and intermediate differential values.
+    
+    Args:
+        ball_row: Dictionary containing original ball specifications.
+        game_count: Number of games bowled with the ball.
+        
+    Returns:
+        Dict: A new dictionary with updated (degraded) specifications.
     """
     if game_count <= 0:
         # No degradation; return shallow copy to avoid mutating caller's data

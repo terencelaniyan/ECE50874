@@ -23,7 +23,16 @@ SORT_COLUMNS = frozenset({
 
 
 def validate_ball_ids(cur, ball_ids: List[str]) -> None:
-    """Raise ValidationError if any ball_id is not in the balls table."""
+    """
+    Verify that all provided ball IDs exist in the balls table.
+    
+    Args:
+        cur: Database cursor.
+        ball_ids: List of ball identifiers to check.
+        
+    Raises:
+        ValidationError: If any of the IDs are not found in the database.
+    """
     if not ball_ids:
         return
     cur.execute(
@@ -40,7 +49,21 @@ def validate_ball_ids(cur, ball_ids: List[str]) -> None:
 
 
 def load_arsenal_balls(cur, arsenal_id: str) -> List[Tuple[dict, int]]:
-    """Return [(ball_row, game_count), ...]. Raise NotFoundError if arsenal missing."""
+    """
+    Fetch all balls belonging to a specific arsenal along with their game counts.
+    
+    Args:
+        cur: Database cursor.
+        arsenal_id: UUID of the arsenal.
+        
+    Returns:
+        List[Tuple[dict, int]]: A list of tuples, each containing a ball's row data 
+                                and its corresponding game count in the arsenal.
+                                
+    Raises:
+        NotFoundError: If the arsenal does not exist.
+        ValidationError: If the arsenal references ball IDs that aren't in the catalog.
+    """
     cur.execute(
         "SELECT id, name FROM arsenals WHERE id = %s::uuid;",
         (arsenal_id,),
@@ -99,7 +122,25 @@ def list_balls(
     limit: int = 50,
     offset: int = 0,
 ) -> Tuple[List[dict], int]:
-    """Return (rows, total_count) for balls matching filters and pagination."""
+    """
+    Search and filter the bowling ball catalog.
+    
+    Args:
+        conn: Database connection.
+        brand: Optional brand filter (case-insensitive substring).
+        coverstock_type: Optional coverstock type filter (case-insensitive substring).
+        symmetry: Optional symmetry filter (case-insensitive substring).
+        status: Optional status filter (exact match).
+        q: Optional search query for name, brand, or coverstock.
+        sort: Column to sort by (defaults to release_date).
+        order: Sort direction (asc or desc).
+        limit: Max items to return.
+        offset: Items to skip.
+        
+    Returns:
+        Tuple[List[dict], int]: A list of ball row dictionaries and the total 
+                               count of matching results.
+    """
     where = []
     params: dict[str, Any] = {}
     brand = (brand or "").strip() or None
@@ -171,7 +212,20 @@ def get_ball(conn, ball_id: str) -> Optional[dict]:
 
 
 def create_arsenal(conn, name: Optional[str], balls: List[dict]) -> dict:
-    """Create arsenal and arsenal_balls. Returns {id, name, balls}."""
+    """
+    Create a new arsenal and its associated balls.
+    
+    Args:
+        conn: Database connection.
+        name: Display name for the arsenal.
+        balls: List of items with ball_id and game_count.
+        
+    Returns:
+        dict: A dictionary containing the new arsenal's ID, name, and balls.
+        
+    Raises:
+        ValidationError: If any of the referenced balls do not exist.
+    """
     ball_ids = [b["ball_id"] for b in balls]
     with conn.cursor() as cur:
         if ball_ids:
@@ -198,7 +252,18 @@ def create_arsenal(conn, name: Optional[str], balls: List[dict]) -> dict:
 
 
 def list_arsenals(conn, limit: int = 50, offset: int = 0) -> List[dict]:
-    """Return list of {id, name, ball_count} for arsenals."""
+    """
+    Retrieve a paginated list of all arsenals.
+    
+    Args:
+        conn: Database connection.
+        limit: Max items to return.
+        offset: Items to skip.
+        
+    Returns:
+        List[dict]: A list of dictionaries, each containing arsenal ID, 
+                    name, and the number of balls it contains.
+    """
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -219,7 +284,19 @@ def list_arsenals(conn, limit: int = 50, offset: int = 0) -> List[dict]:
 
 
 def get_arsenal(conn, arsenal_id: str) -> dict:
-    """Return {id, name, balls}. Raise NotFoundError if not found."""
+    """
+    Retrieve detailed information for a single arsenal.
+    
+    Args:
+        conn: Database connection.
+        arsenal_id: UUID of the arsenal.
+        
+    Returns:
+        dict: Arsenal details including its name and list of balls.
+        
+    Raises:
+        NotFoundError: If the arsenal does not exist.
+    """
     with conn.cursor() as cur:
         cur.execute(
             "SELECT id, name FROM arsenals WHERE id = %s::uuid;",
@@ -250,7 +327,19 @@ def update_arsenal(
     name: Optional[str] = None,
     balls: Optional[List[dict]] = None,
 ) -> None:
-    """Update arsenal name and/or balls. Raise NotFoundError if not found."""
+    """
+    Update an arsenal's name and/or its collection of balls.
+    
+    Args:
+        conn: Database connection.
+        arsenal_id: UUID of the arsenal to update.
+        name: New display name (optional).
+        balls: New list of ball dictionary objects (optional).
+        
+    Raises:
+        NotFoundError: If the arsenal does not exist.
+        ValidationError: If any of the new ball IDs are invalid.
+    """
     with conn.cursor() as cur:
         cur.execute(
             "SELECT id, name FROM arsenals WHERE id = %s::uuid;",
@@ -284,7 +373,16 @@ def update_arsenal(
 
 
 def delete_arsenal(conn, arsenal_id: str) -> None:
-    """Delete arsenal. Raise NotFoundError if not found."""
+    """
+    Delete an arsenal and its associated ball mappings.
+    
+    Args:
+        conn: Database connection.
+        arsenal_id: UUID of the arsenal to delete.
+        
+    Raises:
+        NotFoundError: If the arsenal does not exist.
+    """
     with conn.cursor() as cur:
         cur.execute(
             "DELETE FROM arsenals WHERE id = %s::uuid RETURNING id;",
@@ -301,7 +399,20 @@ def resolve_arsenal_rows(
     arsenal_ball_ids: List[str],
     game_counts: Optional[dict],
 ) -> Tuple[List[dict], List[str]]:
-    """Return (effective arsenal rows, ball_ids). Uses degradation when available."""
+    """
+    Resolve a set of ball IDs or an arsenal ID into actual ball row data,
+    applying performance degradation based on game counts.
+    
+    Args:
+        conn: Database connection.
+        arsenal_id: Optional UUID of a saved arsenal.
+        arsenal_ball_ids: Optional list of ad-hoc ball IDs.
+        game_counts: Optional mapping of ball_id to games bowled.
+        
+    Returns:
+        Tuple[List[dict], List[str]]: A tuple containing the list of potentially 
+                                     degraded ball rows and the list of ball IDs.
+    """
     if arsenal_id:
         with conn.cursor() as cur:
             loaded = load_arsenal_balls(cur, arsenal_id)
@@ -340,7 +451,26 @@ def get_recommendations(
     status: Optional[str] = None,
     diversity_min_distance: float = 0.0,
 ) -> List[Tuple[dict, float]]:
-    """Return [(ball, score)] for top-k. Caller must pass arsenal_id or ball_ids."""
+    """
+    Generate bowling ball recommendations based on a user's arsenal.
+    
+    Args:
+        conn: Database connection.
+        arsenal_id: UUID of a saved arsenal to use as base.
+        arsenal_ball_ids: List of ball IDs to use as an ad-hoc arsenal.
+        game_counts: Mapping of ball_id to games for degradation calculation.
+        k: Number of recommendations to return.
+        w_rg: Weight for RG similarity.
+        w_diff: Weight for differential similarity.
+        w_int: Weight for intermediate differential similarity.
+        brand: Optional brand filter for candidates.
+        coverstock_type: Optional coverstock type filter for candidates.
+        status: Optional status filter for candidates.
+        diversity_min_distance: Minimum distance between recommendations to ensure variety.
+        
+    Returns:
+        List[Tuple[dict, float]]: Top-k recommended balls with their similarity scores.
+    """
     arsenal_rows, arsenal_ids = resolve_arsenal_rows(
         conn, arsenal_id, arsenal_ball_ids, game_counts
     )
@@ -387,7 +517,20 @@ def get_gaps(
     k: int,
     zone_threshold: float = 0.05,
 ) -> List[dict]:
-    """Return list of zones: [{center, label, description, balls: [GapItem-like]}, ...]."""
+    """
+    Identify coverage gaps in a user's arsenal and group them into logical zones.
+    
+    Args:
+        conn: Database connection.
+        arsenal_id: UUID of a saved arsenal.
+        arsenal_ball_ids: List of ad-hoc ball IDs.
+        game_counts: Mapping of ball_id to games for degradation.
+        k: Number of gap balls to identify.
+        zone_threshold: Distance threshold for clustering balls into zones.
+        
+    Returns:
+        List[dict]: A list of gap zones, each with a center, label, and list of balls.
+    """
     arsenal_rows, arsenal_ids = resolve_arsenal_rows(
         conn, arsenal_id, arsenal_ball_ids, game_counts
     )

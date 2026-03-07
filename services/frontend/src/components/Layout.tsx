@@ -10,6 +10,13 @@ import { SimulationView } from "./SimulationView";
 
 type Tab = "catalog" | "grid" | "simulation" | "recommendations" | "gaps" | "database";
 
+/**
+ * Main application layout component.
+ * 
+ * Manages the top-level navigation (tabs) and renders the corresponding view
+ * components (Grid, Simulation, Database, etc.). It also includes the shared
+ * header and logo.
+ */
 export function Layout() {
   const [tab, setTab] = useState<Tab>("grid");
 
