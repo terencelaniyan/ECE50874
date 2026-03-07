@@ -83,8 +83,8 @@ body::before {
 }
 
 .logo-pin {
-  width: 20px;
-  height: 36px;
+  width: 14px;
+  height: 44px;
   flex-shrink: 0;
 }
 
@@ -805,8 +805,8 @@ body::before {
 }
 
 .chart-logo-pin {
-  width: 14px;
-  height: 14px;
+  width: 6.4px;
+  height: 20px;
   color: var(--accent);
   filter: drop-shadow(0 0 5px rgba(232, 255, 60, 0.4));
 }
