@@ -38,6 +38,7 @@ High-level layout:
 - `data/` – Input data, processed artifacts, and experiment outputs.
 - `docs/`
   - `backend.md` – Backend architecture and API details.
+  - `frontend.md` – Frontend architecture, structure, and usage.
   - `data-collection.md` – Data collection pipeline and formats.
   - `recommendation-engine.md` – Recommendation engine design and math.
 - `docker-compose.yml` – Local PostgreSQL service definition.
@@ -198,6 +199,7 @@ Refer to:
 - `docs/data-collection.md` – how data is collected, cleaned, and stored.
 - `docs/recommendation-engine.md` – how data feeds into the recommendation engine.
 - `docs/backend.md` – backend endpoints that read/write data.
+- `docs/frontend.md` – frontend structure, data flow, and usage.
 
 Large or sensitive files should **not** be committed to Git. Use `.gitignore` to exclude them.
 
@@ -267,6 +269,7 @@ Additional documentation
 For deeper details, see:
 
 - `docs/backend.md` – backend modules, routing, and configuration.
+- `docs/frontend.md` – frontend architecture, structure, and usage.
 - `docs/data-collection.md` – data sources, schemas, and pipelines.
 - `docs/recommendation-engine.md` – algorithms, metrics, and implementation notes.
 

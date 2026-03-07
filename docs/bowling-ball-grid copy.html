@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bowling Ball Grid Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131c;
+    --surface2: #1c1c2e;
+    --accent: #e8ff3c;
+    --accent2: #ff5c38;
+    --accent3: #38c9ff;
+    --text: #f0f0f8;
+    --muted: #6a6a8a;
+    --border: #2a2a3e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.4;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,15,0.92);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-shadow: 0 0 30px rgba(232,255,60,0.4);
+  }
+
+  .logo span { color: var(--text); }
+
+  nav {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .nav-btn {
+    padding: 8px 20px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .nav-btn.active {
+    background: var(--accent);
+    color: #0a0a0f;
+    font-weight: bold;
+  }
+
+  .nav-btn:hover:not(.active) { color: var(--text); background: var(--border); }
+
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #4cff8a;
+    box-shadow: 0 0 10px #4cff8a;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Views */
+  .view { display: none; padding: 40px; animation: fadeIn 0.3s ease; }
+  .view.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Grid View Layout */
+  .grid-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr 280px;
+    gap: 20px;
+    height: calc(100vh - 140px);
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .panel-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .panel-badge {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(232,255,60,0.12);
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  .panel-body { padding: 16px; flex: 1; overflow-y: auto; }
+
+  /* Ball cards in arsenal */
+  .ball-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 10px;
+    cursor: grab;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ball-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+  }
+
+  .ball-card.slot-1::before { background: var(--accent2); }
+  .ball-card.slot-2::before { background: #ff9c38; }
+  .ball-card.slot-3::before { background: var(--accent); }
+  .ball-card.slot-4::before { background: var(--accent3); }
+  .ball-card.slot-5::before { background: #b838ff; }
+
+  .ball-card:hover { border-color: rgba(232,255,60,0.4); transform: translateX(2px); }
+
+  .ball-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+
+  .ball-meta {
+    font-size: 10px;
+    color: var(--muted);
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .ball-meta span { color: var(--accent3); }
+
+  .ball-stats {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .stat-chip {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.05);
+    color: var(--muted);
+  }
+
+  .stat-chip b { color: var(--text); }
+
+  /* Health bar */
+  .health-bar-wrap { margin-top: 10px; }
+  .health-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .health-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .health-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  /* Voronoi chart area */
+  .chart-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .chart-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .chart-body {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #voronoi-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Axis labels */
+  .axis-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    fill: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  /* Slot zones */
+  .slot-zone {
+    fill: rgba(255,255,255,0.02);
+    stroke: rgba(255,255,255,0.06);
+    stroke-dasharray: 4 4;
+  }
+
+  /* Voronoi cells */
+  .voronoi-cell {
+    stroke: rgba(232,255,60,0.3);
+    stroke-width: 1;
+    transition: fill 0.3s;
+  }
+
+  /* Ball nodes */
+  .ball-node circle {
+    stroke-width: 2;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .ball-node circle:hover { r: 14; }
+
+  .ball-node text {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    fill: var(--text);
+    text-anchor: middle;
+    pointer-events: none;
+  }
+
+  /* Gap indicator */
+  .gap-indicator {
+    fill: rgba(255,92,56,0.12);
+    stroke: rgba(255,92,56,0.5);
+    stroke-dasharray: 6 3;
+    stroke-width: 1.5;
+    animation: gapPulse 2s infinite;
+  }
+
+  @keyframes gapPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Right recommendations panel */
+  .rec-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+
+  .rec-rank {
+    position: absolute;
+    top: 10px; right: 10px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--border);
+  }
+
+  .rec-badge {
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+    display: inline-block;
+    letter-spacing: 1px;
+  }
+
+  .rec-badge.gap { background: rgba(255,92,56,0.15); color: var(--accent2); }
+  .rec-badge.replacement { background: rgba(56,201,255,0.15); color: var(--accent3); }
+
+  .rec-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+
+  .rec-reason {
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Simulation View */
+  .sim-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    height: calc(100vh - 140px);
+  }
+
+  .lane-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lane-canvas {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #lane-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Lane visualization */
+  .lane-oil-zone {
+    fill: rgba(56,201,255,0.08);
+  }
+
+  .lane-dry-zone {
+    fill: rgba(232,255,60,0.04);
+  }
+
+  .lane-board {
+    stroke: rgba(255,255,255,0.03);
+    stroke-width: 0.5;
+  }
+
+  .trajectory-path {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-dasharray: 600;
+    stroke-dashoffset: 600;
+    filter: drop-shadow(0 0 6px rgba(232,255,60,0.6));
+  }
+
+  .trajectory-path.animate {
+    animation: drawPath 2s ease-out forwards;
+  }
+
+  @keyframes drawPath {
+    to { stroke-dashoffset: 0; }
+  }
+
+  .ball-anim {
+    transition: all 0.1s linear;
+  }
+
+  /* Phase indicators */
+  .phase-bar {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .phase-seg {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    transition: background 0.3s;
+  }
+
+  .phase-seg.skid { background: var(--accent3); }
+  .phase-seg.hook { background: var(--accent); }
+  .phase-seg.roll { background: var(--accent2); }
+
+  .phase-labels {
+    padding: 0 20px 14px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* Sim controls panel */
+  .sim-panel { display: flex; flex-direction: column; gap: 16px; }
+
+  .control-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .control-group label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .slider-label {
+    font-size: 11px;
+    color: var(--muted);
+    width: 80px;
+    flex-shrink: 0;
+  }
+
+  input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(232,255,60,0.5);
+  }
+
+  .slider-val {
+    font-size: 11px;
+    color: var(--accent);
+    width: 36px;
+    text-align: right;
+  }
+
+  /* Ball selector */
+  .ball-select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .ball-select:focus { border-color: var(--accent); }
+
+  /* Simulate button */
+  .sim-btn {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    background: var(--accent);
+    color: #0a0a0f;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 3px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 24px rgba(232,255,60,0.25);
+  }
+
+  .sim-btn:hover {
+    background: #f5ff60;
+    box-shadow: 0 4px 32px rgba(232,255,60,0.4);
+    transform: translateY(-1px);
+  }
+
+  .sim-btn:active { transform: translateY(0); }
+
+  /* Results */
+  .result-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 11px;
+  }
+
+  .result-row:last-child { border: none; }
+  .result-key { color: var(--muted); }
+  .result-val { color: var(--text); font-weight: 500; }
+  .result-val.good { color: #4cff8a; }
+  .result-val.warn { color: var(--accent); }
+  .result-val.bad { color: var(--accent2); }
+
+  /* DB View */
+  .db-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: calc(100vh - 140px);
+  }
+
+  .db-toolbar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .search-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    outline: none;
+  }
+
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: var(--muted); }
+
+  .filter-btn {
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    border-radius: 8px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+
+  .filter-btn:hover, .filter-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .db-table-wrap {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead th {
+    padding: 14px 16px;
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+
+  tbody tr:hover { background: rgba(232,255,60,0.04); }
+
+  tbody td {
+    padding: 12px 16px;
+    font-size: 12px;
+  }
+
+  .cover-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+  }
+
+  .cover-solid { background: rgba(255,92,56,0.15); color: #ff7a5c; }
+  .cover-pearl { background: rgba(56,201,255,0.15); color: var(--accent3); }
+  .cover-hybrid { background: rgba(232,255,60,0.15); color: var(--accent); }
+  .cover-urethane { background: rgba(184,56,255,0.15); color: #c87fff; }
+
+  .rg-bar-cell { display: flex; align-items: center; gap: 8px; }
+  .mini-bar { width: 60px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .mini-fill { height: 100%; border-radius: 2px; background: var(--accent3); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* Tooltip */
+  .tooltip {
+    position: fixed;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 11px;
+    pointer-events: none;
+    z-index: 200;
+    display: none;
+    min-width: 160px;
+  }
+
+  .tooltip-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .tooltip-row { display: flex; justify-content: space-between; gap: 20px; color: var(--muted); margin-top: 4px; }
+  .tooltip-row span:last-child { color: var(--text); }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 16px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">BBG<span>Grid</span></div>
+  <nav>
+    <button class="nav-btn active" onclick="showView('grid')">Grid View</button>
+    <button class="nav-btn" onclick="showView('sim')">Simulation</button>
+    <button class="nav-btn" onclick="showView('db')">Ball Database</button>
+  </nav>
+  <div class="status-badge">
+    <div class="status-dot"></div>
+    <span>DB: 247 BALLS LOADED</span>
+  </div>
+</header>
+
+<!-- GRID VIEW -->
+<div class="view active" id="view-grid">
+  <div class="grid-layout">
+
+    <!-- Arsenal Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">My Arsenal</div>
+        <div class="panel-badge">5 / 6 SLOTS</div>
+      </div>
+      <div class="panel-body" id="arsenal-panel">
+        <!-- Balls injected by JS -->
+      </div>
+    </div>
+
+    <!-- Voronoi Chart -->
+    <div class="chart-container">
+      <div class="chart-header">
+        <div class="panel-title">RG — Differential Coverage Map</div>
+        <div style="display:flex;gap:8px">
+          <div class="panel-badge" style="background:rgba(255,92,56,0.15);color:var(--accent2)">⚠ 1 GAP DETECTED</div>
+          <div class="panel-badge">VORONOI ACTIVE</div>
+        </div>
+      </div>
+      <div class="chart-body">
+        <svg id="voronoi-svg"></svg>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div> Slot 1 Heavy Oil</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff9c38"></div> Slot 2 Med-Heavy</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div> Slot 3 Benchmark</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent3)"></div> Slot 4 Med-Light</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#b838ff"></div> Slot 5 Spare</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(255,92,56,0.5);border:1px dashed var(--accent2)"></div> Gap Zone</div>
+      </div>
+    </div>
+
+    <!-- Recommendations Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Recommendations</div>
+        <div class="panel-badge">K-NN RANKED</div>
+      </div>
+      <div class="panel-body" id="recs-panel">
+        <!-- Recs injected by JS -->
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SIMULATION VIEW -->
+<div class="view" id="view-sim">
+  <div class="sim-layout">
+    <div class="lane-container">
+      <div class="panel-header">
+        <div class="panel-title">3D Lane Simulation (Top View)</div>
+        <div class="panel-badge" id="phase-label">READY</div>
+      </div>
+      <div class="lane-canvas">
+        <svg id="lane-svg"></svg>
+      </div>
+      <div class="phase-bar">
+        <span style="font-size:10px;color:var(--muted);margin-right:8px;letter-spacing:1px">SKID</span>
+        <div class="phase-seg skid" id="ps-skid" style="flex:3"></div>
+        <span style="font-size:10px;color:var(--muted);margin:0 8px;letter-spacing:1px">HOOK</span>
+        <div class="phase-seg hook" id="ps-hook" style="flex:2"></div>
+        <span style="font-size:10px;color:var(--muted);margin:0 8px;letter-spacing:1px">ROLL</span>
+        <div class="phase-seg roll" id="ps-roll" style="flex:1.5"></div>
+      </div>
+    </div>
+
+    <div class="sim-panel">
+      <div class="control-group">
+        <label>Select Ball</label>
+        <select class="ball-select" id="sim-ball-select">
+          <option>Storm Phaze III</option>
+          <option>Storm Proton PhysiX</option>
+          <option>Hammer Black Widow 3.0</option>
+          <option>Motiv Forge Fire</option>
+          <option>Columbia 300 Freeze</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>Delivery Parameters</label>
+        <div class="slider-row">
+          <div class="slider-label">Ball Speed</div>
+          <input type="range" id="sl-speed" min="12" max="22" value="17" step="0.5" oninput="updateSlider(this,'sv-speed',' mph')">
+          <div class="slider-val" id="sv-speed">17 mph</div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">Rev Rate</div>
+          <input type="range" id="sl-rev" min="150" max="450" value="280" step="10" oninput="updateSlider(this,'sv-rev',' rpm')">
+          <div class="slider-val" id="sv-rev">280 rpm</div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">Launch Angle</div>
+          <input type="range" id="sl-angle" min="0" max="8" value="3" step="0.5" oninput="updateSlider(this,'sv-angle','°')">
+          <div class="slider-val" id="sv-angle">3°</div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">Board #</div>
+          <input type="range" id="sl-board" min="5" max="25" value="15" step="1" oninput="updateSlider(this,'sv-board','')">
+          <div class="slider-val" id="sv-board">15</div>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Oil Pattern</label>
+        <select class="ball-select">
+          <option>House Shot (38ft)</option>
+          <option>Sport Shot — Badger (52ft)</option>
+          <option>Sport Shot — Cheetah (33ft)</option>
+          <option>Sport Shot — Chameleon (41ft)</option>
+        </select>
+      </div>
+
+      <button class="sim-btn" onclick="runSimulation()">LAUNCH BALL</button>
+
+      <div class="result-card" id="sim-results" style="display:none">
+        <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:800;letter-spacing:2px;color:var(--muted);margin-bottom:12px;text-transform:uppercase">Simulation Results</div>
+        <div class="result-row"><div class="result-key">Entry Angle</div><div class="result-val good" id="res-angle">—</div></div>
+        <div class="result-row"><div class="result-key">Breakpoint</div><div class="result-val" id="res-break">—</div></div>
+        <div class="result-row"><div class="result-key">Skid Length</div><div class="result-val" id="res-skid">—</div></div>
+        <div class="result-row"><div class="result-key">Hook Distance</div><div class="result-val" id="res-hook">—</div></div>
+        <div class="result-row"><div class="result-key">Outcome</div><div class="result-val good" id="res-outcome">—</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DB VIEW -->
+<div class="view" id="view-db">
+  <div class="db-layout">
+    <div class="db-toolbar">
+      <input type="text" class="search-input" placeholder="Search balls, brands, specs..." oninput="filterTable(this.value)">
+      <button class="filter-btn active" onclick="toggleFilter(this,'all')">All</button>
+      <button class="filter-btn" onclick="toggleFilter(this,'solid')">Solid</button>
+      <button class="filter-btn" onclick="toggleFilter(this,'pearl')">Pearl</button>
+      <button class="filter-btn" onclick="toggleFilter(this,'hybrid')">Hybrid</button>
+      <button class="filter-btn" onclick="toggleFilter(this,'urethane')">Urethane</button>
+    </div>
+    <div class="db-table-wrap">
+      <table id="ball-table">
+        <thead>
+          <tr>
+            <th>Ball Name</th>
+            <th>Brand</th>
+            <th>Cover Type</th>
+            <th>RG</th>
+            <th>Differential</th>
+            <th>Mass Bias</th>
+            <th>Year</th>
+          </tr>
+        </thead>
+        <tbody id="ball-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip">
+  <div class="tooltip-name" id="tt-name"></div>
+  <div class="tooltip-row"><span>RG</span><span id="tt-rg"></span></div>
+  <div class="tooltip-row"><span>Diff</span><span id="tt-diff"></span></div>
+  <div class="tooltip-row"><span>Cover</span><span id="tt-cover"></span></div>
+  <div class="tooltip-row"><span>Slot</span><span id="tt-slot"></span></div>
+</div>
+
+<script>
+// =====================
+// DATA
+// =====================
+const arsenal = [
+  { name: "Storm Proton PhysiX", brand: "Storm", cover: "Solid", rg: 2.48, diff: 0.053, massBias: 0.018, games: 87, maxGames: 200, slot: 1, color: "#ff5c38" },
+  { name: "Hammer Black Widow 3.0", brand: "Hammer", cover: "Hybrid", rg: 2.50, diff: 0.048, massBias: 0.014, games: 42, maxGames: 200, slot: 2, color: "#ff9c38" },
+  { name: "Storm Phaze III", brand: "Storm", cover: "Pearl", rg: 2.56, diff: 0.045, massBias: 0.011, games: 115, maxGames: 200, slot: 3, color: "#e8ff3c" },
+  { name: "Motiv Forge Fire", brand: "Motiv", cover: "Pearl", rg: 2.62, diff: 0.038, massBias: 0.0, games: 23, maxGames: 200, slot: 4, color: "#38c9ff" },
+  { name: "Columbia 300 Freeze", brand: "Columbia", cover: "Plastic", rg: 2.72, diff: 0.024, massBias: 0.0, games: 310, maxGames: 400, slot: 5, color: "#b838ff" },
+];
+
+const recommendations = [
+  { name: "Storm Electrify Pearl", type: "gap", reason: "Fills detected gap in med-heavy oil zone. RG 2.53 / Diff 0.051. Nearest neighbor distance: 0.18", sim: 94 },
+  { name: "Roto Grip Hustle RAP", type: "replacement", reason: "Replaces degraded Proton PhysiX (87 games, -22% hook). Very similar core geometry.", sim: 91 },
+  { name: "900 Global Intent C16", type: "gap", reason: "Strong asymmetric option to shore up Slot 2. Wider Voronoi cell coverage.", sim: 87 },
+];
+
+const dbBalls = [
+  { name: "Storm Proton PhysiX", brand: "Storm", cover: "Solid", rg: 2.48, diff: 0.053, mb: 0.018, year: 2022 },
+  { name: "Storm Phaze III", brand: "Storm", cover: "Pearl", rg: 2.56, diff: 0.045, mb: 0.011, year: 2023 },
+  { name: "Storm Electrify Pearl", brand: "Storm", cover: "Pearl", rg: 2.53, diff: 0.051, mb: 0.013, year: 2024 },
+  { name: "Hammer Black Widow 3.0", brand: "Hammer", cover: "Hybrid", rg: 2.50, diff: 0.048, mb: 0.014, year: 2023 },
+  { name: "Hammer Obsession Tour", brand: "Hammer", cover: "Solid", rg: 2.49, diff: 0.053, mb: 0.017, year: 2024 },
+  { name: "Motiv Forge Fire", brand: "Motiv", cover: "Pearl", rg: 2.62, diff: 0.038, mb: 0.0, year: 2024 },
+  { name: "Motiv Trident Oblivion", brand: "Motiv", cover: "Solid", rg: 2.49, diff: 0.055, mb: 0.019, year: 2023 },
+  { name: "Columbia 300 Freeze", brand: "Columbia", cover: "Plastic", rg: 2.72, diff: 0.024, mb: 0.0, year: 2022 },
+  { name: "Roto Grip Hustle RAP", brand: "Roto Grip", cover: "Hybrid", rg: 2.50, diff: 0.048, mb: 0.015, year: 2024 },
+  { name: "900 Global Intent C16", brand: "900 Global", cover: "Solid", rg: 2.47, diff: 0.057, mb: 0.022, year: 2024 },
+  { name: "DV8 Thug Life", brand: "DV8", cover: "Solid", rg: 2.50, diff: 0.052, mb: 0.016, year: 2023 },
+  { name: "Track 300C", brand: "Track", cover: "Hybrid", rg: 2.55, diff: 0.046, mb: 0.012, year: 2024 },
+  { name: "Brunswick Rhino", brand: "Brunswick", cover: "Pearl", rg: 2.58, diff: 0.035, mb: 0.0, year: 2022 },
+  { name: "Ebonite Gamebreaker 4", brand: "Ebonite", cover: "Solid", rg: 2.51, diff: 0.050, mb: 0.016, year: 2023 },
+  { name: "Pyramid Pathfinder Plus", brand: "Pyramid", cover: "Urethane", rg: 2.64, diff: 0.030, mb: 0.0, year: 2024 },
+];
+
+// =====================
+// VIEW SWITCHING
+// =====================
+function showView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  event.target.classList.add('active');
+  if (v === 'grid') setTimeout(drawVoronoi, 50);
+  if (v === 'sim') setTimeout(drawLane, 50);
+  if (v === 'db') renderTable(dbBalls);
+}
+
+// =====================
+// ARSENAL PANEL
+// =====================
+function renderArsenal() {
+  const panel = document.getElementById('arsenal-panel');
+  const slotNames = ['','Heavy Oil','Med-Heavy','Benchmark','Med-Light','Spare'];
+  panel.innerHTML = arsenal.map(b => {
+    const health = Math.round(100 - (b.games / b.maxGames * 100));
+    const hColor = health > 60 ? '#4cff8a' : health > 30 ? '#e8ff3c' : '#ff5c38';
+    return `
+    <div class="ball-card slot-${b.slot}" onclick="highlightBall('${b.name}')">
+      <div class="ball-name">${b.name}</div>
+      <div class="ball-meta">SLOT ${b.slot}: ${slotNames[b.slot]} &nbsp;·&nbsp; <span>${b.brand}</span></div>
+      <div class="ball-stats">
+        <div class="stat-chip">RG <b>${b.rg}</b></div>
+        <div class="stat-chip">Diff <b>${b.diff}</b></div>
+        <div class="stat-chip">${b.cover}</div>
+      </div>
+      <div class="health-bar-wrap">
+        <div class="health-label"><span>Coverstock Health</span><span style="color:${hColor}">${health}%</span></div>
+        <div class="health-bar"><div class="health-fill" style="width:${health}%;background:${hColor}"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// =====================
+// VORONOI CHART
+// =====================
+function drawVoronoi() {
+  const svg = d3.select('#voronoi-svg');
+  svg.selectAll('*').remove();
+  const el = document.getElementById('voronoi-svg');
+  const W = el.clientWidth, H = el.clientHeight;
+  const pad = { l: 60, r: 30, t: 30, b: 50 };
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+
+  // Scales: x = RG (2.44-2.78), y = Diff (0.01-0.065)
+  const xScale = d3.scaleLinear([2.44, 2.78], [0, iw]);
+  const yScale = d3.scaleLinear([0.065, 0.010], [0, ih]);
+
+  const g = svg.append('g').attr('transform', `translate(${pad.l},${pad.t})`);
+
+  // Background
+  g.append('rect').attr('width', iw).attr('height', ih)
+    .attr('fill', 'rgba(255,255,255,0.01)').attr('rx', 6);
+
+  // Grid lines
+  for (let x = 2.45; x <= 2.78; x += 0.05) {
+    g.append('line')
+      .attr('x1', xScale(x)).attr('x2', xScale(x))
+      .attr('y1', 0).attr('y2', ih)
+      .attr('stroke', 'rgba(255,255,255,0.04)').attr('stroke-width', 1);
+  }
+  for (let y = 0.01; y <= 0.065; y += 0.01) {
+    g.append('line')
+      .attr('x1', 0).attr('x2', iw)
+      .attr('y1', yScale(y)).attr('y2', yScale(y))
+      .attr('stroke', 'rgba(255,255,255,0.04)').attr('stroke-width', 1);
+  }
+
+  // Slot zone labels
+  const slotZones = [
+    { label: 'SLOT 1', x: 2.44, x2: 2.52, y: 0.044, y2: 0.065, color: 'rgba(255,92,56,0.05)' },
+    { label: 'SLOT 2', x: 2.52, x2: 2.58, y: 0.036, y2: 0.065, color: 'rgba(255,156,56,0.04)' },
+    { label: 'SLOT 3', x: 2.52, x2: 2.62, y: 0.020, y2: 0.036, color: 'rgba(232,255,60,0.03)' },
+    { label: 'SLOT 4', x: 2.58, x2: 2.70, y: 0.015, y2: 0.042, color: 'rgba(56,201,255,0.04)' },
+    { label: 'SLOT 5', x: 2.64, x2: 2.78, y: 0.010, y2: 0.030, color: 'rgba(184,56,255,0.04)' },
+  ];
+
+  slotZones.forEach(z => {
+    g.append('rect')
+      .attr('x', xScale(z.x)).attr('y', yScale(z.y2))
+      .attr('width', xScale(z.x2) - xScale(z.x))
+      .attr('height', yScale(z.y) - yScale(z.y2))
+      .attr('fill', z.color)
+      .attr('stroke', 'rgba(255,255,255,0.06)')
+      .attr('stroke-dasharray', '4,4');
+    g.append('text')
+      .attr('x', (xScale(z.x) + xScale(z.x2)) / 2)
+      .attr('y', yScale(z.y2) + 14)
+      .attr('text-anchor', 'middle')
+      .attr('fill', 'rgba(255,255,255,0.15)')
+      .attr('font-size', '9px')
+      .attr('font-family', 'Syne, sans-serif')
+      .attr('font-weight', '800')
+      .attr('letter-spacing', '2px')
+      .text(z.label);
+  });
+
+  // Gap zone
+  g.append('ellipse')
+    .attr('cx', xScale(2.545)).attr('cy', yScale(0.051))
+    .attr('rx', 28).attr('ry', 20)
+    .attr('fill', 'rgba(255,92,56,0.1)')
+    .attr('stroke', 'rgba(255,92,56,0.6)')
+    .attr('stroke-dasharray', '6,3')
+    .attr('stroke-width', 1.5)
+    .style('animation', 'gapPulse 2s infinite');
+  g.append('text')
+    .attr('x', xScale(2.545)).attr('y', yScale(0.051) + 3)
+    .attr('text-anchor', 'middle').attr('fill', '#ff5c38')
+    .attr('font-size', '9px').attr('font-family', 'DM Mono, monospace')
+    .attr('letter-spacing', '1px').text('⚠ GAP');
+
+  // Voronoi
+  const pts = arsenal.map(b => [xScale(b.rg), yScale(b.diff)]);
+  const delaunay = d3.Delaunay.from(pts);
+  const voronoi = delaunay.voronoi([0, 0, iw, ih]);
+  
+  g.append('g').selectAll('path')
+    .data(arsenal)
+    .join('path')
+    .attr('d', (d, i) => voronoi.renderCell(i))
+    .attr('fill', d => d.color + '18')
+    .attr('stroke', d => d.color + '55')
+    .attr('stroke-width', 1.5);
+
+  // Ball nodes
+  const nodes = g.append('g').selectAll('g')
+    .data(arsenal)
+    .join('g')
+    .attr('class', 'ball-node')
+    .attr('transform', d => `translate(${xScale(d.rg)},${yScale(d.diff)})`);
+
+  nodes.append('circle')
+    .attr('r', 10)
+    .attr('fill', d => d.color + 'cc')
+    .attr('stroke', d => d.color)
+    .attr('stroke-width', 2)
+    .on('mousemove', (e, d) => showTooltip(e, d))
+    .on('mouseleave', hideTooltip);
+
+  nodes.append('text').attr('dy', 3).attr('font-size', '8px')
+    .attr('fill', '#0a0a0f').attr('font-weight', 'bold')
+    .attr('text-anchor', 'middle').text(d => d.slot);
+
+  // Labels
+  nodes.append('text')
+    .attr('dy', 22).attr('font-size', '9px').attr('fill', 'rgba(240,240,248,0.7)')
+    .attr('text-anchor', 'middle').text(d => d.name.split(' ').slice(-2).join(' '));
+
+  // Axes
+  const xAxis = d3.axisBottom(xScale).ticks(6).tickSize(4);
+  const yAxis = d3.axisLeft(yScale).ticks(6).tickSize(4);
+
+  g.append('g').attr('transform', `translate(0,${ih})`).call(xAxis)
+    .selectAll('text').attr('fill', '#6a6a8a').attr('font-family', 'DM Mono').attr('font-size', '10px');
+  g.append('g').call(yAxis)
+    .selectAll('text').attr('fill', '#6a6a8a').attr('font-family', 'DM Mono').attr('font-size', '10px');
+  g.selectAll('.domain, .tick line').attr('stroke', 'rgba(255,255,255,0.1)');
+
+  g.append('text').attr('x', iw / 2).attr('y', ih + 40)
+    .attr('text-anchor', 'middle').attr('fill', '#6a6a8a')
+    .attr('font-size', '11px').attr('font-family', 'DM Mono').attr('letter-spacing', '1px')
+    .text('RADIUS OF GYRATION (RG)');
+
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -ih / 2).attr('y', -44)
+    .attr('text-anchor', 'middle').attr('fill', '#6a6a8a')
+    .attr('font-size', '11px').attr('font-family', 'DM Mono').attr('letter-spacing', '1px')
+    .text('DIFFERENTIAL');
+}
+
+function showTooltip(e, d) {
+  const tt = document.getElementById('tooltip');
+  tt.style.display = 'block';
+  tt.style.left = (e.clientX + 14) + 'px';
+  tt.style.top = (e.clientY - 10) + 'px';
+  document.getElementById('tt-name').textContent = d.name;
+  document.getElementById('tt-rg').textContent = d.rg;
+  document.getElementById('tt-diff').textContent = d.diff;
+  document.getElementById('tt-cover').textContent = d.cover;
+  document.getElementById('tt-slot').textContent = 'Slot ' + d.slot;
+}
+
+function hideTooltip() {
+  document.getElementById('tooltip').style.display = 'none';
+}
+
+function highlightBall(name) {
+  const b = arsenal.find(x => x.name === name);
+  if (!b) return;
+  // Flash effect on voronoi
+  d3.select('#voronoi-svg').selectAll('circle').filter((d) => d && d.name === name)
+    .transition().duration(200).attr('r', 16)
+    .transition().duration(200).attr('r', 10);
+}
+
+// =====================
+// RECOMMENDATIONS
+// =====================
+function renderRecs() {
+  const panel = document.getElementById('recs-panel');
+  panel.innerHTML = recommendations.map((r, i) => `
+    <div class="rec-item">
+      <div class="rec-rank">${String(i+1).padStart(2,'0')}</div>
+      <div class="rec-badge ${r.type}">${r.type === 'gap' ? '⚠ GAP FILL' : '↺ REPLACEMENT'}</div>
+      <div class="rec-name">${r.name}</div>
+      <div class="rec-reason">${r.reason}</div>
+      <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
+        <div style="flex:1;height:3px;background:var(--border);border-radius:2px">
+          <div style="width:${r.sim}%;height:100%;background:var(--accent);border-radius:2px"></div>
+        </div>
+        <div style="font-size:10px;color:var(--accent)">${r.sim}% MATCH</div>
+      </div>
+    </div>`).join('');
+}
+
+// =====================
+// LANE SIMULATION
+// =====================
+function drawLane(trajectory) {
+  const svg = d3.select('#lane-svg');
+  svg.selectAll('*').remove();
+  const el = document.getElementById('lane-svg');
+  const W = el.clientWidth, H = el.clientHeight;
+  const laneW = 80, pad = 20;
+  const laneX = (W - laneW) / 2;
+
+  // Lane background
+  svg.append('rect').attr('width', W).attr('height', H).attr('fill', 'var(--surface)');
+
+  // Lane boards
+  for (let i = 0; i <= 39; i++) {
+    const x = laneX + (i / 39) * laneW;
+    svg.append('line').attr('x1', x).attr('x2', x).attr('y1', pad).attr('y2', H - pad)
+      .attr('stroke', i % 5 === 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.02)')
+      .attr('stroke-width', i % 5 === 0 ? 1 : 0.5);
+  }
+
+  // Oil zone
+  const oilEnd = H - pad - (H - 2 * pad) * 0.62;
+  svg.append('rect').attr('x', laneX).attr('y', oilEnd)
+    .attr('width', laneW).attr('height', H - pad - oilEnd)
+    .attr('fill', 'rgba(56,201,255,0.06)');
+
+  svg.append('rect').attr('x', laneX).attr('y', pad)
+    .attr('width', laneW).attr('height', oilEnd - pad)
+    .attr('fill', 'rgba(255,255,255,0.02)');
+
+  // Labels
+  svg.append('text').attr('x', laneX - 8).attr('y', H - pad - 4)
+    .attr('fill', '#6a6a8a').attr('font-size', '9px').attr('font-family', 'DM Mono')
+    .attr('text-anchor', 'end').text('FOUL');
+  svg.append('text').attr('x', laneX - 8).attr('y', oilEnd + 4)
+    .attr('fill', '#38c9ff').attr('font-size', '9px').attr('font-family', 'DM Mono')
+    .attr('text-anchor', 'end').attr('letter-spacing', '1px').text('OIL END');
+  svg.append('text').attr('x', laneX - 8).attr('y', pad + 10)
+    .attr('fill', '#6a6a8a').attr('font-size', '9px').attr('font-family', 'DM Mono')
+    .attr('text-anchor', 'end').text('PINS');
+
+  if (trajectory) {
+    const path = svg.append('path')
+      .attr('d', trajectory)
+      .attr('fill', 'none')
+      .attr('stroke', 'var(--accent)')
+      .attr('stroke-width', 2.5)
+      .attr('filter', 'drop-shadow(0 0 8px rgba(232,255,60,0.7))')
+      .attr('class', 'trajectory-path');
+
+    const totalLength = path.node().getTotalLength();
+    path.attr('stroke-dasharray', totalLength).attr('stroke-dashoffset', totalLength);
+    path.transition().duration(1800).ease(d3.easeQuadOut)
+      .attr('stroke-dashoffset', 0);
+
+    // Animate ball
+    const ballEl = svg.append('circle').attr('r', 7)
+      .attr('fill', 'var(--accent)').attr('filter', 'drop-shadow(0 0 10px rgba(232,255,60,0.8))');
+    const pathNode = path.node();
+    let t = 0;
+    function animateBall() {
+      if (t > 1) return;
+      const pt = pathNode.getPointAtLength(t * totalLength);
+      ballEl.attr('cx', pt.x).attr('cy', pt.y);
+      t += 0.008;
+      requestAnimationFrame(animateBall);
+    }
+    animateBall();
+  }
+}
+
+let simRunning = false;
+function runSimulation() {
+  if (simRunning) return;
+  simRunning = true;
+  document.getElementById('phase-label').textContent = 'SIMULATING…';
+
+  const speed = parseFloat(document.getElementById('sl-speed').value);
+  const rev = parseFloat(document.getElementById('sl-rev').value);
+  const angle = parseFloat(document.getElementById('sl-angle').value);
+  const board = parseInt(document.getElementById('sl-board').value);
+
+  const svg = document.getElementById('lane-svg');
+  const W = svg.clientWidth, H = svg.clientHeight;
+  const laneW = 80, pad = 20;
+  const laneX = (W - laneW) / 2;
+  const boardX = laneX + (board / 39) * laneW;
+  const startY = H - pad;
+  const hookFactor = (rev / speed) * 0.8;
+  const skidLen = (speed / 20) * (H - 2 * pad) * 0.55;
+  const hookAmt = Math.min(hookFactor * 18, 35);
+  const endX = boardX - hookAmt;
+  const endY = pad + 10;
+
+  const cp1x = boardX + angle * 2;
+  const cp1y = startY - skidLen;
+  const cp2x = boardX - hookAmt * 0.4;
+  const cp2y = startY - skidLen * 1.5;
+
+  const pathStr = `M${boardX},${startY} C${cp1x},${cp1y} ${cp2x},${cp2y} ${endX},${endY}`;
+
+  drawLane(pathStr);
+
+  // Results
+  const entryAngle = (2.5 + hookFactor * 1.2).toFixed(1);
+  const breakPt = Math.round(38 + (speed - 15) * 1.5);
+  const skidFt = Math.round(28 + (speed - 15) * 2);
+  const hookFt = Math.round(22 - (speed - 15));
+
+  setTimeout(() => {
+    document.getElementById('phase-label').textContent = entryAngle > 4 ? 'STRIKE LINE ✓' : 'LIGHT HIT';
+    document.getElementById('sim-results').style.display = 'block';
+    document.getElementById('res-angle').textContent = entryAngle + '°';
+    document.getElementById('res-angle').className = 'result-val ' + (entryAngle >= 4 ? 'good' : 'warn');
+    document.getElementById('res-break').textContent = 'Board ' + (board - Math.round(hookAmt / 3));
+    document.getElementById('res-skid').textContent = skidFt + ' ft';
+    document.getElementById('res-hook').textContent = hookFt + ' ft';
+    const outcome = entryAngle >= 4.5 ? '✓ POCKET HIT' : entryAngle >= 3 ? '⚠ LIGHT POCKET' : '✗ CROSSOVER';
+    document.getElementById('res-outcome').textContent = outcome;
+    document.getElementById('res-outcome').className = 'result-val ' + (entryAngle >= 4.5 ? 'good' : entryAngle >= 3 ? 'warn' : 'bad');
+    simRunning = false;
+  }, 2000);
+}
+
+// =====================
+// DATABASE TABLE
+// =====================
+let activeFilter = 'all';
+function renderTable(balls) {
+  const tbody = document.getElementById('ball-tbody');
+  tbody.innerHTML = balls.map(b => {
+    const rgNorm = (b.rg - 2.44) / (2.78 - 2.44) * 100;
+    const diffNorm = b.diff / 0.065 * 100;
+    return `
+    <tr>
+      <td>${b.name}</td>
+      <td style="color:var(--muted)">${b.brand}</td>
+      <td><span class="cover-badge cover-${b.cover.toLowerCase()}">${b.cover}</span></td>
+      <td>
+        <div class="rg-bar-cell">
+          ${b.rg}
+          <div class="mini-bar"><div class="mini-fill" style="width:${rgNorm}%"></div></div>
+        </div>
+      </td>
+      <td>
+        <div class="rg-bar-cell">
+          ${b.diff}
+          <div class="mini-bar"><div class="mini-fill" style="width:${diffNorm}%;background:var(--accent)"></div></div>
+        </div>
+      </td>
+      <td style="color:var(--muted)">${b.mb || '—'}</td>
+      <td style="color:var(--muted)">${b.year}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable(query) {
+  const q = query.toLowerCase();
+  const filtered = dbBalls.filter(b => {
+    const matchText = b.name.toLowerCase().includes(q) || b.brand.toLowerCase().includes(q);
+    const matchFilter = activeFilter === 'all' || b.cover.toLowerCase() === activeFilter;
+    return matchText && matchFilter;
+  });
+  renderTable(filtered);
+}
+
+function toggleFilter(btn, filter) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterTable(document.querySelector('.search-input').value);
+}
+
+// =====================
+// SLIDERS
+// =====================
+function updateSlider(el, valId, suffix) {
+  document.getElementById(valId).textContent = el.value + suffix;
+}
+
+// =====================
+// INIT
+// =====================
+renderArsenal();
+renderRecs();
+drawVoronoi();
+
+window.addEventListener('resize', () => {
+  const active = document.querySelector('.view.active').id;
+  if (active === 'view-grid') drawVoronoi();
+  if (active === 'view-sim') drawLane();
+});
+</script>
+</body>
+</html>
