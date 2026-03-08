@@ -6,17 +6,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Ball } from "../types/ball";
-
-export interface BagEntry {
-  ball: Ball;
-  game_count: number;
-}
+import type { Ball, CustomBall } from "../types/ball";
+import type { BagEntry } from "../types/ball";
 
 interface BagContextValue {
   bag: BagEntry[];
   savedArsenalId: string | null;
   addToBag: (ball: Ball, gameCount?: number) => void;
+  addCustomToBag: (ball: CustomBall, gameCount?: number) => void;
   removeFromBag: (ballId: string) => void;
   setGameCount: (ballId: string, gameCount: number) => void;
   setBag: (entries: BagEntry[]) => void;
@@ -46,7 +43,14 @@ export function BagProvider({ children }: { children: ReactNode }) {
   const addToBag = useCallback((ball: Ball, gameCount = 0) => {
     setBagState((prev) => {
       if (prev.some((e) => e.ball.ball_id === ball.ball_id)) return prev;
-      return [...prev, { ball, game_count: gameCount }];
+      return [...prev, { type: "catalog", ball, game_count: gameCount }];
+    });
+  }, []);
+
+  const addCustomToBag = useCallback((ball: CustomBall, gameCount = 0) => {
+    setBagState((prev) => {
+      if (prev.some((e) => e.ball.ball_id === ball.ball_id)) return prev;
+      return [...prev, { type: "custom", ball, game_count: gameCount }];
     });
   }, []);
 
@@ -77,6 +81,7 @@ export function BagProvider({ children }: { children: ReactNode }) {
       bag,
       savedArsenalId,
       addToBag,
+      addCustomToBag,
       removeFromBag,
       setGameCount,
       setBag,
@@ -88,6 +93,7 @@ export function BagProvider({ children }: { children: ReactNode }) {
       bag,
       savedArsenalId,
       addToBag,
+      addCustomToBag,
       removeFromBag,
       setGameCount,
       setBag,

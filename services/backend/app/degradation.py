@@ -75,5 +75,7 @@ def apply_degradation(ball_row: Dict, game_count: int) -> Dict:
     out = dict(ball_row)  # shallow copy preserves non-spec fields (name, brand, etc.)
     out["rg"] = float(ball_row["rg"]) * factor          # effective RG
     out["diff"] = float(ball_row["diff"]) * factor      # effective differential
-    out["int_diff"] = float(ball_row["int_diff"]) * factor  # effective intermediate diff
+    # Handle None for intermediate differential (common for symmetric balls)
+    idiff = ball_row.get("int_diff")
+    out["int_diff"] = (float(idiff) * factor) if idiff is not None else 0.0
     return out

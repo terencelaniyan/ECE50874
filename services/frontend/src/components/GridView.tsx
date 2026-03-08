@@ -4,8 +4,11 @@ import { useBag } from "../context/BagContext";
 import { listBalls } from "../api/balls";
 import { getGaps } from "../api/gaps";
 import { getSlotColor } from "../constants/slots";
-import type { Ball } from "../types/ball";
+import type { Ball, CustomBall } from "../types/ball";
 import type { GapItem, GapZone } from "../types/ball";
+
+/** Ball or custom ball for scatter (rg, diff, ball_id, name, brand). */
+type GridBall = Ball | CustomBall;
 
 const MARGIN = { top: 20, right: 20, bottom: 40, left: 50 };
 const DEFAULT_WIDTH = 800;
@@ -66,8 +69,8 @@ export function GridView({ variant = "catalog" }: GridViewProps) {
   const [loading, setLoading] = useState(variant === "catalog");
   const [error, setError] = useState<string | null>(null);
   const [size, setSize] = useState({ w: DEFAULT_WIDTH, h: DEFAULT_HEIGHT });
-  const [hoveredBall, setHoveredBall] = useState<Ball | null>(null);
-  const { bag, addToBag, removeFromBag, arsenalBallIds, gameCounts } = useBag();
+  const [hoveredBall, setHoveredBall] = useState<GridBall | null>(null);
+  const { bag, addToBag, removeFromBag, arsenalBallIds, gameCounts, savedArsenalId } = useBag();
   const [gapZones, setGapZones] = useState<GapZone[]>([]);
 
   const PAGE_SIZE = 200;
@@ -119,7 +122,7 @@ export function GridView({ variant = "catalog" }: GridViewProps) {
   }, [variant]);
 
   useEffect(() => {
-    if (variant !== "arsenal" && arsenalBallIds.length === 0) {
+    if (variant !== "arsenal" && !savedArsenalId && arsenalBallIds.length === 0) {
       setGapZones([]);
       return;
     }
@@ -128,11 +131,14 @@ export function GridView({ variant = "catalog" }: GridViewProps) {
       return;
     }
     let cancelled = false;
-    getGaps({
-      arsenal_ball_ids: arsenalBallIds,
-      game_counts: Object.keys(gameCounts).length ? gameCounts : undefined,
-      k: 10,
-    })
+    const body = savedArsenalId
+      ? { arsenal_id: savedArsenalId, k: 10 }
+      : {
+          arsenal_ball_ids: arsenalBallIds,
+          game_counts: Object.keys(gameCounts).length ? gameCounts : undefined,
+          k: 10,
+        };
+    getGaps(body)
       .then((res) => {
         if (!cancelled) setGapZones(res.zones ?? []);
       })
@@ -142,7 +148,7 @@ export function GridView({ variant = "catalog" }: GridViewProps) {
     return () => {
       cancelled = true;
     };
-  }, [variant, arsenalBallIds, gameCounts, bag.length]);
+  }, [variant, arsenalBallIds, gameCounts, bag.length, savedArsenalId]);
 
   const width = size.w + MARGIN.left + MARGIN.right;
   const height = size.h + MARGIN.top + MARGIN.bottom;
@@ -186,12 +192,12 @@ export function GridView({ variant = "catalog" }: GridViewProps) {
   }, [balls, size.w, size.h, xScale, yScale]);
 
   const handlePointClick = useCallback(
-    (ball: Ball) => {
+    (ball: GridBall) => {
       if (!isArsenal) {
         if (arsenalBallIds.includes(ball.ball_id)) {
           removeFromBag(ball.ball_id);
         } else {
-          addToBag(ball);
+          addToBag(ball as Ball);
         }
       }
     },
@@ -199,7 +205,7 @@ export function GridView({ variant = "catalog" }: GridViewProps) {
   );
 
   const handlePointKeyDown = useCallback(
-    (ev: React.KeyboardEvent, ball: Ball) => {
+    (ev: React.KeyboardEvent, ball: GridBall) => {
       if (ev.key === "Enter" || ev.key === " ") {
         ev.preventDefault();
         handlePointClick(ball);
@@ -355,8 +361,8 @@ export function GridView({ variant = "catalog" }: GridViewProps) {
                     role={isArsenal ? "img" : "button"}
                     aria-label={
                       isArsenal
-                        ? `${ball.name}, Slot ${slot}. RG ${ball.rg}, Diff ${ball.diff}.`
-                        : `${ball.name}, ${ball.brand}. RG ${ball.rg}, differential ${ball.diff}. ${inBag ? "In bag" : "Not in bag"}. Activate to ${inBag ? "remove from" : "add to"} bag.`
+                        ? `${ball.name ?? "Custom"}, Slot ${slot}. RG ${ball.rg}, Diff ${ball.diff}.`
+                        : `${ball.name ?? "Custom"}, ${ball.brand ?? ""}. RG ${ball.rg}, differential ${ball.diff}. ${inBag ? "In bag" : "Not in bag"}. Activate to ${inBag ? "remove from" : "add to"} bag.`
                     }
                     onClick={() => handlePointClick(ball)}
                     onKeyDown={isArsenal ? undefined : (ev) => handlePointKeyDown(ev, ball)}
@@ -461,13 +467,13 @@ export function GridView({ variant = "catalog" }: GridViewProps) {
                 ry={4}
               />
               <text x={14} y={-8} fill="var(--text-main)" fontSize={11}>
-                {hoveredBall.name}
+                {hoveredBall.name ?? "Custom"}
               </text>
               <text x={14} y={6} fill="var(--text-muted)" fontSize={10}>
-                {hoveredBall.brand} · RG {hoveredBall.rg} · Diff {hoveredBall.diff}
+                {hoveredBall.brand ?? ""} · RG {hoveredBall.rg} · Diff {hoveredBall.diff}
               </text>
               <text x={14} y={20} fill="var(--text-dim)" fontSize={10}>
-                Cover: {hoveredBall.coverstock_type ?? "—"}
+                Cover: {"coverstock_type" in hoveredBall ? (hoveredBall.coverstock_type ?? "—") : (hoveredBall.surface_grit ?? hoveredBall.surface_finish ?? "—")}
                 {isArsenal &&
                   ` · Slot ${balls.indexOf(hoveredBall) + 1}`}
               </text>

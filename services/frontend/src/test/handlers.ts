@@ -5,12 +5,14 @@ const defaultArsenal = {
   id: "arsenal-1",
   name: "My bag",
   balls: [{ ball_id: minimalBall.ball_id, game_count: 3 }],
+  custom_balls: [],
 };
 
 const defaultCreatedArsenal = {
   id: "new-id",
   name: "Saved",
   balls: [],
+  custom_balls: [],
 };
 
 export const handlers = [

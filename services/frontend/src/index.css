@@ -882,6 +882,26 @@ body::before {
   border-bottom: 1px solid var(--border-color);
 }
 
+.arsenal-modal-title {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+}
+.arsenal-modal-hint {
+  margin: 0 0 12px 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.arsenal-form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+.arsenal-form-label .arsenal-form-input {
+  display: block;
+  width: 100%;
+  margin-top: 2px;
+  padding: 6px 8px;
+}
 .arsenal-modal .virtual-bag-input {
   width: 100%;
   margin-bottom: 12px;

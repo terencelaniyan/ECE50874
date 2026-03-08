@@ -7,7 +7,7 @@
 export const BAG_CAPACITY = 6;
 
 /** Max games per ball for "Coverstock Health" percentage (100% = 0 games, 0% = maxGames). */
-export const MAX_GAMES = 200;
+export const MAX_GAMES = 87;
 
 /** Slot index (1–5) to role label. */
 export const SLOT_LABELS: Record<number, string> = {

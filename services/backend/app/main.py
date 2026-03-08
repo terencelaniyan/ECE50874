@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 
 from .api_models import (
     ArsenalBallResponse,
+    ArsenalCustomBallResponse,
     ArsenalResponse,
     ArsenalSummary,
     Ball,
@@ -148,24 +149,35 @@ def get_ball(ball_id: str, db=Depends(get_db)):
     return row
 
 
+def _split_arsenal_balls(balls):
+    """Split validated ball list into catalog entries and custom ball dicts for the service layer."""
+    catalog = []
+    custom = []
+    for b in balls:
+        if getattr(b, "custom", False) is True:
+            custom.append({
+                "name": b.name,
+                "brand": b.brand,
+                "rg": b.rg,
+                "diff": b.diff,
+                "int_diff": b.int_diff,
+                "surface_grit": b.surface_grit,
+                "surface_finish": b.surface_finish,
+                "game_count": b.game_count,
+            })
+        else:
+            catalog.append({"ball_id": b.ball_id, "game_count": b.game_count})
+    return catalog, custom
+
+
 @app.post("/arsenals", response_model=ArsenalResponse, status_code=201)
 def create_arsenal(req: CreateArsenalRequest, db=Depends(get_db)):
     """
     Create a new bowling ball arsenal.
-    
-    Args:
-        req: Request body containing arsenal name and initial balls.
-        db: Database session.
-        
-    Returns:
-        ArsenalResponse: The created arsenal details.
-        
-    Raises:
-        HTTPException: 400 if validation fails.
     """
-    balls = [{"ball_id": b.ball_id, "game_count": b.game_count} for b in req.balls]
+    catalog_balls, custom_balls = _split_arsenal_balls(req.balls)
     try:
-        data = svc_create_arsenal(db, req.name, balls)
+        data = svc_create_arsenal(db, req.name, catalog_balls, custom_balls=custom_balls)
     except ValidationError as e:
         raise HTTPException(
             status_code=400,
@@ -175,6 +187,20 @@ def create_arsenal(req: CreateArsenalRequest, db=Depends(get_db)):
         id=data["id"],
         name=data["name"],
         balls=[ArsenalBallResponse(ball_id=b["ball_id"], game_count=b["game_count"]) for b in data["balls"]],
+        custom_balls=[
+            ArsenalCustomBallResponse(
+                id=cb["id"],
+                name=cb.get("name"),
+                brand=cb.get("brand"),
+                rg=cb["rg"],
+                diff=cb["diff"],
+                int_diff=cb["int_diff"],
+                surface_grit=cb.get("surface_grit"),
+                surface_finish=cb.get("surface_finish"),
+                game_count=cb["game_count"],
+            )
+            for cb in data["custom_balls"]
+        ],
     )
 
 
@@ -222,6 +248,20 @@ def get_arsenal(arsenal_id: str, db=Depends(get_db)):
         id=data["id"],
         name=data["name"],
         balls=[ArsenalBallResponse(ball_id=b["ball_id"], game_count=b["game_count"]) for b in data["balls"]],
+        custom_balls=[
+            ArsenalCustomBallResponse(
+                id=cb["id"],
+                name=cb.get("name"),
+                brand=cb.get("brand"),
+                rg=cb["rg"],
+                diff=cb["diff"],
+                int_diff=cb["int_diff"],
+                surface_grit=cb.get("surface_grit"),
+                surface_finish=cb.get("surface_finish"),
+                game_count=cb["game_count"],
+            )
+            for cb in data["custom_balls"]
+        ],
     )
 
 
@@ -242,10 +282,11 @@ def update_arsenal(arsenal_id: str, req: UpdateArsenalRequest, db=Depends(get_db
         HTTPException: 404 if not found, 400 if validation fails.
     """
     try:
-        balls = None
+        catalog_balls = None
+        custom_balls = None
         if req.balls is not None:
-            balls = [{"ball_id": b.ball_id, "game_count": b.game_count} for b in req.balls]
-        svc_update_arsenal(db, arsenal_id, name=req.name, balls=balls)
+            catalog_balls, custom_balls = _split_arsenal_balls(req.balls)
+        svc_update_arsenal(db, arsenal_id, name=req.name, balls=catalog_balls, custom_balls=custom_balls)
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=e.message)
     except ValidationError as e:
@@ -369,7 +410,7 @@ ADMIN_KEY = os.environ.get("ADMIN_KEY")
 
 
 def _require_admin_key(x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key")) -> None:
-    if ADMIN_KEY and x_admin_key != ADMIN_KEY:
+    if not ADMIN_KEY or x_admin_key != ADMIN_KEY:
         raise HTTPException(status_code=403, detail="Invalid or missing X-Admin-Key")
 
 

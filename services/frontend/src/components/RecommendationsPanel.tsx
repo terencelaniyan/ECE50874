@@ -8,7 +8,7 @@ import type { RecommendationItem } from "../types/ball";
 const MAX_COMPARE = 5;
 
 export function RecommendationsPanel() {
-  const { arsenalBallIds, gameCounts, addToBag } = useBag();
+  const { arsenalBallIds, gameCounts, savedArsenalId, addToBag } = useBag();
   const [items, setItems] = useState<RecommendationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +24,19 @@ export function RecommendationsPanel() {
   }, []);
 
   const fetchRecs = useCallback(async () => {
+    if (savedArsenalId) {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await getRecommendations({ arsenal_id: savedArsenalId, k: 10 });
+        setItems(res.items);
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Failed to load recommendations");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
     if (arsenalBallIds.length === 0) {
       setItems([]);
       return;
@@ -42,7 +55,7 @@ export function RecommendationsPanel() {
     } finally {
       setLoading(false);
     }
-  }, [arsenalBallIds, gameCounts]);
+  }, [arsenalBallIds, gameCounts, savedArsenalId]);
 
   useEffect(() => {
     fetchRecs();

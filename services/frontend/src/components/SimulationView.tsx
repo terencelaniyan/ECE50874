@@ -45,7 +45,7 @@ export function SimulationView() {
   const animFrameRef = useRef<number>(0);
 
   const ballOptions =
-    bag.length > 0 ? bag.map((e) => e.ball.name) : ["No balls in bag"];
+    bag.length > 0 ? bag.map((e) => e.ball.name ?? "Custom") : ["No balls in bag"];
   const currentBall =
     selectedBallName ||
     (ballOptions[0] !== "No balls in bag" ? ballOptions[0] : "");
@@ -243,30 +243,70 @@ export function SimulationView() {
     const pad = 20;
     const laneX = (W - laneW) / 2;
 
+    const selectedBall = bag.find((e) => (e.ball.name ?? "Custom") === selectedBallName)?.ball;
+    const rg = selectedBall ? parseFloat(String(selectedBall.rg)) : 2.5;
+    const diff = selectedBall ? parseFloat(String(selectedBall.diff)) : 0.04;
+
+    // Pattern impact (length in feet)
+    let patternLength = 40;
+    if (oilPattern.includes("Badger")) patternLength = 52;
+    if (oilPattern.includes("Cheetah")) patternLength = 33;
+    if (oilPattern.includes("Chameleon")) patternLength = 41;
+    if (oilPattern.includes("House")) patternLength = 38;
+
     const boardX = laneX + (board / 39) * laneW;
     const startY = H - pad;
-    const hookFactor = (revRate / speed) * 0.8;
-    const skidLen = (speed / 20) * (H - 2 * pad) * 0.55;
-    const hookAmt = Math.min(hookFactor * 18, 35);
+    
+    // Physics adjustment: 
+    // - Higher RG means the ball delays its hook (longer skid).
+    // - Higher Differential means the ball hooks more (larger hookAmt).
+    // - Oil pattern length determines when the ball starts to grab.
+    
+    const rgFactor = (rg - 2.45) * 5; // Normalized around 2.5
+    const diffFactor = diff * 50;     // Normalized around 0.04 (approx 2.0)
+    const revFactor = revRate / 200;  // Normalized around 300 (approx 1.5)
+    const speedFactor = 17 / speed;   // Normalized around 17 (approx 1.0)
+    
+    // Total hook potential (scaled down to prevent immediate 45 max)
+    const hookPotential = diffFactor * revFactor * speedFactor * 4;
+    
+    // Calculate skid length based on oil pattern + speed + RG
+    // 1 foot = approx (H - 2*pad) / 60 units (if H represents 60ft)
+    const unitsPerFoot = (H - 2 * pad) / 60;
+    const baseSkid = patternLength * unitsPerFoot;
+    const skidLen = baseSkid * (1 + (speed - 17) * 0.02) * (1 + rgFactor * 0.05);
+
+    // Final hook amount (boards moved)
+    // Scale hookPotential to pixels
+    const hookAmtRaw = hookPotential * 2.5; 
+    const hookAmt = Math.min(hookAmtRaw, 45); // Max hook cap still exists but is harder to hit
+    
     const endX = boardX - hookAmt;
     const endY = pad + 10;
 
-    const cp1x = boardX + launchAngle * 2;
-    const cp1y = startY - skidLen;
-    const cp2x = boardX - hookAmt * 0.4;
-    const cp2y = startY - skidLen * 1.5;
+    // Control point 1 (Skid phase)
+    // Points toward launch angle, stays near original board
+    const cp1x = boardX + Math.tan((launchAngle * Math.PI) / 180) * skidLen;
+    const cp1y = startY - skidLen * 0.7;
+
+    // Control point 2 (Hook/Roll phase)
+    // Drags the curve toward the pocket
+    const cp2x = endX + (boardX - endX) * 0.1;
+    const cp2y = endY + (startY - endY) * 0.2;
 
     const pathStr = `M${boardX},${startY} C${cp1x},${cp1y} ${cp2x},${cp2y} ${endX},${endY}`;
     setTrajectory(pathStr);
 
     // Results
-    const entryAngle = 2.5 + hookFactor * 1.2;
+    const entryAngle = 2.0 + (hookPotential * 0.4);
     const entryAngleStr = entryAngle.toFixed(1);
     const entryClass: "good" | "warn" | "bad" =
       entryAngle >= 4.5 ? "good" : entryAngle >= 3 ? "warn" : "bad";
-    const breakPt = `Board ${board - Math.round(hookAmt / 3)}`;
-    const skidFt = Math.round(28 + (speed - 15) * 2);
-    const hookFt = Math.round(22 - (speed - 15));
+    
+    const breakPt = `Board ${Math.round(board - hookAmt / 3)}`;
+    const skidFt = Math.round(patternLength + (speed - 17) + (rgFactor * 2));
+    const hookFt = Math.round(60 - skidFt);
+    
     const outcome =
       entryAngle >= 4.5
         ? "✓ POCKET HIT"
@@ -289,13 +329,13 @@ export function SimulationView() {
       });
       setSimRunning(false);
     }, 2000);
-  }, [speed, revRate, launchAngle, board, simRunning]);
+  }, [speed, revRate, launchAngle, board, simRunning, bag, selectedBallName, oilPattern]);
 
   return (
     <div className="sim-layout">
       <div className="lane-container">
         <div className="panel-header">
-          <div className="panel-title">3D Lane Simulation (Top View)</div>
+          <div className="panel-title">Lane Simulation (Top View)</div>
           <div className="panel-badge" id="phase-label">
             {phaseLabel}
           </div>

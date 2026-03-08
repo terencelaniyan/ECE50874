@@ -8,7 +8,7 @@ import type { GapItem, GapZone } from "../types/ball";
 const MAX_COMPARE = 5;
 
 export function GapsPanel() {
-  const { arsenalBallIds, gameCounts, addToBag } = useBag();
+  const { arsenalBallIds, gameCounts, savedArsenalId, addToBag } = useBag();
   const [zones, setZones] = useState<GapZone[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,18 +27,21 @@ export function GapsPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await getGaps({
-        arsenal_ball_ids: arsenalBallIds,
-        game_counts: Object.keys(gameCounts).length ? gameCounts : undefined,
-        k: 10,
-      });
+      const body = savedArsenalId
+        ? { arsenal_id: savedArsenalId, k: 10 }
+        : {
+            arsenal_ball_ids: arsenalBallIds,
+            game_counts: Object.keys(gameCounts).length ? gameCounts : undefined,
+            k: 10,
+          };
+      const res = await getGaps(body);
       setZones(res.zones);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load gaps");
     } finally {
       setLoading(false);
     }
-  }, [arsenalBallIds, gameCounts]);
+  }, [arsenalBallIds, gameCounts, savedArsenalId]);
 
   useEffect(() => {
     fetchGaps();

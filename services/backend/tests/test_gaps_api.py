@@ -1,5 +1,8 @@
 """Integration tests for POST /gaps (require DATABASE_URL and seeded balls table)."""
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import pytest
 from fastapi.testclient import TestClient

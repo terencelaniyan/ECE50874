@@ -9,7 +9,7 @@
 # ===========================================================================
 
 from datetime import date
-from typing import Dict, List, Optional
+from typing import Annotated, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -56,35 +56,69 @@ class BallsResponse(BaseModel):
 # Arsenal models – a user's personal collection of bowling balls
 # ---------------------------------------------------------------------------
 
-class ArsenalBallInput(BaseModel):
-    """Input schema for adding a ball to an arsenal."""
-    ball_id: str                                      # must exist in the `balls` table
-    game_count: int = Field(default=0, ge=0)          # games bowled with this ball (for degradation)
+class ArsenalCatalogBallInput(BaseModel):
+    """Catalog ball reference (must exist in balls table)."""
+    custom: Literal[False] = False
+    ball_id: str = Field(..., description="Must exist in the balls table")
+    game_count: int = Field(default=0, ge=0, description="Games bowled (for degradation)")
+
+
+class ArsenalCustomBallInput(BaseModel):
+    """User-defined ball with specs (not in catalog)."""
+    custom: Literal[True] = True
+    name: Optional[str] = None
+    brand: Optional[str] = None
+    rg: float = Field(..., ge=2.0, le=3.0, description="Radius of gyration")
+    diff: float = Field(..., ge=0.0, le=0.1, description="Differential")
+    int_diff: float = Field(..., ge=0.0, le=0.1, description="Intermediate differential / mass bias")
+    surface_grit: Optional[str] = None
+    surface_finish: Optional[str] = None
+    game_count: int = Field(default=0, ge=0)
+
+
+ArsenalBallInput = Annotated[
+    Union[ArsenalCatalogBallInput, ArsenalCustomBallInput],
+    Field(discriminator="custom"),
+]
 
 
 class CreateArsenalRequest(BaseModel):
     """POST /arsenals – create a new arsenal."""
-    name: Optional[str] = None                        # optional display name
-    balls: List[ArsenalBallInput] = Field(default_factory=list)  # initial ball list
+    name: Optional[str] = None
+    balls: List[ArsenalBallInput] = Field(default_factory=list)
 
 
 class UpdateArsenalRequest(BaseModel):
     """PATCH /arsenals/{id} – update arsenal name and/or ball list."""
-    name: Optional[str] = None                        # new display name (None = keep current)
-    balls: Optional[List[ArsenalBallInput]] = None    # new ball list (None = keep current)
+    name: Optional[str] = None
+    balls: Optional[List[ArsenalBallInput]] = None
 
 
 class ArsenalBallResponse(BaseModel):
-    """Single ball entry in an arsenal response."""
-    ball_id: str       # ball identifier
-    game_count: int    # games played with this ball
+    """Single catalog ball entry in an arsenal response."""
+    ball_id: str
+    game_count: int
+
+
+class ArsenalCustomBallResponse(BaseModel):
+    """Single custom ball entry in an arsenal response."""
+    id: str
+    name: Optional[str] = None
+    brand: Optional[str] = None
+    rg: float
+    diff: float
+    int_diff: float
+    surface_grit: Optional[str] = None
+    surface_finish: Optional[str] = None
+    game_count: int
 
 
 class ArsenalResponse(BaseModel):
     """Full detail response for a single arsenal."""
-    id: str                                    # UUID string
-    name: Optional[str] = None                 # display name
-    balls: List[ArsenalBallResponse]           # balls in the arsenal
+    id: str
+    name: Optional[str] = None
+    balls: List[ArsenalBallResponse]
+    custom_balls: List[ArsenalCustomBallResponse] = Field(default_factory=list)
 
 
 class ArsenalSummary(BaseModel):

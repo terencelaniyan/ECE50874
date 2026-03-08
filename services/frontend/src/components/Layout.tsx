@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { listBalls } from "../api/balls";
 import { BallCatalog } from "./BallCatalog";
 import { RecommendationsPanel } from "./RecommendationsPanel";
 import { GapsPanel } from "./GapsPanel";
@@ -19,6 +20,16 @@ type Tab = "catalog" | "grid" | "simulation" | "recommendations" | "gaps" | "dat
  */
 export function Layout() {
   const [tab, setTab] = useState<Tab>("grid");
+  const [ballCount, setBallCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    listBalls({ limit: 1 })
+      .then((res) => setBallCount(res.count))
+      .catch(() => setBallCount(null));
+  }, []);
+
+  const badgeText =
+    ballCount !== null ? `DB: ${ballCount} BALLS LOADED` : "DB: —";
 
   return (
     <div className="layout">
@@ -85,6 +96,17 @@ export function Layout() {
           <button
             type="button"
             role="tab"
+            aria-selected={tab === "catalog"}
+            aria-controls="panel-catalog"
+            id="tab-catalog"
+            className={`nav-btn ${tab === "catalog" ? "active" : ""}`}
+            onClick={() => setTab("catalog")}
+          >
+            Catalog
+          </button>
+          <button
+            type="button"
+            role="tab"
             aria-selected={tab === "simulation"}
             aria-controls="panel-simulation"
             id="tab-simulation"
@@ -107,7 +129,7 @@ export function Layout() {
         </nav>
         <div className="status-badge">
           <div className="status-dot" aria-hidden />
-          <span>DB: 1360 BALLS LOADED</span>
+          <span>{badgeText}</span>
         </div>
       </header>
       <div className="layout-body">

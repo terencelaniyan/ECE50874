@@ -60,7 +60,7 @@ describe("BallCatalog", () => {
         expect.any(Object)
       );
     });
-    const searchInput = screen.getByPlaceholderText(/search name/i);
+    const searchInput = screen.getByPlaceholderText(/search balls/i);
     fireEvent.change(searchInput, { target: { value: "phantom" } });
     await waitFor(
       () => {

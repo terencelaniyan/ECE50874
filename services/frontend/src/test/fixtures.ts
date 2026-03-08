@@ -1,5 +1,4 @@
-import type { Ball } from "../types/ball";
-import type { BagEntry } from "../context/BagContext";
+import type { Ball, BagEntry } from "../types/ball";
 
 export const minimalBall: Ball = {
   ball_id: "ball-1",
@@ -23,5 +22,5 @@ export const minimalBall2: Ball = {
 };
 
 export function bagEntry(ball: Ball, game_count = 0): BagEntry {
-  return { ball, game_count };
+  return { type: "catalog", ball, game_count };
 }

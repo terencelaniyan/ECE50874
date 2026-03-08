@@ -34,19 +34,38 @@ CREATE TABLE IF NOT EXISTS arsenal_balls (
 );
 """
 
+ARSENAL_CUSTOM_BALLS_TABLE = """
+CREATE TABLE IF NOT EXISTS arsenal_custom_balls (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  arsenal_id  UUID NOT NULL REFERENCES arsenals(id) ON DELETE CASCADE,
+  name        TEXT,
+  brand       TEXT,
+  rg          NUMERIC NOT NULL,
+  diff        NUMERIC NOT NULL,
+  int_diff    NUMERIC NOT NULL,
+  surface_grit   TEXT,
+  surface_finish  TEXT,
+  game_count  INTEGER NOT NULL DEFAULT 0 CHECK (game_count >= 0)
+);
+"""
+
 def main() -> None:
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
             cur.execute(ARSENALS_TABLE)
             cur.execute(ARSENAL_BALLS_TABLE)
+            cur.execute(ARSENAL_CUSTOM_BALLS_TABLE)
             cur.execute(
                 "CREATE INDEX IF NOT EXISTS idx_arsenal_balls_arsenal_id ON arsenal_balls(arsenal_id);"
             )
             cur.execute(
                 "CREATE INDEX IF NOT EXISTS idx_arsenal_balls_ball_id ON arsenal_balls(ball_id);"
             )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_arsenal_custom_balls_arsenal_id ON arsenal_custom_balls(arsenal_id);"
+            )
         conn.commit()
-    print("Migrated: arsenals and arsenal_balls tables created.")
+    print("Migrated: arsenals, arsenal_balls, and arsenal_custom_balls tables created.")
 
 
 if __name__ == "__main__":

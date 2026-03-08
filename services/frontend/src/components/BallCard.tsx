@@ -1,3 +1,4 @@
+import { getBallPlaceholderImage } from "../constants/ballAssets";
 import type { Ball } from "../types/ball";
 
 interface BallCardProps {
@@ -19,11 +20,6 @@ export function BallCard({ ball, onAdd, onAddToBag, inBag }: BallCardProps) {
     if (onAdd) onAdd(ball);
     else onAddToBag?.();
   };
-  const getImage = (brand: string) => {
-    if (brand === "DV8") return "/ball_blue_gold.png";
-    if (brand === "Motiv") return "/ball_black_orange.png";
-    return "/ball_purple_pink.png";
-  };
 
   return (
     <li className="ball-card">
@@ -33,7 +29,7 @@ export function BallCard({ ball, onAdd, onAddToBag, inBag }: BallCardProps) {
       </div>
       
       <div className="ball-card-media">
-        <img src={getImage(ball.brand)} alt={ball.name} className="ball-card-img" />
+        <img src={getBallPlaceholderImage(ball.brand)} alt={ball.name} className="ball-card-img" />
       </div>
 
       <dl className="ball-card-specs">

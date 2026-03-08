@@ -50,19 +50,9 @@ def validate_ball_ids(cur, ball_ids: List[str]) -> None:
 
 def load_arsenal_balls(cur, arsenal_id: str) -> List[Tuple[dict, int]]:
     """
-    Fetch all balls belonging to a specific arsenal along with their game counts.
-    
-    Args:
-        cur: Database cursor.
-        arsenal_id: UUID of the arsenal.
-        
-    Returns:
-        List[Tuple[dict, int]]: A list of tuples, each containing a ball's row data 
-                                and its corresponding game count in the arsenal.
-                                
-    Raises:
-        NotFoundError: If the arsenal does not exist.
-        ValidationError: If the arsenal references ball IDs that aren't in the catalog.
+    Fetch all catalog balls belonging to a specific arsenal along with their game counts.
+
+    Does not load custom balls; use load_custom_arsenal_balls for those.
     """
     cur.execute(
         "SELECT id, name FROM arsenals WHERE id = %s::uuid;",
@@ -99,6 +89,57 @@ def load_arsenal_balls(cur, arsenal_id: str) -> List[Tuple[dict, int]]:
             )
         result.append((ball_rows[bid], r["game_count"]))
     return result
+
+
+def load_custom_arsenal_balls(cur, arsenal_id: str) -> List[Tuple[dict, int]]:
+    """
+    Fetch all custom balls for an arsenal with their game counts.
+
+    Returns list of (row_dict, game_count). Each row_dict has id, arsenal_id, name, brand,
+    rg, diff, int_diff, surface_grit, surface_finish, game_count (and will get ball_id
+    set to synthetic when building engine rows).
+    """
+    cur.execute(
+        """
+        SELECT id, arsenal_id, name, brand, rg, diff, int_diff,
+               surface_grit, surface_finish, game_count
+        FROM arsenal_custom_balls
+        WHERE arsenal_id = %s::uuid
+        ORDER BY id;
+        """,
+        (arsenal_id,),
+    )
+    rows = cur.fetchall()
+    return [(dict(r), r["game_count"]) for r in rows]
+
+
+def _get_arsenal_custom_balls(conn, arsenal_id: str) -> List[dict]:
+    """Return custom ball records for an arsenal (for API response)."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT id, name, brand, rg, diff, int_diff, surface_grit, surface_finish, game_count
+            FROM arsenal_custom_balls
+            WHERE arsenal_id = %s::uuid
+            ORDER BY id;
+            """,
+            (arsenal_id,),
+        )
+        rows = cur.fetchall()
+    return [
+        {
+            "id": str(r["id"]),
+            "name": r["name"],
+            "brand": r["brand"],
+            "rg": float(r["rg"]),
+            "diff": float(r["diff"]),
+            "int_diff": float(r["int_diff"]),
+            "surface_grit": r["surface_grit"],
+            "surface_finish": r["surface_finish"],
+            "game_count": r["game_count"],
+        }
+        for r in rows
+    ]
 
 
 def check_health(conn) -> dict:
@@ -211,21 +252,20 @@ def get_ball(conn, ball_id: str) -> Optional[dict]:
         return cur.fetchone()
 
 
-def create_arsenal(conn, name: Optional[str], balls: List[dict]) -> dict:
+def create_arsenal(
+    conn,
+    name: Optional[str],
+    balls: List[dict],
+    custom_balls: Optional[List[dict]] = None,
+) -> dict:
     """
-    Create a new arsenal and its associated balls.
-    
-    Args:
-        conn: Database connection.
-        name: Display name for the arsenal.
-        balls: List of items with ball_id and game_count.
-        
-    Returns:
-        dict: A dictionary containing the new arsenal's ID, name, and balls.
-        
-    Raises:
-        ValidationError: If any of the referenced balls do not exist.
+    Create a new arsenal and its associated catalog and custom balls in one transaction.
+
+    balls: list of {ball_id, game_count}. custom_balls: list of {name?, brand?, rg, diff,
+    int_diff, surface_grit?, surface_finish?, game_count?}. On any failure, entire
+    operation is rolled back.
     """
+    custom_balls = custom_balls or []
     ball_ids = [b["ball_id"] for b in balls]
     with conn.cursor() as cur:
         if ball_ids:
@@ -244,11 +284,32 @@ def create_arsenal(conn, name: Optional[str], balls: List[dict]) -> dict:
                 """,
                 (arsenal_id, b["ball_id"], b["game_count"]),
             )
+        for cb in custom_balls:
+            gc = cb.get("game_count", 0)
+            cur.execute(
+                """
+                INSERT INTO arsenal_custom_balls
+                (arsenal_id, name, brand, rg, diff, int_diff, surface_grit, surface_finish, game_count)
+                VALUES (%s::uuid, %s, %s, %s, %s, %s, %s, %s, %s);
+                """,
+                (
+                    arsenal_id,
+                    cb.get("name"),
+                    cb.get("brand"),
+                    float(cb["rg"]),
+                    float(cb["diff"]),
+                    float(cb["int_diff"]),
+                    cb.get("surface_grit"),
+                    cb.get("surface_finish"),
+                    gc if gc is not None else 0,
+                ),
+            )
     conn.commit()
     balls_out = [
         {"ball_id": b["ball_id"], "game_count": b["game_count"]} for b in balls
     ]
-    return {"id": arsenal_id, "name": name, "balls": balls_out}
+    custom_out = _get_arsenal_custom_balls(conn, arsenal_id)
+    return {"id": arsenal_id, "name": name, "balls": balls_out, "custom_balls": custom_out}
 
 
 def list_arsenals(conn, limit: int = 50, offset: int = 0) -> List[dict]:
@@ -268,8 +329,9 @@ def list_arsenals(conn, limit: int = 50, offset: int = 0) -> List[dict]:
         cur.execute(
             """
             SELECT a.id, a.name,
-                (SELECT COUNT(*)::int FROM arsenal_balls ab
-                 WHERE ab.arsenal_id = a.id) AS ball_count
+                (SELECT COUNT(*)::int FROM arsenal_balls ab WHERE ab.arsenal_id = a.id)
+                + (SELECT COUNT(*)::int FROM arsenal_custom_balls acb WHERE acb.arsenal_id = a.id)
+                AS ball_count
             FROM arsenals a
             ORDER BY a.created_at DESC
             LIMIT %s OFFSET %s;
@@ -318,7 +380,8 @@ def get_arsenal(conn, arsenal_id: str) -> dict:
     balls_out = [
         {"ball_id": r["ball_id"], "game_count": r["game_count"]} for r in balls
     ]
-    return {"id": str(row["id"]), "name": row["name"], "balls": balls_out}
+    custom_out = _get_arsenal_custom_balls(conn, arsenal_id)
+    return {"id": str(row["id"]), "name": row["name"], "balls": balls_out, "custom_balls": custom_out}
 
 
 def update_arsenal(
@@ -326,19 +389,11 @@ def update_arsenal(
     arsenal_id: str,
     name: Optional[str] = None,
     balls: Optional[List[dict]] = None,
+    custom_balls: Optional[List[dict]] = None,
 ) -> None:
     """
-    Update an arsenal's name and/or its collection of balls.
-    
-    Args:
-        conn: Database connection.
-        arsenal_id: UUID of the arsenal to update.
-        name: New display name (optional).
-        balls: New list of ball dictionary objects (optional).
-        
-    Raises:
-        NotFoundError: If the arsenal does not exist.
-        ValidationError: If any of the new ball IDs are invalid.
+    Update an arsenal's name and/or catalog and custom balls in one transaction.
+    On any failure, the whole operation is rolled back.
     """
     with conn.cursor() as cur:
         cur.execute(
@@ -369,6 +424,31 @@ def update_arsenal(
                     """,
                     (arsenal_id, b["ball_id"], b["game_count"]),
                 )
+        if custom_balls is not None:
+            cur.execute(
+                "DELETE FROM arsenal_custom_balls WHERE arsenal_id = %s::uuid;",
+                (arsenal_id,),
+            )
+            for cb in custom_balls:
+                gc = cb.get("game_count", 0)
+                cur.execute(
+                    """
+                    INSERT INTO arsenal_custom_balls
+                    (arsenal_id, name, brand, rg, diff, int_diff, surface_grit, surface_finish, game_count)
+                    VALUES (%s::uuid, %s, %s, %s, %s, %s, %s, %s, %s);
+                    """,
+                    (
+                        arsenal_id,
+                        cb.get("name"),
+                        cb.get("brand"),
+                        float(cb["rg"]),
+                        float(cb["diff"]),
+                        float(cb["int_diff"]),
+                        cb.get("surface_grit"),
+                        cb.get("surface_finish"),
+                        gc if gc is not None else 0,
+                    ),
+                )
     conn.commit()
 
 
@@ -393,6 +473,26 @@ def delete_arsenal(conn, arsenal_id: str) -> None:
     conn.commit()
 
 
+def _custom_row_to_engine_row(custom_dict: dict, game_count: int) -> Tuple[dict, int]:
+    """Convert a custom ball DB row to engine row shape and return (row, game_count)."""
+    row = {
+        "ball_id": f"custom-{str(custom_dict['id'])}",
+        "name": custom_dict.get("name") or "Custom",
+        "brand": custom_dict.get("brand"),
+        "rg": float(custom_dict["rg"]),
+        "diff": float(custom_dict["diff"]),
+        "int_diff": float(custom_dict["int_diff"]),
+        "surface_grit": custom_dict.get("surface_grit"),
+        "surface_finish": custom_dict.get("surface_finish"),
+    }
+    return row, game_count
+
+
+def _apply_degradation_to_rows(rows_with_gc: List[Tuple[dict, int]]) -> List[dict]:
+    """Apply degradation to each (row, game_count) and return list of effective rows."""
+    return [apply_degradation(row, gc) for row, gc in rows_with_gc]
+
+
 def resolve_arsenal_rows(
     conn,
     arsenal_id: Optional[str],
@@ -400,25 +500,17 @@ def resolve_arsenal_rows(
     game_counts: Optional[dict],
 ) -> Tuple[List[dict], List[str]]:
     """
-    Resolve a set of ball IDs or an arsenal ID into actual ball row data,
-    applying performance degradation based on game counts.
-    
-    Args:
-        conn: Database connection.
-        arsenal_id: Optional UUID of a saved arsenal.
-        arsenal_ball_ids: Optional list of ad-hoc ball IDs.
-        game_counts: Optional mapping of ball_id to games bowled.
-        
-    Returns:
-        Tuple[List[dict], List[str]]: A tuple containing the list of potentially 
-                                     degraded ball rows and the list of ball IDs.
+    Resolve arsenal ID or ad-hoc ball IDs into degraded ball rows for engines.
+    Uses helpers to load catalog vs custom, apply degradation, and merge.
     """
     if arsenal_id:
         with conn.cursor() as cur:
-            loaded = load_arsenal_balls(cur, arsenal_id)
-        if not loaded:
-            return [], []
-        effective = [apply_degradation(ball_row, gc) for ball_row, gc in loaded]
+            catalog_loaded = load_arsenal_balls(cur, arsenal_id)
+            custom_loaded = load_custom_arsenal_balls(cur, arsenal_id)
+        catalog_with_gc = catalog_loaded
+        custom_with_gc = [_custom_row_to_engine_row(d, gc) for d, gc in custom_loaded]
+        all_with_gc = catalog_with_gc + custom_with_gc
+        effective = _apply_degradation_to_rows(all_with_gc)
         ids = [r["ball_id"] for r in effective]
         return effective, ids
     arsenal_ids = list(dict.fromkeys(arsenal_ball_ids))

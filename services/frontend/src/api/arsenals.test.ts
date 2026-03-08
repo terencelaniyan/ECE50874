@@ -44,7 +44,10 @@ describe("arsenals API", () => {
   });
 
   it("createArsenal calls fetch POST with /api/arsenals and body", async () => {
-    const body = { name: "My bag", balls: [{ ball_id: "b1", game_count: 0 }] };
+    const body = {
+      name: "My bag",
+      balls: [{ custom: false as const, ball_id: "b1", game_count: 0 }],
+    };
     await createArsenal(body);
     expect(mockFetch).toHaveBeenCalledWith(
       apiUrl("/arsenals"),

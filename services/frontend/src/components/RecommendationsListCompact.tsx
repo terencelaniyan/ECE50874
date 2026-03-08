@@ -27,7 +27,7 @@ function getReasonText(
 }
 
 export function RecommendationsListCompact() {
-  const { arsenalBallIds, gameCounts, addToBag: addToBagCb } = useBag();
+  const { arsenalBallIds, gameCounts, savedArsenalId, addToBag: addToBagCb } = useBag();
   const [items, setItems] = useState<RecommendationItem[]>([]);
   const [gapZones, setGapZones] = useState<GapZone[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,7 +38,7 @@ export function RecommendationsListCompact() {
   );
 
   const fetchRecsAndGaps = useCallback(async () => {
-    if (arsenalBallIds.length === 0) {
+    if (!savedArsenalId && arsenalBallIds.length === 0) {
       setItems([]);
       setGapZones([]);
       return;
@@ -46,17 +46,19 @@ export function RecommendationsListCompact() {
     setLoading(true);
     setError(null);
     try {
+      const recBody = savedArsenalId
+        ? { arsenal_id: savedArsenalId, k: 10 }
+        : { arsenal_ball_ids: arsenalBallIds, game_counts: gameCounts, k: 10 };
+      const gapBody = savedArsenalId
+        ? { arsenal_id: savedArsenalId, k: 10 }
+        : {
+            arsenal_ball_ids: arsenalBallIds,
+            game_counts: Object.keys(gameCounts).length ? gameCounts : undefined,
+            k: 10,
+          };
       const [recRes, gapRes] = await Promise.all([
-        getRecommendations({
-          arsenal_ball_ids: arsenalBallIds,
-          game_counts: gameCounts,
-          k: 10,
-        }),
-        getGaps({
-          arsenal_ball_ids: arsenalBallIds,
-          game_counts: Object.keys(gameCounts).length ? gameCounts : undefined,
-          k: 10,
-        }),
+        getRecommendations(recBody),
+        getGaps(gapBody),
       ]);
       setItems(recRes.items ?? []);
       setGapZones(gapRes.zones ?? []);
@@ -67,13 +69,13 @@ export function RecommendationsListCompact() {
     } finally {
       setLoading(false);
     }
-  }, [arsenalBallIds, gameCounts]);
+  }, [arsenalBallIds, gameCounts, savedArsenalId]);
 
   useEffect(() => {
     fetchRecsAndGaps();
   }, [fetchRecsAndGaps]);
 
-  if (arsenalBallIds.length === 0) {
+  if (!savedArsenalId && arsenalBallIds.length === 0) {
     return (
       <p className="recs-empty">Add balls to your bag to get recommendations.</p>
     );

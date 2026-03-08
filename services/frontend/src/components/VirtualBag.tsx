@@ -8,7 +8,10 @@ import {
   deleteArsenal,
 } from "../api/arsenals";
 import { getBall } from "../api/balls";
+import { BAG_CAPACITY } from "../constants/slots";
+import { getBallPlaceholderImage } from "../constants/ballAssets";
 import type { ArsenalSummary } from "../types/ball";
+import { bagEntriesToArsenalBallInputs } from "../types/ball";
 
 /**
  * VirtualBag component manages the user's current collection of balls.
@@ -40,14 +43,10 @@ export function VirtualBag() {
     setError(null);
     setLoading(true);
     try {
-      const body = {
+      const res = await createArsenal({
         name: arsenalName || undefined,
-        balls: bag.map((e) => ({
-          ball_id: e.ball.ball_id,
-          game_count: e.game_count,
-        })),
-      };
-      const res = await createArsenal(body);
+        balls: bagEntriesToArsenalBallInputs(bag),
+      });
       setSavedArsenalId(res.id);
       setSaveOpen(false);
       setArsenalName("");
@@ -75,15 +74,28 @@ export function VirtualBag() {
       setLoading(true);
       try {
         const res = await getArsenal(id);
-        const balls = await Promise.all(
-          res.balls.map((ab) => getBall(ab.ball_id))
+        const catalogEntries = await Promise.all(
+          res.balls.map(async (ab) => {
+            const ball = await getBall(ab.ball_id);
+            if (!ball) throw new Error(`Ball ${ab.ball_id} not found`);
+            return { type: "catalog" as const, ball, game_count: ab.game_count };
+          })
         );
-        setBag(
-          res.balls.map((ab, i) => ({
-            ball: balls[i],
-            game_count: ab.game_count,
-          }))
-        );
+        const customEntries = (res.custom_balls ?? []).map((cb) => ({
+          type: "custom" as const,
+          ball: {
+            ball_id: `custom-${cb.id}`,
+            name: cb.name ?? undefined,
+            brand: cb.brand ?? undefined,
+            rg: cb.rg,
+            diff: cb.diff,
+            int_diff: cb.int_diff,
+            surface_grit: cb.surface_grit ?? undefined,
+            surface_finish: cb.surface_finish ?? undefined,
+          },
+          game_count: cb.game_count,
+        }));
+        setBag([...catalogEntries, ...customEntries]);
         setSavedArsenalId(id);
         setLoadOpen(false);
       } catch (e: unknown) {
@@ -101,10 +113,7 @@ export function VirtualBag() {
     setLoading(true);
     try {
       await updateArsenal(savedArsenalId, {
-        balls: bag.map((e) => ({
-          ball_id: e.ball.ball_id,
-          game_count: e.game_count,
-        })),
+        balls: bagEntriesToArsenalBallInputs(bag),
       });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Update failed");
@@ -127,13 +136,6 @@ export function VirtualBag() {
     }
   }, [savedArsenalId, setSavedArsenalId]);
 
-  const getImage = (brand: string) => {
-    if (brand === "DV8") return "/ball_blue_gold.png";
-    if (brand === "Motiv") return "/ball_black_orange.png";
-    return "/ball_purple_pink.png";
-  };
-
-  const BAG_CAPACITY = 6;
   const progressPercent = Math.min((bag.length / BAG_CAPACITY) * 100, 100);
 
   return (
@@ -163,17 +165,17 @@ export function VirtualBag() {
           bag.map((e) => (
             <li key={e.ball.ball_id} className="virtual-bag-item">
               <div className="virtual-bag-thumb-container">
-                <img src={getImage(e.ball.brand)} alt="" className="virtual-bag-thumb" />
+                <img src={getBallPlaceholderImage(e.ball.brand ?? "")} alt="" className="virtual-bag-thumb" />
               </div>
               <div className="virtual-bag-info">
-                <span className="virtual-bag-name">{e.ball.name}</span>
-                <span className="virtual-bag-status">15lb • Active</span>
+                <span className="virtual-bag-name">{e.ball.name ?? "Custom"}</span>
+                <span className="virtual-bag-status">{e.type === "custom" ? "Custom" : "15lb • Active"}</span>
               </div>
               <button
                 type="button"
                 onClick={() => removeFromBag(e.ball.ball_id)}
                 className="virtual-bag-remove-icon"
-                aria-label={`Remove ${e.ball.name}`}
+                aria-label={`Remove ${e.ball.name ?? "Custom"}`}
               >
                 ⋮
               </button>
