@@ -1457,6 +1457,71 @@ body::before {
   background: #33e0ff;
 }
 
+/* Rec method toggle */
+.rec-method-toggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.rec-method-btn {
+  padding: 4px 10px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: var(--transition-fast);
+}
+
+.rec-method-btn.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+  font-weight: 700;
+}
+
+.rec-method-btn:hover:not(.active) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.rec-fallback-badge {
+  font-size: 9px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba(255, 92, 56, 0.15);
+  color: var(--accent2);
+  letter-spacing: 1px;
+}
+
+.rec-badges-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.rec-badge.method {
+  background: rgba(232, 255, 60, 0.12);
+  color: var(--accent);
+}
+
+.rec-badge.method-two_tower {
+  background: rgba(184, 56, 255, 0.15);
+  color: #c87fff;
+}
+
+.rec-badge.method-hybrid {
+  background: rgba(255, 156, 56, 0.15);
+  color: #ff9c38;
+}
+
 .recs-empty,
 .recs-loading {
   font-size: 0.9rem;

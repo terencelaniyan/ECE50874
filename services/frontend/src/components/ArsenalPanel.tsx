@@ -35,7 +35,7 @@ function ArsenalCard({ entry, slot }: ArsenalCardProps) {
   const slotLabel = getSlotLabel(slot);
   const displayName = ball.name ?? "Custom";
   const displayBrand = ball.brand ?? "—";
-  const coverstock = entry.type === "catalog" ? (ball.coverstock_type ?? "—") : (ball.surface_grit ?? ball.surface_finish ?? "—");
+  const coverstock = entry.type === "catalog" ? ((ball as import("../types/ball").Ball).coverstock_type ?? "—") : (ball.surface_grit ?? ball.surface_finish ?? "—");
 
   return (
     <div className={`arsenal-card slot-${slot}`}>

@@ -206,7 +206,7 @@ export function Layout() {
               <div className="panel recs-panel-wrap">
                 <div className="panel-header">
                   <div className="panel-title">Recommendations</div>
-                  <div className="panel-badge">K-NN RANKED</div>
+                  <div className="panel-badge">RANKED</div>
                 </div>
                 <div className="panel-body" id="recs-panel">
                   <RecommendationsListCompact />

@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useBag } from "../context/BagContext";
 import { getRecommendations } from "../api/recommendations";
+import { getRecommendationsV2 } from "../api/recommendations-v2";
 import { getGaps } from "../api/gaps";
-import type { RecommendationItem } from "../types/ball";
+import type { RecommendationItem, RecommendV2Item } from "../types/ball";
 import type { GapZone } from "../types/ball";
+
+type RecMethod = "knn" | "two_tower" | "hybrid";
 
 /** Derive match % from score (lower score = better). Normalize so best in list is 100%, rest scale down. */
 function scoreToMatchPercent(score: number, maxScoreInList: number): number {
@@ -28,10 +31,12 @@ function getReasonText(
 
 export function RecommendationsListCompact() {
   const { arsenalBallIds, gameCounts, savedArsenalId, addToBag: addToBagCb } = useBag();
-  const [items, setItems] = useState<RecommendationItem[]>([]);
+  const [items, setItems] = useState<(RecommendationItem | RecommendV2Item)[]>([]);
   const [gapZones, setGapZones] = useState<GapZone[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [method, setMethod] = useState<RecMethod>("knn");
+  const [actualMethod, setActualMethod] = useState<string | null>(null);
 
   const gapBallIds = new Set(
     (gapZones ?? []).flatMap((z) => z.balls.map((b) => b.ball.ball_id))
@@ -41,14 +46,12 @@ export function RecommendationsListCompact() {
     if (!savedArsenalId && arsenalBallIds.length === 0) {
       setItems([]);
       setGapZones([]);
+      setActualMethod(null);
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const recBody = savedArsenalId
-        ? { arsenal_id: savedArsenalId, k: 10 }
-        : { arsenal_ball_ids: arsenalBallIds, game_counts: gameCounts, k: 10 };
       const gapBody = savedArsenalId
         ? { arsenal_id: savedArsenalId, k: 10 }
         : {
@@ -56,20 +59,39 @@ export function RecommendationsListCompact() {
             game_counts: Object.keys(gameCounts).length ? gameCounts : undefined,
             k: 10,
           };
-      const [recRes, gapRes] = await Promise.all([
-        getRecommendations(recBody),
-        getGaps(gapBody),
-      ]);
-      setItems(recRes.items ?? []);
-      setGapZones(gapRes.zones ?? []);
+
+      if (method === "knn") {
+        const recBody = savedArsenalId
+          ? { arsenal_id: savedArsenalId, k: 10 }
+          : { arsenal_ball_ids: arsenalBallIds, game_counts: gameCounts, k: 10 };
+        const [recRes, gapRes] = await Promise.all([
+          getRecommendations(recBody),
+          getGaps(gapBody),
+        ]);
+        setItems(recRes.items ?? []);
+        setGapZones(gapRes.zones ?? []);
+        setActualMethod("knn");
+      } else {
+        const recBody = savedArsenalId
+          ? { arsenal_id: savedArsenalId, k: 10, method }
+          : { arsenal_ball_ids: arsenalBallIds, game_counts: gameCounts, k: 10, method };
+        const [recRes, gapRes] = await Promise.all([
+          getRecommendationsV2(recBody),
+          getGaps(gapBody),
+        ]);
+        setItems(recRes.items ?? []);
+        setGapZones(gapRes.zones ?? []);
+        setActualMethod(recRes.method);
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load");
       setItems([]);
       setGapZones([]);
+      setActualMethod(null);
     } finally {
       setLoading(false);
     }
-  }, [arsenalBallIds, gameCounts, savedArsenalId]);
+  }, [arsenalBallIds, gameCounts, savedArsenalId, method]);
 
   useEffect(() => {
     fetchRecsAndGaps();
@@ -80,63 +102,107 @@ export function RecommendationsListCompact() {
       <p className="recs-empty">Add balls to your bag to get recommendations.</p>
     );
   }
+
+  const methodToggle = (
+    <div className="rec-method-toggle">
+      {(["knn", "two_tower", "hybrid"] as RecMethod[]).map((m) => (
+        <button
+          key={m}
+          type="button"
+          className={`rec-method-btn ${method === m ? "active" : ""}`}
+          onClick={() => setMethod(m)}
+        >
+          {m === "knn" ? "KNN" : m === "two_tower" ? "V2" : "Hybrid"}
+        </button>
+      ))}
+      {actualMethod && actualMethod !== method && (
+        <span className="rec-fallback-badge">KNN fallback</span>
+      )}
+    </div>
+  );
+
   if (error) {
     return (
-      <p className="recs-error" role="alert">
-        {error}
-        <button type="button" onClick={fetchRecsAndGaps} className="recs-retry">
-          Try again
-        </button>
-      </p>
+      <>
+        {methodToggle}
+        <p className="recs-error" role="alert">
+          {error}
+          <button type="button" onClick={fetchRecsAndGaps} className="recs-retry">
+            Try again
+          </button>
+        </p>
+      </>
     );
   }
   if (loading) {
-    return <p className="recs-loading" aria-live="polite">Loading…</p>;
+    return (
+      <>
+        {methodToggle}
+        <p className="recs-loading" aria-live="polite">Loading…</p>
+      </>
+    );
   }
   if (items.length === 0) {
-    return <p className="recs-empty">No recommendations right now.</p>;
+    return (
+      <>
+        {methodToggle}
+        <p className="recs-empty">No recommendations right now.</p>
+      </>
+    );
   }
 
   const validItems = (items ?? []).filter((i) => i?.ball);
   const maxScore = Math.max(0, ...validItems.map((i) => i.score));
 
   return (
-    <ul className="rec-list-compact" aria-label="Recommendations">
-      {validItems.map((item, i) => {
-        const isGapFill = gapBallIds.has(item.ball.ball_id);
-        const matchPct = scoreToMatchPercent(item.score, maxScore);
-        const reason = getReasonText(item, isGapFill);
-        return (
-          <li key={item.ball.ball_id} className="rec-item">
-            <div className="rec-rank">
-              {String(i + 1).padStart(2, "0")}
-            </div>
-            <div
-              className={`rec-badge ${isGapFill ? "gap" : "replacement"}`}
-            >
-              {isGapFill ? "GAP FILL" : "REPLACEMENT"}
-            </div>
-            <div className="rec-name">{item.ball.name}</div>
-            <div className="rec-reason">{reason}</div>
-            <div className="rec-match-row">
-              <div className="rec-match-bar-wrap">
-                <div
-                  className="rec-match-bar-fill"
-                  style={{ width: `${matchPct}%` }}
-                />
+    <>
+      {methodToggle}
+      <ul className="rec-list-compact" aria-label="Recommendations">
+        {validItems.map((item, i) => {
+          const isGapFill = gapBallIds.has(item.ball.ball_id);
+          const matchPct = scoreToMatchPercent(item.score, maxScore);
+          const isV2 = "method" in item;
+          const reason = isV2 && (item as RecommendV2Item).reason
+            ? (item as RecommendV2Item).reason!
+            : getReasonText(item, isGapFill);
+          const itemMethod = isV2 ? (item as RecommendV2Item).method : "knn";
+          return (
+            <li key={item.ball.ball_id} className="rec-item">
+              <div className="rec-rank">
+                {String(i + 1).padStart(2, "0")}
               </div>
-              <span className="rec-match-pct">{matchPct}% MATCH</span>
-            </div>
-            <button
-              type="button"
-              className="rec-add-btn"
-              onClick={() => addToBagCb(item.ball)}
-            >
-              Add to bag
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+              <div className="rec-badges-row">
+                <div
+                  className={`rec-badge ${isGapFill ? "gap" : "replacement"}`}
+                >
+                  {isGapFill ? "GAP FILL" : "REPLACEMENT"}
+                </div>
+                <div className={`rec-badge method method-${itemMethod}`}>
+                  {itemMethod === "knn" ? "KNN" : itemMethod === "two_tower" ? "V2" : "HYBRID"}
+                </div>
+              </div>
+              <div className="rec-name">{item.ball.name}</div>
+              <div className="rec-reason">{reason}</div>
+              <div className="rec-match-row">
+                <div className="rec-match-bar-wrap">
+                  <div
+                    className="rec-match-bar-fill"
+                    style={{ width: `${matchPct}%` }}
+                  />
+                </div>
+                <span className="rec-match-pct">{matchPct}% MATCH</span>
+              </div>
+              <button
+                type="button"
+                className="rec-add-btn"
+                onClick={() => addToBagCb(item.ball)}
+              >
+                Add to bag
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }
