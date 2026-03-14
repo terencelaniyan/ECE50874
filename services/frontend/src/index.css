@@ -1696,6 +1696,100 @@ body::before {
   letter-spacing: 0.5px;
 }
 
+.deg-compare-link {
+  display: block;
+  margin-top: 6px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--accent3);
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 700;
+  transition: var(--transition-fast);
+}
+
+.deg-compare-link:hover {
+  color: var(--accent);
+}
+
+/* Degradation Compare Modal */
+.deg-compare-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deg-compare-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 700px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.deg-compare-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.deg-compare-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.deg-compare-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.deg-compare-chip {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+}
+
+.deg-compare-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: var(--transition-fast);
+}
+
+.deg-compare-close:hover {
+  color: var(--text);
+}
+
+.deg-compare-canvas {
+  width: 100%;
+  height: 400px;
+  display: block;
+}
+
 .recs-empty,
 .recs-loading {
   font-size: 0.9rem;

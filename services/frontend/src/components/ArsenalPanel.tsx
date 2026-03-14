@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useBag } from "../context/BagContext";
+import { DegradationCompareView } from "./DegradationCompareView";
 import {
   BAG_CAPACITY,
   MAX_GAMES,
@@ -28,9 +29,10 @@ interface ArsenalCardProps {
   slot: number;
   degModel: DegModel;
   v2Data: DegradationCompareResponse | null;
+  onClickCompare: () => void;
 }
 
-function ArsenalCard({ entry, slot, degModel, v2Data }: ArsenalCardProps) {
+function ArsenalCard({ entry, slot, degModel, v2Data, onClickCompare }: ArsenalCardProps) {
   const { ball, game_count } = entry;
   const slotLabel = getSlotLabel(slot);
   const displayName = ball.name ?? "Custom";
@@ -85,6 +87,9 @@ function ArsenalCard({ entry, slot, degModel, v2Data }: ArsenalCardProps) {
         {lambdaIndicator && (
           <div className="lambda-indicator">{lambdaIndicator} &middot; {coverstock}</div>
         )}
+        <button type="button" className="deg-compare-link" onClick={onClickCompare}>
+          Compare V1/V2
+        </button>
       </div>
     </div>
   );
@@ -114,6 +119,7 @@ export function ArsenalPanel() {
   const [loading, setLoading] = useState(false);
   const [degModel, setDegModel] = useState<DegModel>("v1");
   const [v2Results, setV2Results] = useState<Record<string, DegradationCompareResponse>>({});
+  const [compareEntry, setCompareEntry] = useState<BagEntry | null>(null);
 
   // Fetch V2 degradation data when model is switched to V2
   useEffect(() => {
@@ -323,6 +329,7 @@ export function ArsenalPanel() {
                 slot={slot}
                 degModel={degModel}
                 v2Data={v2Results[entry.ball.ball_id] ?? null}
+                onClickCompare={() => setCompareEntry(entry)}
               />
             );
           })
@@ -456,6 +463,12 @@ export function ArsenalPanel() {
             </button>
           </div>
         </div>
+      )}
+      {compareEntry && (
+        <DegradationCompareView
+          entry={compareEntry}
+          onClose={() => setCompareEntry(null)}
+        />
       )}
     </div>
   );
