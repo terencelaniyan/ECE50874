@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useBag } from "../context/BagContext";
 import {
   BAG_CAPACITY,
@@ -11,8 +11,11 @@ import {
   getArsenal,
 } from "../api/arsenals";
 import { getBall } from "../api/balls";
-import type { BagEntry, ArsenalSummary } from "../types/ball";
+import { compareDegradation } from "../api/degradation";
+import type { Ball, BagEntry, ArsenalSummary, DegradationCompareResponse } from "../types/ball";
 import { bagEntriesToArsenalBallInputs } from "../types/ball";
+
+type DegModel = "v1" | "v2";
 
 function healthColor(healthPercent: number): string {
   if (healthPercent > 60) return "#4cff8a";
@@ -23,19 +26,28 @@ function healthColor(healthPercent: number): string {
 interface ArsenalCardProps {
   entry: BagEntry;
   slot: number;
+  degModel: DegModel;
+  v2Data: DegradationCompareResponse | null;
 }
 
-function ArsenalCard({ entry, slot }: ArsenalCardProps) {
+function ArsenalCard({ entry, slot, degModel, v2Data }: ArsenalCardProps) {
   const { ball, game_count } = entry;
-  const healthPercent = Math.max(
-    0,
-    100 - (game_count / MAX_GAMES) * 100
-  );
-  const color = healthColor(healthPercent);
   const slotLabel = getSlotLabel(slot);
   const displayName = ball.name ?? "Custom";
   const displayBrand = ball.brand ?? "—";
-  const coverstock = entry.type === "catalog" ? ((ball as import("../types/ball").Ball).coverstock_type ?? "—") : (ball.surface_grit ?? ball.surface_finish ?? "—");
+  const coverstock = entry.type === "catalog" ? ((ball as Ball).coverstock_type ?? "—") : (ball.surface_grit ?? ball.surface_finish ?? "—");
+
+  let healthPercent: number;
+  let lambdaIndicator: string | null = null;
+
+  if (degModel === "v2" && v2Data) {
+    healthPercent = Math.max(0, Math.min(100, v2Data.v2_logarithmic.factor * 100));
+    lambdaIndicator = `λ=${v2Data.v2_lambda.toFixed(4)}`;
+  } else {
+    healthPercent = Math.max(0, 100 - (game_count / MAX_GAMES) * 100);
+  }
+
+  const color = healthColor(healthPercent);
 
   return (
     <div className={`arsenal-card slot-${slot}`}>
@@ -58,7 +70,10 @@ function ArsenalCard({ entry, slot }: ArsenalCardProps) {
       </div>
       <div className="health-bar-wrap">
         <div className="health-label">
-          <span>Coverstock Health</span>
+          <span>
+            Coverstock Health
+            {degModel === "v2" && <span className="deg-model-indicator"> (LOG)</span>}
+          </span>
           <span style={{ color }}>{Math.round(healthPercent)}%</span>
         </div>
         <div className="health-bar">
@@ -67,15 +82,14 @@ function ArsenalCard({ entry, slot }: ArsenalCardProps) {
             style={{ width: `${healthPercent}%`, background: color }}
           />
         </div>
+        {lambdaIndicator && (
+          <div className="lambda-indicator">{lambdaIndicator} &middot; {coverstock}</div>
+        )}
       </div>
     </div>
   );
 }
 
-/**
- * ArsenalPanel component displays the user's current bag with detailed health 
- * (wear) metrics and provides save/load functionality.
- */
 const INITIAL_CUSTOM_FORM = {
   name: "",
   brand: "",
@@ -98,6 +112,39 @@ export function ArsenalPanel() {
   const [savedList, setSavedList] = useState<ArsenalSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [degModel, setDegModel] = useState<DegModel>("v1");
+  const [v2Results, setV2Results] = useState<Record<string, DegradationCompareResponse>>({});
+
+  // Fetch V2 degradation data when model is switched to V2
+  useEffect(() => {
+    if (degModel !== "v2" || bag.length === 0) return;
+    let cancelled = false;
+    const fetchAll = async () => {
+      const results: Record<string, DegradationCompareResponse> = {};
+      await Promise.all(
+        bag.map(async (entry) => {
+          try {
+            const b = entry.ball;
+            const coverType = entry.type === "catalog" ? ((b as Ball).coverstock_type ?? undefined) : undefined;
+            const res = await compareDegradation({
+              ball_id: b.ball_id.startsWith("custom-") ? undefined : b.ball_id,
+              rg: b.rg,
+              diff: b.diff,
+              int_diff: b.int_diff,
+              coverstock_type: coverType,
+              game_count: entry.game_count,
+            });
+            results[b.ball_id] = res;
+          } catch {
+            // skip failed fetches
+          }
+        })
+      );
+      if (!cancelled) setV2Results(results);
+    };
+    fetchAll();
+    return () => { cancelled = true; };
+  }, [degModel, bag]);
 
   const handleAddCustomBall = useCallback(() => {
     const rg = parseFloat(customForm.rg);
@@ -216,6 +263,22 @@ export function ArsenalPanel() {
           <div className="panel-badge">
             {filledSlots} / {BAG_CAPACITY} SLOTS
           </div>
+          <div className="deg-toggle">
+            <button
+              type="button"
+              className={`deg-toggle-btn ${degModel === "v1" ? "active" : ""}`}
+              onClick={() => setDegModel("v1")}
+            >
+              V1
+            </button>
+            <button
+              type="button"
+              className={`deg-toggle-btn ${degModel === "v2" ? "active" : ""}`}
+              onClick={() => setDegModel("v2")}
+            >
+              V2
+            </button>
+          </div>
           <button
             type="button"
             className="arsenal-save-load-btn"
@@ -254,7 +317,13 @@ export function ArsenalPanel() {
           bag.map((entry, i) => {
             const slot = i + 1;
             return (
-              <ArsenalCard key={entry.ball.ball_id} entry={entry} slot={slot} />
+              <ArsenalCard
+                key={entry.ball.ball_id}
+                entry={entry}
+                slot={slot}
+                degModel={degModel}
+                v2Data={v2Results[entry.ball.ball_id] ?? null}
+              />
             );
           })
         )}
