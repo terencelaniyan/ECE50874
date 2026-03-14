@@ -8,6 +8,7 @@ import { ArsenalPanel } from "./ArsenalPanel";
 import { RecommendationsListCompact } from "./RecommendationsListCompact";
 import { BallDatabaseView } from "./BallDatabaseView";
 import { SimulationView } from "./SimulationView";
+import { SlotAssignmentPanel } from "./SlotAssignmentPanel";
 
 type Tab = "catalog" | "grid" | "simulation" | "recommendations" | "gaps" | "database";
 
@@ -18,8 +19,11 @@ type Tab = "catalog" | "grid" | "simulation" | "recommendations" | "gaps" | "dat
  * components (Grid, Simulation, Database, etc.). It also includes the shared
  * header and logo.
  */
+type RightPanel = "recs" | "slots";
+
 export function Layout() {
   const [tab, setTab] = useState<Tab>("grid");
+  const [rightPanel, setRightPanel] = useState<RightPanel>("recs");
   const [ballCount, setBallCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -205,11 +209,28 @@ export function Layout() {
               </div>
               <div className="panel recs-panel-wrap">
                 <div className="panel-header">
-                  <div className="panel-title">Recommendations</div>
-                  <div className="panel-badge">RANKED</div>
+                  <div className="right-panel-toggle">
+                    <button
+                      type="button"
+                      className={`right-panel-btn ${rightPanel === "recs" ? "active" : ""}`}
+                      onClick={() => setRightPanel("recs")}
+                    >
+                      Recs
+                    </button>
+                    <button
+                      type="button"
+                      className={`right-panel-btn ${rightPanel === "slots" ? "active" : ""}`}
+                      onClick={() => setRightPanel("slots")}
+                    >
+                      Slots
+                    </button>
+                  </div>
+                  <div className="panel-badge">
+                    {rightPanel === "recs" ? "RANKED" : "6-BALL"}
+                  </div>
                 </div>
                 <div className="panel-body" id="recs-panel">
-                  <RecommendationsListCompact />
+                  {rightPanel === "recs" ? <RecommendationsListCompact /> : <SlotAssignmentPanel />}
                 </div>
               </div>
             </div>

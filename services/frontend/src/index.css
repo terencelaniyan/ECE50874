@@ -1522,6 +1522,134 @@ body::before {
   color: #ff9c38;
 }
 
+/* Right panel toggle (Recs / Slots) */
+.right-panel-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.right-panel-btn {
+  padding: 4px 12px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 700;
+  transition: var(--transition-fast);
+}
+
+.right-panel-btn.active {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.right-panel-btn:hover:not(.active) {
+  color: var(--text);
+}
+
+/* Slot Assignment Panel */
+.slot-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.slot-silhouette {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(56, 201, 255, 0.08);
+  border: 1px solid rgba(56, 201, 255, 0.2);
+  border-radius: 8px;
+}
+
+.slot-silhouette-label {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.slot-silhouette-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent3);
+}
+
+.slot-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slot-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  transition: var(--transition-fast);
+}
+
+.slot-card.empty {
+  opacity: 0.5;
+}
+
+.slot-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.slot-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.slot-name {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.slot-ball {
+  padding: 4px 0;
+}
+
+.slot-ball-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.slot-ball-specs {
+  display: flex;
+  gap: 10px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.slot-empty-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--border);
+  font-weight: 700;
+}
+
 .recs-empty,
 .recs-loading {
   font-size: 0.9rem;
