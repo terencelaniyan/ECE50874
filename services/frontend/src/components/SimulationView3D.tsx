@@ -717,7 +717,6 @@ export function SimulationView3D({ initialParams }: Props) {
       let cameraMovedForImpact = false;
 
       const animate = () => {
-        try {
         if (idx >= trajectory.length) {
           setPhaseLabel(sim.pinsDown === 10 ? "STRIKE! \u2713" : `${sim.pinsDown} PINS`);
           setSummary(sim);
@@ -753,11 +752,14 @@ export function SimulationView3D({ initialParams }: Props) {
 
         const frame = trajectory[idx];
 
+        // Schedule next frame FIRST — ensures loop never dies from render errors
+        const step = frame.z >= LANE_LENGTH_M - 0.5 ? 1 : 3;
+        idx += step;
+        requestAnimationFrame(animate);
+
         // Update ball position and rotation from physics
         ball.position.set(frame.x, frame.y, frame.z);
-        if (frame.qx !== undefined) {
-          ball.quaternion.set(frame.qx, frame.qy, frame.qz, frame.qw);
-        }
+        ball.quaternion.set(frame.qx, frame.qy, frame.qz, frame.qw);
 
         // Trail (only while ball is on lane, using pre-allocated buffer)
         if (frame.z < LANE_LENGTH_M + 0.5 && trailCount < maxTrailPts) {
@@ -794,14 +796,6 @@ export function SimulationView3D({ initialParams }: Props) {
             pin.position.set(pt.x, pt.y, pt.z);
             pin.quaternion.set(pt.qx, pt.qy, pt.qz, pt.qw);
           });
-        }
-
-        // Playback speed: faster on lane (skip 3), slower through pins (skip 1)
-        idx += frame.z >= LANE_LENGTH_M - 0.5 ? 1 : 3;
-        requestAnimationFrame(animate);
-        } catch (err) {
-          console.error(`[animate] CRASH at idx=${idx}:`, err);
-          setSimRunning(false);
         }
       };
       animate();
