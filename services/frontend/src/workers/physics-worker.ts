@@ -154,7 +154,7 @@ function simulateRapier(params: PhysicsParams): {
     );
   }
 
-  // ── Gutter physics — 3 angled cuboids per side approximating semicircle ──
+  // ── Gutter physics — single body per side with all colliders ──
   for (const s of [-1, 1]) {
     const gw = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
     const cx = s * (LANE_WIDTH_M / 2 + GUTTER_WIDTH_M / 2);
@@ -167,24 +167,22 @@ function simulateRapier(params: PhysicsParams): {
       gw,
     );
     // Inner slope (~30°)
-    const slopeBody1 = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
     const innerX = s * (LANE_WIDTH_M / 2 + GUTTER_WIDTH_M * 0.15);
     world.createCollider(
       RAPIER.ColliderDesc.cuboid(GUTTER_WIDTH_M * 0.2, 0.01, LANE_LENGTH_M / 2)
         .setTranslation(innerX, -GUTTER_DEPTH_M * 0.4, LANE_LENGTH_M / 2)
         .setRotation({ x: 0, y: 0, z: s * 0.5, w: Math.cos(0.25) })
         .setFriction(0.3),
-      slopeBody1,
+      gw,
     );
     // Outer slope (~30°)
-    const slopeBody2 = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
     const outerX = s * (LANE_WIDTH_M / 2 + GUTTER_WIDTH_M * 0.85);
     world.createCollider(
       RAPIER.ColliderDesc.cuboid(GUTTER_WIDTH_M * 0.2, 0.01, LANE_LENGTH_M / 2)
         .setTranslation(outerX, -GUTTER_DEPTH_M * 0.4, LANE_LENGTH_M / 2)
         .setRotation({ x: 0, y: 0, z: -s * 0.5, w: Math.cos(0.25) })
         .setFriction(0.3),
-      slopeBody2,
+      gw,
     );
 
     // Gutter inner wall (lane edge)
@@ -254,7 +252,6 @@ function simulateRapier(params: PhysicsParams): {
   for (const [px, pz] of PIN_POSITIONS) {
     const desc = RAPIER.RigidBodyDesc.dynamic()
       .setTranslation(px, PIN_BODY_Y, PIN_DECK_Z + pz)
-      .setCcdEnabled(true)
       .setAngularDamping(0.5)
       .setLinearDamping(0.3);
     const body = world.createRigidBody(desc);

@@ -113,7 +113,7 @@ function makePinMesh(): THREE.Group {
   const pts = PIN_PROFILE_PTS.map(([r, y]) => new THREE.Vector2(r, y));
   const grp = new THREE.Group();
   const body = new THREE.Mesh(
-    new THREE.LatheGeometry(pts, 20),
+    new THREE.LatheGeometry(pts, 12),
     new THREE.MeshPhysicalMaterial({
       color: 0xf8f8f2, roughness: 0.18, metalness: 0.02,
       clearcoat: 0.4, clearcoatRoughness: 0.2,
@@ -262,13 +262,11 @@ export function SimulationView3D({ initialParams }: Props) {
     scene.add(new THREE.AmbientLight(0x352030, 0.4));
     scene.add(new THREE.HemisphereLight(0x443344, 0x221122, 0.15));
 
-    // Overhead lane spots — warm white at regular intervals
+    // Overhead lane spots — warm white at regular intervals (no shadows for perf)
     for (let z = 2; z < LANE_LENGTH_M; z += 3.5) {
       const spot = new THREE.SpotLight(0xffd9b3, 1.4, 14, Math.PI / 5, 0.6, 1);
       spot.position.set(0, 4.5, z);
       spot.target.position.set(0, 0, z);
-      spot.castShadow = true;
-      spot.shadow.mapSize.set(512, 512);
       scene.add(spot);
       scene.add(spot.target);
       // Light fixture housing
@@ -292,7 +290,7 @@ export function SimulationView3D({ initialParams }: Props) {
     pinLight.position.set(0, 4, LANE_LENGTH_M + 0.3);
     pinLight.target.position.set(0, 0, LANE_LENGTH_M + 0.4);
     pinLight.castShadow = true;
-    pinLight.shadow.mapSize.set(1024, 1024);
+    pinLight.shadow.mapSize.set(512, 512);
     scene.add(pinLight);
     scene.add(pinLight.target);
 
@@ -699,11 +697,20 @@ export function SimulationView3D({ initialParams }: Props) {
       });
 
       ball.visible = true;
-      const trailPoints: THREE.Vector3[] = [];
+      // Pre-allocate trail buffer (max 500 points)
+      const maxTrailPts = 500;
+      const trailPositions = new Float32Array(maxTrailPts * 3);
+      const trailGeo = new THREE.BufferGeometry();
+      trailGeo.setAttribute("position", new THREE.BufferAttribute(trailPositions, 3));
+      trailGeo.setDrawRange(0, 0);
+      trail.geometry.dispose();
+      trail.geometry = trailGeo;
+      let trailCount = 0;
       let idx = 0;
       let cameraMovedForImpact = false;
 
       const animate = () => {
+        try {
         if (idx >= trajectory.length) {
           setPhaseLabel(sim.pinsDown === 10 ? "STRIKE! \u2713" : `${sim.pinsDown} PINS`);
           setSummary(sim);
@@ -745,12 +752,15 @@ export function SimulationView3D({ initialParams }: Props) {
           ball.quaternion.set(frame.qx, frame.qy, frame.qz, frame.qw);
         }
 
-        // Trail (only while ball is on lane)
-        if (frame.z < LANE_LENGTH_M + 0.5) {
-          trailPoints.push(new THREE.Vector3(frame.x, BALL_RADIUS_M * 0.3, frame.z));
-          const trailGeo = new THREE.BufferGeometry().setFromPoints(trailPoints);
-          trail.geometry.dispose();
-          trail.geometry = trailGeo;
+        // Trail (only while ball is on lane, using pre-allocated buffer)
+        if (frame.z < LANE_LENGTH_M + 0.5 && trailCount < maxTrailPts) {
+          const i3 = trailCount * 3;
+          trailPositions[i3] = frame.x;
+          trailPositions[i3 + 1] = BALL_RADIUS_M * 0.3;
+          trailPositions[i3 + 2] = frame.z;
+          trailCount++;
+          trailGeo.setDrawRange(0, trailCount);
+          (trailGeo.attributes.position as THREE.BufferAttribute).needsUpdate = true;
         }
 
         // Camera: chase mode follows ball
@@ -782,6 +792,10 @@ export function SimulationView3D({ initialParams }: Props) {
         // Playback speed: skip frames for ~2x real-time
         idx += 2;
         requestAnimationFrame(animate);
+        } catch (err) {
+          console.error(`[animate] CRASH at idx=${idx}:`, err);
+          setSimRunning(false);
+        }
       };
       animate();
     },
