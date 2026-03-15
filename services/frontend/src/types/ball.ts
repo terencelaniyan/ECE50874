@@ -147,3 +147,61 @@ export interface GapZone {
 export interface GapResponse {
   zones: GapZone[];
 }
+
+// ── V2 Recommendation Types ──────────────────────────────────────────────
+
+export interface RecommendV2Item {
+  ball: Ball;
+  score: number;
+  method: string;        // "knn", "two_tower", or "hybrid"
+  reason: string | null;
+}
+
+export interface RecommendV2Response {
+  items: RecommendV2Item[];
+  method: string;            // method actually used
+  degradation_model: string; // "v1" or "v2"
+  normalized: boolean;
+}
+
+// ── Slot Assignment Types ───────────────────────────────────────────────
+
+export interface SlotAssignment {
+  ball_id: string;
+  slot: number;          // 1-6
+  slot_name: string;
+  slot_description: string;
+  rg: number;
+  diff: number;
+}
+
+export interface SlotCoverage {
+  slot: number;
+  name: string;
+  covered: boolean;
+}
+
+export interface SlotAssignResponse {
+  assignments: SlotAssignment[];
+  best_k: number;
+  silhouette_score: number;
+  slot_coverage: SlotCoverage[];
+}
+
+// ── Degradation Comparison Types ────────────────────────────────────────
+
+export interface DegradationModelResult {
+  rg: number;
+  diff: number;
+  int_diff: number;
+  factor: number;
+}
+
+export interface DegradationCompareResponse {
+  original: DegradationModelResult;
+  v1_linear: DegradationModelResult;
+  v2_logarithmic: DegradationModelResult;
+  game_count: number;
+  coverstock_type: string | null;
+  v2_lambda: number;
+}

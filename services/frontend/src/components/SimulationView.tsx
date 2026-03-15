@@ -13,11 +13,19 @@ const OIL_OPTIONS = [
   "Sport Shot — Chameleon (41ft)",
 ];
 
-export function SimulationView() {
+interface SimulationViewProps {
+  initialParams?: {
+    speed: number;
+    revRate: number;
+    launchAngle: number;
+  };
+}
+
+export function SimulationView({ initialParams }: SimulationViewProps = {}) {
   const { bag } = useBag();
-  const [speed, setSpeed] = useState(17);
-  const [revRate, setRevRate] = useState(280);
-  const [launchAngle, setLaunchAngle] = useState(3);
+  const [speed, setSpeed] = useState(initialParams?.speed ?? 17);
+  const [revRate, setRevRate] = useState(initialParams?.revRate ?? 280);
+  const [launchAngle, setLaunchAngle] = useState(initialParams?.launchAngle ?? 3);
   const [board, setBoard] = useState(15);
   const [oilPattern, setOilPattern] = useState(OIL_OPTIONS[0]);
   const [selectedBallName, setSelectedBallName] = useState<string>("");
@@ -36,6 +44,15 @@ export function SimulationView() {
     patternLength: number;
   } | null>(null);
   const [advice, setAdvice] = useState<SimulationAdvice | null>(null);
+
+  // Update sliders when initialParams changes (from Analysis tab handoff)
+  useEffect(() => {
+    if (initialParams) {
+      setSpeed(Math.round(initialParams.speed * 2) / 2);
+      setRevRate(Math.round(initialParams.revRate / 10) * 10);
+      setLaunchAngle(Math.round(initialParams.launchAngle * 2) / 2);
+    }
+  }, [initialParams]);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const pathRef = useRef<SVGPathElement>(null);

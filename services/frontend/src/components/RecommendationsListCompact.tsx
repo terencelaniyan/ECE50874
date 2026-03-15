@@ -8,11 +8,11 @@ import type { GapZone } from "../types/ball";
 
 type RecMethod = "knn" | "two_tower" | "hybrid";
 
-/** Derive match % from score (lower score = better). Normalize so best in list is 100%, rest scale down. */
-function scoreToMatchPercent(score: number, maxScoreInList: number): number {
-  if (maxScoreInList <= 0) return 100;
-  const pct = 100 - (score / maxScoreInList) * 100;
-  return Math.max(0, Math.round(pct));
+/** Derive match % from score (lower score = better). Best in list → 100%, worst → baseline. */
+function scoreToMatchPercent(score: number, minScore: number, maxScore: number): number {
+  if (maxScore <= minScore) return 100; // all items equal or single item
+  const pct = 100 * (1 - (score - minScore) / (maxScore - minScore));
+  return Math.max(5, Math.round(pct)); // floor at 5% so worst still shows a sliver
 }
 
 function getReasonText(
@@ -152,7 +152,9 @@ export function RecommendationsListCompact() {
   }
 
   const validItems = (items ?? []).filter((i) => i?.ball);
-  const maxScore = Math.max(0, ...validItems.map((i) => i.score));
+  const scores = validItems.map((i) => i.score);
+  const minScore = Math.min(...scores);
+  const maxScore = Math.max(...scores);
 
   return (
     <>
@@ -160,7 +162,7 @@ export function RecommendationsListCompact() {
       <ul className="rec-list-compact" aria-label="Recommendations">
         {validItems.map((item, i) => {
           const isGapFill = gapBallIds.has(item.ball.ball_id);
-          const matchPct = scoreToMatchPercent(item.score, maxScore);
+          const matchPct = scoreToMatchPercent(item.score, minScore, maxScore);
           const isV2 = "method" in item;
           const reason = isV2 && (item as RecommendV2Item).reason
             ? (item as RecommendV2Item).reason!
