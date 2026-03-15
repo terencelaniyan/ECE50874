@@ -188,3 +188,149 @@ class GapZone(BaseModel):
 class GapResponse(BaseModel):
     """Response for POST /gaps."""
     zones: List[GapZone]  # zones sorted by first ball's gap_score descending
+
+
+# ---------------------------------------------------------------------------
+# V2 Recommendation models (two-tower + enhanced KNN)
+# ---------------------------------------------------------------------------
+
+class RecommendV2Request(BaseModel):
+    """POST /recommendations/v2 – v2 recommendations with model selection."""
+    arsenal_ball_ids: List[str] = Field(default_factory=list)
+    arsenal_id: Optional[str] = None
+    game_counts: Optional[Dict[str, int]] = None
+    k: int = Field(default=5, ge=1, le=50)
+    w_rg: float = Field(default=1.0, ge=0.1, le=10.0)
+    w_diff: float = Field(default=1.0, ge=0.1, le=10.0)
+    w_int: float = Field(default=1.0, ge=0.1, le=10.0)
+    w_cover: float = Field(default=0.3, ge=0.0, le=10.0, description="Weight for coverstock ordinal encoding (proposal eq. 3)")
+    method: str = Field(default="knn", description="knn, two_tower, or hybrid")
+    metric: str = Field(default="l1", description="l1 or l2")
+    normalize: bool = Field(default=False, description="Min-max normalize before distance calc")
+    degradation_model: str = Field(default="v1", description="v1 (linear) or v2 (logarithmic)")
+    brand: Optional[str] = None
+    coverstock_type: Optional[str] = None
+    status: Optional[str] = None
+    diversity_min_distance: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class RecommendV2Item(BaseModel):
+    """Single v2 recommendation result."""
+    ball: Ball
+    score: float
+    method: str = "knn"
+    reason: Optional[str] = None
+
+
+class RecommendV2Response(BaseModel):
+    """Response for POST /recommendations/v2."""
+    items: List[RecommendV2Item]
+    method: str
+    degradation_model: str
+    normalized: bool
+
+
+# ---------------------------------------------------------------------------
+# Slot Assignment models
+# ---------------------------------------------------------------------------
+
+class SlotAssignRequest(BaseModel):
+    """POST /slots – assign arsenal balls to the 6-ball slot system."""
+    arsenal_ball_ids: List[str] = Field(default_factory=list)
+    arsenal_id: Optional[str] = None
+    game_counts: Optional[Dict[str, int]] = None
+
+
+class SlotAssignment(BaseModel):
+    """Single ball-to-slot assignment."""
+    ball_id: str
+    slot: int
+    slot_name: str
+    slot_description: str
+    rg: float
+    diff: float
+
+
+class SlotCoverage(BaseModel):
+    """Coverage status for one of the 6 canonical slots."""
+    slot: int
+    name: str
+    covered: bool
+
+
+class SlotAssignResponse(BaseModel):
+    """Response for POST /slots."""
+    assignments: List[SlotAssignment]
+    best_k: int
+    silhouette_score: float
+    slot_coverage: List[SlotCoverage]
+
+
+# ---------------------------------------------------------------------------
+# Degradation Comparison models
+# ---------------------------------------------------------------------------
+
+class DegradationCompareRequest(BaseModel):
+    """POST /degradation/compare – compare v1 vs v2 degradation models."""
+    ball_id: Optional[str] = None
+    rg: float = Field(default=2.5, ge=2.0, le=3.0)
+    diff: float = Field(default=0.04, ge=0.0, le=0.1)
+    int_diff: float = Field(default=0.01, ge=0.0, le=0.1)
+    coverstock_type: Optional[str] = None
+    game_count: int = Field(default=50, ge=0, le=500)
+
+
+class DegradationModelResult(BaseModel):
+    """Degradation result for a single model."""
+    rg: float
+    diff: float
+    int_diff: float
+    factor: float
+
+
+class DegradationCompareResponse(BaseModel):
+    """Response for POST /degradation/compare."""
+    original: DegradationModelResult
+    v1_linear: DegradationModelResult
+    v2_logarithmic: DegradationModelResult
+    game_count: int
+    coverstock_type: Optional[str] = None
+    v2_lambda: float
+
+
+# ---------------------------------------------------------------------------
+# Admin / Training models
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Oil Pattern models
+# ---------------------------------------------------------------------------
+
+class FrictionZone(BaseModel):
+    """Single friction zone within an oil pattern."""
+    startFt: float
+    endFt: float
+    mu: float
+
+
+class OilPattern(BaseModel):
+    """Single oil pattern."""
+    id: int
+    name: str
+    length_ft: int
+    description: Optional[str] = None
+    zones: List[FrictionZone]
+
+
+class OilPatternsResponse(BaseModel):
+    """Response for GET /oil-patterns."""
+    items: List[OilPattern]
+
+
+class TrainModelRequest(BaseModel):
+    """POST /admin/train-model – train the two-tower model."""
+    n_arsenals: int = Field(default=500, ge=10, le=10000)
+    epochs: int = Field(default=20, ge=1, le=200)
+    batch_size: int = Field(default=64, ge=8, le=512)
+    lr: float = Field(default=0.001, ge=0.0001, le=0.1)
+    neg_ratio: int = Field(default=3, ge=1, le=10)
