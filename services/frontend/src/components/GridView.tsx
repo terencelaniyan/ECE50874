@@ -16,9 +16,12 @@ const DEFAULT_HEIGHT = 500;
 const TICK_COUNT = 6;
 const TICK_SIZE = 6;
 
-/** Fixed domain for arsenal-only view (RG x Differential). */
+/** Fixed domain for arsenal-only view (RG x Differential).
+ * Diff floor raised to 0.020 — real balls rarely go below this (even spare balls sit at ~0.015+).
+ * Prevents Voronoi cells from stretching into empty space at the bottom of the chart.
+ */
 const FIXED_RG_DOMAIN: [number, number] = [2.44, 2.78];
-const FIXED_DIFF_DOMAIN: [number, number] = [0.01, 0.065];
+const FIXED_DIFF_DOMAIN: [number, number] = [0.020, 0.065];
 
 /** Static slot zones in (rg, diff) for background shading (HTML prototype). */
 const SLOT_ZONES: { x: number; x2: number; y: number; y2: number; color: string }[] = [
@@ -26,7 +29,7 @@ const SLOT_ZONES: { x: number; x2: number; y: number; y2: number; color: string 
   { x: 2.52, x2: 2.58, y: 0.036, y2: 0.065, color: "rgba(255,156,56,0.04)" },
   { x: 2.52, x2: 2.62, y: 0.02, y2: 0.036, color: "rgba(232,255,60,0.03)" },
   { x: 2.58, x2: 2.7, y: 0.015, y2: 0.042, color: "rgba(56,201,255,0.04)" },
-  { x: 2.64, x2: 2.78, y: 0.01, y2: 0.03, color: "rgba(184,56,255,0.04)" },
+  { x: 2.64, x2: 2.78, y: 0.020, y2: 0.03, color: "rgba(184,56,255,0.04)" },
 ];
 
 function scaleLinear(
