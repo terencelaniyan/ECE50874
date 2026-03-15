@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bowling Physics — Rapier3D + Three.js</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #111; color: #eee; font-family: monospace; overflow: hidden; }
+  #canvas { width: 100vw; height: 80vh; display: block; }
+  #controls { padding: 10px 20px; display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  label { font-size: 12px; } input[type=range] { width: 100px; }
+  button { background: #e8ff3c; color: #111; border: none; padding: 8px 20px; cursor: pointer;
+    font-family: monospace; font-weight: bold; font-size: 14px; border-radius: 4px; }
+  button:hover { background: #d4eb30; }
+  #info { padding: 4px 20px; font-size: 11px; color: #888; }
+  .ctrl { display: flex; flex-direction: column; gap: 2px; }
+  .val { font-size: 11px; color: #e8ff3c; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="controls">
+  <div class="ctrl"><label>Speed: <span id="speedVal" class="val">17</span> mph</label>
+    <input type="range" id="speed" min="12" max="22" step="0.5" value="17"></div>
+  <div class="ctrl"><label>Rev Rate: <span id="revVal" class="val">300</span> rpm</label>
+    <input type="range" id="revRate" min="150" max="500" step="10" value="300"></div>
+  <div class="ctrl"><label>Angle: <span id="angleVal" class="val">2</span>&deg;</label>
+    <input type="range" id="angle" min="-6" max="6" step="0.5" value="2"></div>
+  <div class="ctrl"><label>Board: <span id="boardVal" class="val">17</span></label>
+    <input type="range" id="board" min="5" max="35" step="1" value="17"></div>
+  <button id="launch">LAUNCH</button>
+  <button id="reset" style="background:#555;color:#eee;">RESET</button>
+  <select id="cam" style="background:#222;color:#eee;border:1px solid #555;padding:4px;">
+    <option value="overhead">Overhead</option>
+    <option value="bowler">Bowler</option>
+    <option value="side">Side</option>
+    <option value="chase">Chase</option>
+  </select>
+</div>
+<div id="info">Loading...</div>
+
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "rapier": "https://cdn.jsdelivr.net/npm/@dimforge/rapier3d-compat@0.14.0/rapier.es.js"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import RAPIER from 'rapier';
+
+// ── Constants (SI units: meters, kg, seconds) ──
+const LANE_L = 18.288;   // 60 ft
+const LANE_W = 1.0668;   // 42 in
+const BALL_R = 0.1085;   // 4.25 in diameter
+const BALL_MASS = 6.8;   // 15 lb
+const PIN_R = 0.06;      // ~2.4 in belly radius
+const PIN_H = 0.381;     // 15 in
+const PIN_MASS = 1.53;   // 3 lb 6 oz
+const G = 9.81;
+const BOARDS = 39;
+const SP = 0.3048;       // 12 in pin spacing
+
+const PIN_POS = [
+  [0, 0],
+  [-SP/2, SP*0.866], [SP/2, SP*0.866],
+  [-SP, SP*1.732], [0, SP*1.732], [SP, SP*1.732],
+  [-SP*1.5, SP*2.598], [-SP/2, SP*2.598], [SP/2, SP*2.598], [SP*1.5, SP*2.598],
+];
+
+const info = document.getElementById('info');
+const canvas = document.getElementById('canvas');
+
+// ── Init Rapier ──
+info.textContent = 'Loading Rapier3D WASM...';
+await RAPIER.init();
+info.textContent = 'Setting up scene...';
+
+// ── Three.js Scene ──
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0d0d12);
+scene.fog = new THREE.Fog(0x0d0d12, 25, 35);
+
+const camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 60);
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+dirLight.position.set(2, 12, 8); dirLight.castShadow = true;
+scene.add(dirLight);
+scene.add(new THREE.PointLight(0xffffcc, 0.5, 8).translateZ(LANE_L + 0.5).translateY(3));
+
+// Lane
+const laneMesh = new THREE.Mesh(
+  new THREE.BoxGeometry(LANE_W, 0.04, LANE_L + 2),
+  new THREE.MeshStandardMaterial({ color: 0x9B7020, roughness: 0.6 })
+);
+laneMesh.position.set(0, -0.02, LANE_L / 2);
+laneMesh.receiveShadow = true;
+scene.add(laneMesh);
+
+// Board lines
+for (let i = 0; i <= BOARDS; i++) {
+  const x = (i / BOARDS) * LANE_W - LANE_W / 2;
+  const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, 0.001, 0), new THREE.Vector3(x, 0.001, LANE_L + 1)]);
+  scene.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: i % 5 === 0 ? 0.1 : 0.03 })));
+}
+
+// Gutters
+for (const s of [-1, 1]) {
+  const g = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, LANE_L + 2),
+    new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
+  g.position.set(s * (LANE_W / 2 + 0.06), -0.02, LANE_L / 2);
+  scene.add(g);
+}
+
+// Pin deck floor
+const deck = new THREE.Mesh(new THREE.BoxGeometry(LANE_W + 0.2, 0.04, 1.5),
+  new THREE.MeshStandardMaterial({ color: 0xA88030, roughness: 0.5 }));
+deck.position.set(0, -0.02, LANE_L + 0.6); deck.receiveShadow = true;
+scene.add(deck);
+
+// ── Pin meshes (lathe geometry for realistic shape) ──
+function makePinMesh() {
+  const pts = [
+    new THREE.Vector2(0, 0), new THREE.Vector2(0.030, 0), new THREE.Vector2(0.030, 0.04),
+    new THREE.Vector2(0.034, 0.10), new THREE.Vector2(0.035, 0.16),
+    new THREE.Vector2(0.028, 0.22), new THREE.Vector2(0.019, 0.28),
+    new THREE.Vector2(0.016, 0.32), new THREE.Vector2(0.013, 0.36), new THREE.Vector2(0, 0.381),
+  ];
+  const grp = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.LatheGeometry(pts, 12),
+    new THREE.MeshStandardMaterial({ color: 0xf5f5f0, roughness: 0.3 }));
+  body.castShadow = true; grp.add(body);
+  for (const y of [0.12, 0.15]) {
+    const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.034, 0.012, 12),
+      new THREE.MeshStandardMaterial({ color: 0xcc2222 }));
+    stripe.position.y = y; grp.add(stripe);
+  }
+  return grp;
+}
+
+const pinMeshes = [];
+for (let i = 0; i < 10; i++) {
+  const pin = makePinMesh();
+  pin.position.set(PIN_POS[i][0], 0, LANE_L + PIN_POS[i][1]);
+  scene.add(pin); pinMeshes.push(pin);
+}
+
+// Ball mesh
+const ballMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(BALL_R, 32, 32),
+  new THREE.MeshPhysicalMaterial({ color: 0xe8ff3c, metalness: 0.3, roughness: 0.35, clearcoat: 0.9 })
+);
+ballMesh.castShadow = true; ballMesh.visible = false; scene.add(ballMesh);
+
+let trailLine = null;
+const trailPts = [];
+
+// ── Physics ──
+let world, ballBody, pinBodies = [];
+let simFrames = [], playIdx = 0, playing = false;
+
+function createWorld() {
+  if (world) world.free();
+  world = new RAPIER.World({ x: 0, y: -G, z: 0 });
+
+  // Ground (fixed body)
+  const ground = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
+  world.createCollider(RAPIER.ColliderDesc.cuboid(5, 0.02, 25)
+    .setTranslation(0, -0.02, 10)
+    .setFriction(0.15).setRestitution(0.1), ground);
+
+  // Back wall
+  const wall = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
+  world.createCollider(RAPIER.ColliderDesc.cuboid(1.5, 0.5, 0.05)
+    .setTranslation(0, 0.25, LANE_L + 1.3)
+    .setRestitution(0.3), wall);
+
+  // Gutter walls
+  for (const s of [-1, 1]) {
+    const gw = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
+    world.createCollider(RAPIER.ColliderDesc.cuboid(0.01, 0.1, 12)
+      .setTranslation(s * (LANE_W / 2 + 0.01), 0.05, 10), gw);
+  }
+
+  // Pins (dynamic bodies with capsule-like colliders)
+  pinBodies = [];
+  for (const [px, pz] of PIN_POS) {
+    const desc = RAPIER.RigidBodyDesc.dynamic()
+      .setTranslation(px, PIN_H / 2, LANE_L + pz)
+      .setCcdEnabled(true);
+    const body = world.createRigidBody(desc);
+    // Bottom sphere (belly)
+    world.createCollider(RAPIER.ColliderDesc.ball(PIN_R)
+      .setTranslation(0, -PIN_H / 2 + 0.08, 0)
+      .setDensity(PIN_MASS / 2 / ((4/3) * Math.PI * PIN_R ** 3))
+      .setRestitution(0.4).setFriction(0.4), body);
+    // Top sphere (neck)
+    world.createCollider(RAPIER.ColliderDesc.ball(PIN_R * 0.5)
+      .setTranslation(0, PIN_H / 2 - 0.06, 0)
+      .setDensity(PIN_MASS / 2 / ((4/3) * Math.PI * (PIN_R * 0.5) ** 3))
+      .setRestitution(0.3).setFriction(0.3), body);
+    pinBodies.push(body);
+  }
+}
+
+function launchBall(speedMph, revRpm, angleDeg, boardNum) {
+  const v0 = speedMph * 0.44704;
+  const omega = (revRpm * 2 * Math.PI) / 60;
+  const rad = (angleDeg * Math.PI) / 180;
+  const startX = (boardNum / BOARDS) * LANE_W - LANE_W / 2;
+
+  const desc = RAPIER.RigidBodyDesc.dynamic()
+    .setTranslation(startX, BALL_R, 0.1)
+    .setLinvel(Math.sin(rad) * v0, 0, Math.cos(rad) * v0)
+    .setCcdEnabled(true);
+
+  ballBody = world.createRigidBody(desc);
+  world.createCollider(RAPIER.ColliderDesc.ball(BALL_R)
+    .setDensity(BALL_MASS / ((4/3) * Math.PI * BALL_R ** 3))
+    .setRestitution(0.3).setFriction(0.2), ballBody);
+}
+
+function runSimulation() {
+  const frames = [];
+  const MAX = 800;
+  for (let s = 0; s < MAX; s++) {
+    world.step();
+    if (s % 2 === 0) {
+      const bp = ballBody.translation();
+      const bq = ballBody.rotation();
+      const bv = ballBody.linvel();
+      const pins = pinBodies.map(pb => {
+        const pp = pb.translation();
+        const pq = pb.rotation();
+        return { x: pp.x, y: pp.y, z: pp.z, qx: pq.x, qy: pq.y, qz: pq.z, qw: pq.w };
+      });
+      frames.push({
+        ball: { x: bp.x, y: bp.y, z: bp.z, qx: bq.x, qy: bq.y, qz: bq.z, qw: bq.w, vx: bv.x, vz: bv.z },
+        pins,
+      });
+      if (bp.z > LANE_L + 2 || bp.y < -1) break;
+    }
+  }
+  return frames;
+}
+
+// ── Controls ──
+function resetAll() {
+  playing = false; playIdx = 0; simFrames = [];
+  ballMesh.visible = false;
+  trailPts.length = 0;
+  if (trailLine) { scene.remove(trailLine); trailLine = null; }
+  pinMeshes.forEach((m, i) => {
+    m.position.set(PIN_POS[i][0], 0, LANE_L + PIN_POS[i][1]);
+    m.rotation.set(0, 0, 0); m.quaternion.identity();
+  });
+  createWorld();
+  info.textContent = 'Ready.';
+}
+
+function launch() {
+  if (playing) return;
+  resetAll();
+  const spd = parseFloat(document.getElementById('speed').value);
+  const rev = parseInt(document.getElementById('revRate').value);
+  const ang = parseFloat(document.getElementById('angle').value);
+  const brd = parseInt(document.getElementById('board').value);
+
+  launchBall(spd, rev, ang, brd);
+  ballMesh.visible = true;
+
+  const t0 = performance.now();
+  simFrames = runSimulation();
+  const ms = (performance.now() - t0).toFixed(0);
+  info.textContent = `Physics: ${ms}ms, ${simFrames.length} frames. Playing...`;
+  setCamera(document.getElementById('cam').value);
+  playing = true; playIdx = 0;
+}
+
+for (const [id, valId] of [['speed','speedVal'],['revRate','revVal'],['angle','angleVal'],['board','boardVal']]) {
+  document.getElementById(id).addEventListener('input', e => document.getElementById(valId).textContent = e.target.value);
+}
+document.getElementById('launch').addEventListener('click', launch);
+document.getElementById('reset').addEventListener('click', resetAll);
+document.getElementById('cam').addEventListener('change', e => setCamera(e.target.value));
+
+function setCamera(mode) {
+  switch (mode) {
+    case 'overhead': camera.position.set(0, 14, -3); camera.lookAt(0, 0, LANE_L / 2); break;
+    case 'bowler':   camera.position.set(0, 1.3, -0.8); camera.lookAt(0, 0.15, LANE_L); break;
+    case 'side':     camera.position.set(3, 2, LANE_L / 2); camera.lookAt(0, 0, LANE_L / 2); break;
+    case 'chase':    camera.position.set(0, 2, -1); camera.lookAt(0, 0, 5); break;
+  }
+}
+
+// ── Main loop ──
+function animate() {
+  requestAnimationFrame(animate);
+
+  if (playing && playIdx < simFrames.length) {
+    const f = simFrames[playIdx];
+    ballMesh.position.set(f.ball.x, f.ball.y, f.ball.z);
+    ballMesh.quaternion.set(f.ball.qx, f.ball.qy, f.ball.qz, f.ball.qw);
+
+    // Trail
+    if (f.ball.z < LANE_L + 0.5 && playIdx % 2 === 0) {
+      trailPts.push(new THREE.Vector3(f.ball.x, BALL_R * 0.3, f.ball.z));
+      if (trailLine) scene.remove(trailLine);
+      trailLine = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(trailPts),
+        new THREE.LineBasicMaterial({ color: 0xe8ff3c, transparent: true, opacity: 0.6 })
+      );
+      scene.add(trailLine);
+    }
+
+    // Pins — direct from physics
+    let fallen = 0;
+    f.pins.forEach((p, i) => {
+      pinMeshes[i].position.set(p.x, p.y, p.z);
+      pinMeshes[i].quaternion.set(p.qx, p.qy, p.qz, p.qw);
+      const dx = Math.abs(p.x - PIN_POS[i][0]);
+      const dz = Math.abs(p.z - (LANE_L + PIN_POS[i][1]));
+      const dy = Math.abs(p.y - PIN_H / 2);
+      if (dx > 0.08 || dz > 0.08 || dy > 0.08) fallen++;
+    });
+
+    // Chase camera
+    if (document.getElementById('cam').value === 'chase') {
+      camera.position.set(f.ball.x + 0.5, 1.5, f.ball.z - 2);
+      camera.lookAt(f.ball.x, 0.1, f.ball.z + 3);
+    }
+
+    playIdx++;
+    info.textContent = `Frame ${playIdx}/${simFrames.length} | Pins: ${fallen}/10`;
+
+    if (playIdx >= simFrames.length) {
+      playing = false;
+      const lastB = simFrames[simFrames.length - 1].ball;
+      const ea = Math.abs(Math.atan2(lastB.vx, lastB.vz) * 180 / Math.PI);
+      info.textContent = `Done! Pins: ${fallen}/10 | Entry: ${ea.toFixed(1)}° | ${simFrames.length} frames`;
+    }
+  }
+
+  renderer.render(scene, camera);
+}
+
+// ── Init ──
+resetAll();
+setCamera('overhead');
+animate();
+window.addEventListener('resize', () => {
+  camera.aspect = canvas.clientWidth / canvas.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+});
+</script>
+</body>
+</html>
