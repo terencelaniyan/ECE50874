@@ -41,7 +41,9 @@ test.describe("TC-07: Degradation V2 Toggle", () => {
     });
     await expect(page.locator(".deg-model-indicator")).toContainText("(LOG)");
 
-    // Lambda indicator should appear for V2 model
-    await expect(page.locator(".lambda-indicator").first()).toBeVisible();
+    // Lambda indicator should appear for V2 model (after API response)
+    await expect(page.locator(".lambda-indicator").first()).toBeVisible({
+      timeout: 10_000,
+    });
   });
 });

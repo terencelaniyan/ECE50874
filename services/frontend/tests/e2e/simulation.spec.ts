@@ -51,12 +51,12 @@ test.describe("TC-06: Lane Simulation", () => {
       timeout: 10_000,
     });
 
-    // Verify key result rows
-    await expect(page.getByText("Entry Angle")).toBeVisible();
-    await expect(page.getByText("Breakpoint")).toBeVisible();
-    await expect(page.getByText("Skid Length")).toBeVisible();
-    await expect(page.getByText("Hook Distance")).toBeVisible();
-    await expect(page.getByText("Outcome")).toBeVisible();
+    // Verify key result rows (exact match to avoid hitting advice text)
+    await expect(page.getByText("Entry Angle", { exact: true })).toBeVisible();
+    await expect(page.getByText("Breakpoint", { exact: true })).toBeVisible();
+    await expect(page.getByText("Skid Length", { exact: true })).toBeVisible();
+    await expect(page.getByText("Hook Distance", { exact: true })).toBeVisible();
+    await expect(page.getByText("Outcome", { exact: true })).toBeVisible();
 
     // Advice card should appear
     await expect(page.locator(".advice-card")).toBeVisible();
