@@ -680,8 +680,13 @@ export function SimulationView3D({ initialParams }: Props) {
       let idx = 0;
       let cameraMovedForImpact = false;
 
-      const animate = () => {
+      // Use setInterval for playback — requestAnimationFrame competes with
+      // Three.js render loop causing extreme slowdown. setInterval runs
+      // independently and just updates object positions; the render loop
+      // picks up the changes on its next frame.
+      const playbackInterval = setInterval(() => {
         if (idx >= trajectory.length) {
+          clearInterval(playbackInterval);
           setPhaseLabel(sim.pinsDown === 10 ? "STRIKE! \u2713" : `${sim.pinsDown} PINS`);
           setSummary(sim);
 
@@ -715,10 +720,7 @@ export function SimulationView3D({ initialParams }: Props) {
         }
 
         const frame = trajectory[idx];
-
-        // Schedule next frame FIRST — ensures loop never dies from render errors
         idx += 3;
-        requestAnimationFrame(animate);
 
         // Update ball position and rotation from physics
         ball.position.set(frame.x, frame.y, frame.z);
@@ -751,7 +753,6 @@ export function SimulationView3D({ initialParams }: Props) {
         }
 
         // Update pin positions from physics data
-        // Use position directly — geometry is centered at PIN_H/2 so NO offset needed
         if (frame.pins) {
           frame.pins.forEach((pt, i) => {
             const pin = pins[i];
@@ -760,8 +761,7 @@ export function SimulationView3D({ initialParams }: Props) {
             pin.quaternion.set(pt.qx, pt.qy, pt.qz, pt.qw);
           });
         }
-      };
-      animate();
+      }, 33); // ~30fps playback, independent of render loop
     },
     [cameraMode, oilPatternIdx],
   );
