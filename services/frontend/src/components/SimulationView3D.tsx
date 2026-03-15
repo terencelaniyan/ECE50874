@@ -245,8 +245,8 @@ export function SimulationView3D({ initialParams }: Props) {
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 80);
-    camera.position.set(0, 14, -3);
-    camera.lookAt(0, 0, LANE_LENGTH_M / 2);
+    camera.position.set(0, 4, -2);
+    camera.lookAt(0, 0, LANE_LENGTH_M * 0.6);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -259,8 +259,15 @@ export function SimulationView3D({ initialParams }: Props) {
     rendererRef.current = renderer;
 
     // ── Lighting (warm bowling alley atmosphere) ──
-    scene.add(new THREE.AmbientLight(0x352030, 0.4));
-    scene.add(new THREE.HemisphereLight(0x443344, 0x221122, 0.15));
+    scene.add(new THREE.AmbientLight(0x554040, 0.6));
+    scene.add(new THREE.HemisphereLight(0x665555, 0x332222, 0.3));
+
+    // Overhead fill light (ensures lane is visible from top camera)
+    const overheadFill = new THREE.DirectionalLight(0xffe8d0, 0.4);
+    overheadFill.position.set(0, 15, LANE_LENGTH_M / 2);
+    overheadFill.target.position.set(0, 0, LANE_LENGTH_M / 2);
+    scene.add(overheadFill);
+    scene.add(overheadFill.target);
 
     // Overhead lane spots — warm white at regular intervals (no shadows for perf)
     for (let z = 2; z < LANE_LENGTH_M; z += 3.5) {
@@ -612,8 +619,8 @@ export function SimulationView3D({ initialParams }: Props) {
     if (!cam) return;
     switch (cameraMode) {
       case "overhead":
-        cam.position.set(0, 14, -3);
-        cam.lookAt(0, 0, LANE_LENGTH_M / 2);
+        cam.position.set(0, 4, -2);
+        cam.lookAt(0, 0, LANE_LENGTH_M * 0.6);
         break;
       case "chase":
         cam.position.set(0, 2, -1);
@@ -789,8 +796,8 @@ export function SimulationView3D({ initialParams }: Props) {
           });
         }
 
-        // Playback speed: skip frames for ~2x real-time
-        idx += 2;
+        // Playback speed: faster on lane (skip 3), slower through pins (skip 1)
+        idx += frame.z >= LANE_LENGTH_M - 0.5 ? 1 : 3;
         requestAnimationFrame(animate);
         } catch (err) {
           console.error(`[animate] CRASH at idx=${idx}:`, err);
