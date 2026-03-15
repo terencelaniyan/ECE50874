@@ -2,6 +2,9 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useBag } from "../context/BagContext";
 import { computeTrajectoryPath } from "../utils/parametric-physics";
 import { computePhaseRatios } from "../utils/phase-detector";
+import { analyzeSimulation } from "../utils/decision-framework";
+import type { SimulationAdvice } from "../utils/decision-framework";
+import type { Ball } from "../types/ball";
 
 const OIL_OPTIONS = [
   "House Shot (38ft)",
@@ -32,6 +35,7 @@ export function SimulationView() {
     outcomeClass: "good" | "warn" | "bad";
     patternLength: number;
   } | null>(null);
+  const [advice, setAdvice] = useState<SimulationAdvice | null>(null);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
@@ -272,6 +276,19 @@ export function SimulationView() {
         outcomeClass: result.outcomeClass,
         patternLength: result.patternLength,
       });
+
+      // Decision Framework: analyze outcome and produce advice
+      const selectedEntry = bag.find((e) => (e.ball.name ?? "Custom") === selectedBallName);
+      const covType = selectedEntry?.type === "catalog"
+        ? (selectedEntry.ball as Ball).coverstock_type ?? undefined
+        : undefined;
+      const simAdvice = analyzeSimulation(result, {
+        rg, diff,
+        coverstockType: covType,
+        gameCount: selectedEntry?.game_count,
+      });
+      setAdvice(simAdvice);
+
       setSimRunning(false);
     }, 2000);
   }, [speed, revRate, launchAngle, board, simRunning, bag, selectedBallName, oilPattern]);
@@ -422,6 +439,29 @@ export function SimulationView() {
                 {results.outcome}
               </div>
             </div>
+          </div>
+        )}
+        {advice && (
+          <div className={`advice-card advice-${results?.entryClass ?? "warn"}`}>
+            <div className="advice-summary">{advice.summary}</div>
+            {advice.reasons.length > 0 && (
+              <ul className="advice-reasons">
+                {advice.reasons.map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
+              </ul>
+            )}
+            {advice.actions.length > 0 && (
+              <div className="advice-actions">
+                <div className="advice-actions-title">RECOMMENDED ACTIONS</div>
+                {advice.actions.map((a, i) => (
+                  <div key={i} className={`advice-action advice-action-${a.type}`}>
+                    <div className="advice-action-label">{a.label}</div>
+                    <div className="advice-action-detail">{a.detail}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

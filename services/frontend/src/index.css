@@ -1356,6 +1356,74 @@ body::before {
 .result-val.warn { color: var(--accent); }
 .result-val.bad { color: var(--accent2); }
 
+/* Decision Framework Advice Panel */
+.advice-card {
+  background: var(--surface2, var(--surface-color));
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 14px;
+  border-left-width: 3px;
+}
+
+.advice-card.advice-good { border-left-color: #4cff8a; }
+.advice-card.advice-warn { border-left-color: var(--accent); }
+.advice-card.advice-bad { border-left-color: var(--accent2); }
+
+.advice-summary {
+  font-size: 11px;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.advice-reasons {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px;
+}
+
+.advice-reasons li {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.5;
+  padding: 4px 0 4px 12px;
+  border-left: 2px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 4px;
+}
+
+.advice-actions-title {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.advice-action {
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  border-left: 2px solid var(--border);
+}
+
+.advice-action-change_ball { border-left-color: var(--accent3); }
+.advice-action-adjust_delivery { border-left-color: var(--accent); }
+.advice-action-maintenance { border-left-color: #ff9c38; }
+
+.advice-action-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.advice-action-detail {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
 /* Recommendations compact (right panel) */
 .recs-panel-wrap .panel-body {
   padding: 12px;
