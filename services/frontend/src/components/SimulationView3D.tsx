@@ -267,43 +267,20 @@ export function SimulationView3D({ initialParams }: Props) {
     scene.add(overheadFill);
     scene.add(overheadFill.target);
 
-    // Overhead lane spots — warm white at regular intervals (no shadows for perf)
-    for (let z = 2; z < LANE_LENGTH_M; z += 3.5) {
-      const spot = new THREE.SpotLight(0xffd9b3, 1.4, 14, Math.PI / 5, 0.6, 1);
-      spot.position.set(0, 4.5, z);
-      spot.target.position.set(0, 0, z);
-      scene.add(spot);
-      scene.add(spot.target);
-      // Light fixture housing
-      const fixture = new THREE.Mesh(
-        new THREE.BoxGeometry(0.2, 0.06, 0.2),
-        new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.3 }),
-      );
-      fixture.position.set(0, 4.5, z);
-      scene.add(fixture);
-    }
+    // Two main lights for performance (SpotLights are expensive per-pixel)
+    // Lane light — wide warm spot covering the full lane
+    const laneLight = new THREE.SpotLight(0xffd9b3, 2.0, 25, Math.PI / 3, 0.5, 0.5);
+    laneLight.position.set(0, 5, LANE_LENGTH_M / 2);
+    laneLight.target.position.set(0, 0, LANE_LENGTH_M / 2);
+    scene.add(laneLight);
+    scene.add(laneLight.target);
 
-    // Blue accent LEDs along gutter edges
-    for (const s of [-1, 1]) {
-      const accentLight = new THREE.PointLight(0x4444aa, 0.3, 8);
-      accentLight.position.set(s * (LANE_WIDTH_M / 2 + 0.1), 0.1, LANE_LENGTH_M / 2);
-      scene.add(accentLight);
-    }
-
-    // Pin deck spotlight
-    const pinLight = new THREE.SpotLight(0xfff5e0, 2.5, 10, Math.PI / 5, 0.3, 1);
+    // Pin deck spotlight — bright, focused
+    const pinLight = new THREE.SpotLight(0xfff5e0, 2.5, 10, Math.PI / 4, 0.3, 0.5);
     pinLight.position.set(0, 4, LANE_LENGTH_M + 0.3);
     pinLight.target.position.set(0, 0, LANE_LENGTH_M + 0.4);
-    // Shadows disabled for render performance
     scene.add(pinLight);
     scene.add(pinLight.target);
-
-    // Side fill on pin deck
-    const pinFill = new THREE.SpotLight(0xffeedd, 0.8, 8, Math.PI / 4, 0.5, 1);
-    pinFill.position.set(1.5, 3, LANE_LENGTH_M + 0.5);
-    pinFill.target.position.set(0, 0, LANE_LENGTH_M + 0.4);
-    scene.add(pinFill);
-    scene.add(pinFill.target);
 
     // ── Lane materials (maple vs pine) ──
     const pineMat = new THREE.MeshStandardMaterial({
@@ -740,8 +717,7 @@ export function SimulationView3D({ initialParams }: Props) {
         const frame = trajectory[idx];
 
         // Schedule next frame FIRST — ensures loop never dies from render errors
-        const step = frame.z >= LANE_LENGTH_M - 0.5 ? 2 : 3;
-        idx += step;
+        idx += 3;
         requestAnimationFrame(animate);
 
         // Update ball position and rotation from physics
