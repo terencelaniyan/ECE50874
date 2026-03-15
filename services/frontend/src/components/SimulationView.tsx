@@ -99,17 +99,41 @@ export function SimulationView() {
       );
     }
 
-    const oilEnd = H - pad - (H - 2 * pad) * 0.62;
+    // Compute oil zone from actual pattern length (lane = 60 ft)
+    let patternFt = 40;
+    if (oilPattern.includes("Badger")) patternFt = 52;
+    else if (oilPattern.includes("Cheetah")) patternFt = 33;
+    else if (oilPattern.includes("Chameleon")) patternFt = 41;
+    else if (oilPattern.includes("House")) patternFt = 38;
+    const oilRatio = patternFt / 60;
+    const laneLen = H - 2 * pad;
+    const oilEnd = H - pad - laneLen * oilRatio;
+
+    // Oil zone (blue tint)
     svg.appendChild(
       makeEl("rect", {
         x: String(laneX),
         y: String(oilEnd),
         width: String(laneW),
         height: String(H - pad - oilEnd),
-        fill: "rgba(56,201,255,0.06)",
+        fill: "rgba(56,201,255,0.08)",
       })
     );
 
+    // Oil zone top edge line
+    svg.appendChild(
+      makeEl("line", {
+        x1: String(laneX),
+        x2: String(laneX + laneW),
+        y1: String(oilEnd),
+        y2: String(oilEnd),
+        stroke: "rgba(56,201,255,0.35)",
+        "stroke-width": "1",
+        "stroke-dasharray": "4 3",
+      })
+    );
+
+    // Dry zone
     svg.appendChild(
       makeEl("rect", {
         x: String(laneX),
@@ -141,7 +165,7 @@ export function SimulationView() {
     };
 
     addLabel(laneX - 8, H - pad - 4, "FOUL", "#6a6a8a");
-    addLabel(laneX - 8, oilEnd + 4, "OIL END", "#38c9ff", {
+    addLabel(laneX - 8, oilEnd + 4, `OIL END ${patternFt}ft`, "#38c9ff", {
       "letter-spacing": "1",
     });
     addLabel(laneX - 8, pad + 10, "PINS", "#6a6a8a");
@@ -197,7 +221,7 @@ export function SimulationView() {
       (ballRef as React.MutableRefObject<SVGCircleElement | null>).current =
         ballEl;
     }
-  }, [trajectory]);
+  }, [trajectory, oilPattern]);
 
   useEffect(() => {
     drawLane();
