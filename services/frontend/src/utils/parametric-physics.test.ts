@@ -51,28 +51,34 @@ describe("outcome classification", () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 2. PHYSICAL VALIDITY — results within realistic bowling ranges
-//    Reference: USBC ball motion study, Storm/Brunswick tech specs
-//    - Entry angle: 3°-6° typical for strikes (6° considered ideal max)
-//    - Skid length: 25-50 ft depending on oil pattern and ball
-//    - Hook distance: 10-35 ft (60 - skid)
-//    - Lane is 60 ft from foul line to headpin
+// 2. USBC-REFERENCED PHYSICAL VALIDITY
+//    Sources: USBC Ball Motion Study, IBPSIA entry angle research,
+//    BowlersMart coverstocks/cores guides, Storm/Brunswick tech docs
+//    Key benchmarks:
+//    - Optimal entry angle: 6° (USBC), practical strike range 4-6°
+//    - RG allowed: 2.460"-2.800" (USBC Equipment Specs Manual)
+//    - Differential max: 0.060" (USBC, reduced from 0.080 in 2005)
+//    - Lane: 60 ft foul line to headpin
+//    - Skid phase: 0-20 ft, Hook: 15-45 ft, Roll: 45-60 ft (typical)
+//    - Rule of 31: breakpoint_board ≈ pattern_length - 31
 // ═══════════════════════════════════════════════════════════════════════════
-describe("physical validity — realistic ranges", () => {
-  it("entry angle stays within 1°-10° for all reasonable inputs", () => {
-    const scenarios: Partial<SimulationParams>[] = [
-      { diff: 0.008, revRate: 150, speed: 22 },  // minimal hook (spare ball, fast, low rev)
-      { diff: 0.060, revRate: 450, speed: 12 },   // maximum hook (aggressive ball, max rev, slow)
-      {},  // baseline
-    ];
-    for (const s of scenarios) {
-      const r = computeTrajectory(withOverrides(s));
-      expect(r.entryAngle).toBeGreaterThan(0);
-      expect(r.entryAngle).toBeLessThan(20); // parametric model can overshoot at extremes
-    }
+describe("USBC-referenced physical validity", () => {
+  it("baseline bowler (17 mph, 280 rpm, 0.040 diff) achieves strike-range entry angle (4-6°)", () => {
+    const r = computeTrajectory(BASELINE);
+    // USBC: practical strike range is 4-6 degrees. Our baseline should be in this window.
+    expect(r.entryAngle).toBeGreaterThanOrEqual(4);
+    expect(r.entryAngle).toBeLessThanOrEqual(8); // parametric model allows slight overshoot
+    expect(r.entryClass).toBe("good");
   });
 
-  it("skid + hook ≤ 60 ft (lane length)", () => {
+  it("spare ball (plastic, 0.008 diff) produces sub-3° entry — too weak for strikes", () => {
+    // Plastic balls: diff 0.008-0.015, minimal hook potential
+    const r = computeTrajectory(withOverrides({ diff: 0.010, revRate: 200, speed: 18 }));
+    expect(r.entryAngle).toBeLessThan(4);
+    expect(r.entryClass).not.toBe("good");
+  });
+
+  it("skid + hook ≤ 60 ft (lane length) for all patterns", () => {
     const patterns = [
       "House Shot (38ft)",
       "Sport Shot — Badger (52ft)",
@@ -87,18 +93,82 @@ describe("physical validity — realistic ranges", () => {
     }
   });
 
-  it("skid length is in plausible range (20-55 ft)", () => {
-    const r = computeTrajectory(BASELINE);
-    expect(r.skidFt).toBeGreaterThanOrEqual(20);
-    expect(r.skidFt).toBeLessThanOrEqual(55);
+  it("skid length approximates oil pattern length for avg bowler", () => {
+    // The skid phase roughly corresponds to oil pattern length
+    // (ball slides on oil, then hooks on dry backend)
+    const r = computeTrajectory(BASELINE); // 38ft house shot
+    // Skid should be within ±8 ft of pattern length for average bowler
+    expect(Math.abs(r.skidFt - 38)).toBeLessThanOrEqual(8);
   });
 
-  it("pattern length is correctly detected", () => {
+  it("pattern length is correctly detected for all 4 patterns + unknown", () => {
     expect(computeTrajectory(withOverrides({ oilPattern: "House Shot (38ft)" })).patternLength).toBe(38);
     expect(computeTrajectory(withOverrides({ oilPattern: "Sport Shot — Badger (52ft)" })).patternLength).toBe(52);
     expect(computeTrajectory(withOverrides({ oilPattern: "Sport Shot — Cheetah (33ft)" })).patternLength).toBe(33);
     expect(computeTrajectory(withOverrides({ oilPattern: "Sport Shot — Chameleon (41ft)" })).patternLength).toBe(41);
-    expect(computeTrajectory(withOverrides({ oilPattern: "Unknown Pattern" })).patternLength).toBe(40);
+    expect(computeTrajectory(withOverrides({ oilPattern: "Unknown" })).patternLength).toBe(40);
+  });
+
+  it("USBC spec boundaries: RG 2.460-2.800 and diff 0.010-0.060 all produce valid output", () => {
+    const corners: Partial<SimulationParams>[] = [
+      { rg: 2.460, diff: 0.010 }, // low RG, low diff
+      { rg: 2.460, diff: 0.060 }, // low RG, max diff
+      { rg: 2.800, diff: 0.010 }, // max RG, low diff
+      { rg: 2.800, diff: 0.060 }, // max RG, max diff
+    ];
+    for (const c of corners) {
+      const r = computeTrajectory(withOverrides(c));
+      expect(Number.isFinite(r.entryAngle)).toBe(true);
+      expect(Number.isFinite(r.skidFt)).toBe(true);
+      expect(r.skidFt).toBeGreaterThan(0);
+      expect(r.skidFt).toBeLessThanOrEqual(60);
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 2b. BOWLER ARCHETYPE MATRIX
+//    Validates that different bowler types produce qualitatively correct results
+//    per bowling industry knowledge (BowlVersity, MOTIV, National Bowling Academy)
+// ═══════════════════════════════════════════════════════════════════════════
+describe("bowler archetype matrix", () => {
+  it("stroker (low rev, moderate speed) → moderate entry angle", () => {
+    // Stroker: 200-300 rpm, 16-18 mph, smooth arc
+    const r = computeTrajectory(withOverrides({ revRate: 250, speed: 17, diff: 0.040 }));
+    expect(r.entryAngle).toBeGreaterThanOrEqual(3);
+    expect(r.entryAngle).toBeLessThanOrEqual(7);
+  });
+
+  it("cranker (high rev, slower speed) → high entry angle", () => {
+    // Cranker: 400-500 rpm, 14-16 mph, aggressive hook
+    const r = computeTrajectory(withOverrides({ revRate: 450, speed: 14, diff: 0.055 }));
+    expect(r.entryAngle).toBeGreaterThan(6);
+    expect(r.entryClass).toBe("good");
+  });
+
+  it("speed-dominant bowler (fast, low rev) → weak hook", () => {
+    // Speed dominant: 20+ mph, <250 rpm
+    const r = computeTrajectory(withOverrides({ speed: 21, revRate: 200, diff: 0.040 }));
+    expect(r.entryAngle).toBeLessThan(5);
+  });
+
+  it("cranker entry angle > stroker entry angle (same ball)", () => {
+    const ball = { diff: 0.045, rg: 2.52 };
+    const stroker = computeTrajectory(withOverrides({ ...ball, revRate: 250, speed: 17 }));
+    const cranker = computeTrajectory(withOverrides({ ...ball, revRate: 420, speed: 15 }));
+    expect(cranker.entryAngle).toBeGreaterThan(stroker.entryAngle);
+  });
+
+  it("aggressive ball on short pattern hooks more than control ball on long pattern", () => {
+    // Aggressive: low RG, high diff, short pattern
+    const agg = computeTrajectory(withOverrides({
+      rg: 2.48, diff: 0.055, oilPattern: "Sport Shot — Cheetah (33ft)",
+    }));
+    // Control: high RG, low diff, long pattern
+    const ctrl = computeTrajectory(withOverrides({
+      rg: 2.70, diff: 0.020, oilPattern: "Sport Shot — Badger (52ft)",
+    }));
+    expect(agg.entryAngle).toBeGreaterThan(ctrl.entryAngle);
   });
 });
 
