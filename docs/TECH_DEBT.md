@@ -58,34 +58,41 @@ All three new backend endpoints (`/recommendations/v2`, `/slots`, `/degradation/
 `/health`, `/balls`, `/balls/{id}`, `/arsenals` (CRUD × 5), `/recommendations` (v1 KNN), `/recommendations/v2` (two-tower/hybrid/enhanced KNN), `/gaps`, `/slots`, `/degradation/compare`, `/admin/refresh-catalog`, `/admin/train-model`
 
 **Test coverage:**
-- Backend: 94 unit tests passing (degradation, gap engine, recommendation engine, slot assignment, two-tower model, synthetic data)
-- Frontend: 45 tests passing (Vitest + Testing Library + MSW mocks)
-- Integration tests: 6 (require DATABASE_URL, skipped in CI)
+- Backend: 108 unit tests passing (degradation, gap engine, recommendation engine, slot assignment, two-tower model, synthetic data, new endpoint API tests)
+- Frontend: 103 tests passing (Vitest + Testing Library + MSW mocks + bowling kinematics)
+- E2E: 11 Playwright tests passing (smoke, catalog, recommendations, slots, degradation, 2D sim, 3D sim, oil patterns API)
+- Integration tests: 24 (require DATABASE_URL, skipped in CI)
+- **Total: 246 tests**
 
-### Phase 1: Physics Simulation — PARTIALLY DONE (2D only)
+### Phase 1: Physics Simulation — DONE (2D + 3D)
 
 | Proposed Requirement | Status | What Exists |
 |---|---|---|
-| Lane simulation with trajectory | **PARTIAL** | 2D top-down SVG with Bézier curve trajectory, animated ball, oil/dry zones |
-| Delivery parameter input | **DONE** | Sliders for speed (12–22 mph), rev rate (150–450 rpm), launch angle (0–8°), board (5–25) |
-| Oil pattern selection | **DONE** | House Shot 38ft, Badger 52ft, Cheetah 33ft, Chameleon 41ft |
-| Skid/hook/roll phase visualization | **DONE** | Phase bar dynamically computed from `computePhaseRatios()` in `src/utils/phase-detector.ts` |
-| Results display | **DONE** | Entry angle, breakpoint, skid length, hook distance, outcome classification |
-| **Rapier3D rigid-body physics** | **NOT DONE** | Current model is parametric (Bézier curves from tuning factors), not rigid-body |
-| **Three.js 3D rendering** | **NOT DONE** | Current rendering is 2D SVG, not WebGL 3D |
-| **Dual-state friction model (eq. 2)** | **NOT DONE** | No friction state machine; trajectory is computed from heuristic factors |
-| **Euler's equations for asymmetric inertia** | **NOT DONE** | No rotational dynamics |
-| **`oil_patterns` DB table** | **NOT DONE** | Oil patterns hardcoded in frontend JavaScript |
+| Lane simulation with trajectory | **DONE** | 2D SVG (parametric) + 3D Three.js (Rapier3D physics worker) |
+| Delivery parameter input | **DONE** | Sliders for speed, rev rate, launch angle, board — shared across 2D and 3D views |
+| Oil pattern selection | **DONE** | 6 patterns (House, Badger, Cheetah, Chameleon, Scorpion, Viper) from `oil_patterns` DB table |
+| Skid/hook/roll phase visualization | **DONE** | Phase bar from `computePhaseRatios()` (2D), phase classification from velocity sync (3D) |
+| Results display | **DONE** | Entry angle, breakpoint, skid/hook/roll lengths, total time, outcome, decision framework advice |
+| **Rapier3D rigid-body physics** | **DONE** | `physics-worker.ts` — WASM-based rigid body with dual-state friction, falls back to kinematic |
+| **Three.js 3D rendering** | **DONE** | `SimulationView3D.tsx` — 3D lane, pins, animated ball, trajectory trail, 3 camera modes |
+| **Dual-state friction model (eq. 2)** | **DONE** | Zone-based μ lookup: oil zones (μ≈0.04), dry zones (μ≈0.18–0.22), rolling resistance (μ_r≈0.01) |
+| **Euler's equations for asymmetric inertia** | **DONE** | Rapier3D handles asymmetric inertia tensor from RG + differential. Ball spec drives I_base and asymmetry factor |
+| **`oil_patterns` DB table** | **DONE** | `oil_patterns` table with JSONB zones, `GET /oil-patterns` API endpoint, 6 seeded patterns |
+| Decision Framework (sim → rec feedback) | **DONE** | `analyzeSimulation()` produces advice with recommended actions (both 2D and 3D views) |
 
-### Phase 2: Vision Integration — NOT STARTED
+### Phase 2: Vision Integration — DONE (video upload, kinematics extraction)
 
-| Proposed Requirement | Status |
-|---|---|
-| FR1: MediaPipe BlazePose (33 landmarks, <50 ms) | Not started |
-| Kinematic extraction (speed, angle, rev-rate proxy) | Not started |
-| Calibration system (foul-line marking) | Not started |
-| Release detection (slide-foot deceleration) | Not started |
-| Vision Web Worker | Not started |
+| Proposed Requirement | Status | What Exists |
+|---|---|---|
+| FR1: MediaPipe BlazePose (33 landmarks) | **DONE** | `vision-worker.ts` loads PoseLandmarker from CDN, processes video frames |
+| Kinematic extraction (speed, angle, rev-rate proxy) | **DONE** | `bowling-kinematics.ts` — `extractKinematics()` with 16 unit tests |
+| Calibration system (bowler height) | **DONE** | `calibration.ts` — pixel-to-feet using shoulder-to-ankle ratio |
+| Release detection | **DONE** | `detectReleaseFrame()` — wrist velocity peak with 3-frame moving average |
+| Vision Web Worker | **DONE** | `vision-worker.ts` with main-thread fallback |
+| Video upload + analysis UI | **DONE** | `AnalysisView.tsx` with 6 sub-components: uploader, overlay, scrubber, results, baselines, form feedback |
+| Baseline comparison (PBA/USBC) | **DONE** | Speed/rev/angle baselines from published data |
+| Form evaluation | **DONE** | Arm verticality, knee bend, follow-through, balance at release |
+| Simulation integration | **DONE** | "Simulate This Delivery" button passes extracted params to SimulationView |
 
 ---
 
@@ -173,7 +180,7 @@ This is the critical gap between proposal and implementation. The proposal's Pha
 | Frontend: API gaps | `gaps.test.ts` | 2 | Unit | getGaps request/response |
 | Frontend: App integration | `App.integration.test.tsx` | 1 | Integration | App mounts and renders |
 
-**Total: 94 backend + 45 frontend = 139 tests**
+**Total: 108 backend + 103 frontend + 24 integration + 11 E2E = 246 tests**
 
 ### 4.2 How It Is Tested
 
