@@ -12,8 +12,8 @@ import { analyzeSimulation } from "../utils/decision-framework";
 import { getRecommendationsV2 } from "../api/recommendations-v2";
 import type { SimulationAdvice } from "../utils/decision-framework";
 import type { Ball, RecommendV2Item } from "../types/ball";
+import { runBowlingSimulation } from "../physics/bowling-physics";
 import type {
-  PhysicsWorkerMessage,
   PhysicsParams,
   TrajectoryFrame,
   SimulationSummary,
@@ -208,8 +208,6 @@ export function SimulationView3D({ initialParams }: Props) {
   const pinMeshesRef = useRef<THREE.Group[]>([]);
   const trailRef = useRef<THREE.Line | null>(null);
   const animFrameRef = useRef<number>(0);
-  const workerRef = useRef<Worker | null>(null);
-
   const [speed, setSpeed] = useState(initialParams?.speed ?? 17);
   const [revRate, setRevRate] = useState(initialParams?.revRate ?? 280);
   const [launchAngle, setLaunchAngle] = useState(initialParams?.launchAngle ?? 3);
@@ -219,7 +217,7 @@ export function SimulationView3D({ initialParams }: Props) {
   const [cameraMode, setCameraMode] = useState<CameraMode>("overhead");
   const [simRunning, setSimRunning] = useState(false);
   const [phaseLabel, setPhaseLabel] = useState("READY");
-  const [workerReady, setWorkerReady] = useState(false);
+  const [physicsReady, setPhysicsReady] = useState(false);
   const [summary, setSummary] = useState<SimulationSummary | null>(null);
   const [advice, setAdvice] = useState<SimulationAdvice | null>(null);
   const [recBalls, setRecBalls] = useState<RecommendV2Item[]>([]);
@@ -252,8 +250,8 @@ export function SimulationView3D({ initialParams }: Props) {
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     renderer.setSize(canvas.clientWidth, canvas.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // Shadows disabled for render performance
+    renderer.shadowMap.enabled = false;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.2;
     rendererRef.current = renderer;
@@ -296,8 +294,7 @@ export function SimulationView3D({ initialParams }: Props) {
     const pinLight = new THREE.SpotLight(0xfff5e0, 2.5, 10, Math.PI / 5, 0.3, 1);
     pinLight.position.set(0, 4, LANE_LENGTH_M + 0.3);
     pinLight.target.position.set(0, 0, LANE_LENGTH_M + 0.4);
-    pinLight.castShadow = true;
-    pinLight.shadow.mapSize.set(512, 512);
+    // Shadows disabled for render performance
     scene.add(pinLight);
     scene.add(pinLight.target);
 
@@ -593,24 +590,15 @@ export function SimulationView3D({ initialParams }: Props) {
     };
   }, [oilPatternIdx]);
 
-  // ── Initialize physics worker ─────────────────────────────────────────
+  // ── Initialize Rapier WASM on main thread ────────────────────────────
   useEffect(() => {
-    const worker = new Worker(
-      new URL("../workers/physics-worker.ts", import.meta.url),
-      { type: "module" },
+    let cancelled = false;
+    import("../physics/bowling-physics").then(({ initRapier }) =>
+      initRapier().then((ok) => {
+        if (!cancelled) setPhysicsReady(ok);
+      }),
     );
-    workerRef.current = worker;
-
-    worker.onmessage = (e: MessageEvent<PhysicsWorkerMessage>) => {
-      const msg = e.data;
-      if (msg.type === "ready") {
-        setWorkerReady(true);
-      }
-    };
-
-    worker.postMessage({ type: "init" } satisfies PhysicsWorkerMessage);
-
-    return () => worker.terminate();
+    return () => { cancelled = true; };
   }, []);
 
   // ── Camera mode ───────────────────────────────────────────────────────
@@ -637,9 +625,9 @@ export function SimulationView3D({ initialParams }: Props) {
     }
   }, [cameraMode]);
 
-  // ── Run simulation ────────────────────────────────────────────────────
+  // ── Run simulation (main-thread Rapier) ──────────────────────────────
   const runSimulation = useCallback(() => {
-    if (simRunning || !workerRef.current) return;
+    if (simRunning) return;
     setSimRunning(true);
     setPhaseLabel("SIMULATING\u2026");
     setSummary(null);
@@ -668,20 +656,19 @@ export function SimulationView3D({ initialParams }: Props) {
       oilPattern,
     };
 
-    const worker = workerRef.current;
-    const handler = (e: MessageEvent<PhysicsWorkerMessage>) => {
-      const msg = e.data;
-      if (msg.type === "result") {
-        worker.removeEventListener("message", handler);
-        playTrajectory(msg.trajectory, msg.summary, selectedEntry);
-      } else if (msg.type === "error") {
-        worker.removeEventListener("message", handler);
+    // Use setTimeout(0) to let React flush the "SIMULATING..." label before
+    // the synchronous Rapier simulation blocks the main thread (~200ms).
+    setTimeout(async () => {
+      try {
+        const result = await runBowlingSimulation(params);
+        playTrajectory(result.trajectory, result.summary, selectedEntry);
+      } catch (err) {
+        console.error("Rapier simulation failed:", err);
         setPhaseLabel("ERROR");
         setSimRunning(false);
       }
-    };
-    worker.addEventListener("message", handler);
-    worker.postMessage({ type: "simulate", params } satisfies PhysicsWorkerMessage);
+    }, 0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- playTrajectory accessed via ref-like closure
   }, [simRunning, bag, currentBall, speed, revRate, launchAngle, board, oilPatternIdx]);
 
   // ── Animate trajectory with physics-driven pin scatter ──────────────────
@@ -753,7 +740,7 @@ export function SimulationView3D({ initialParams }: Props) {
         const frame = trajectory[idx];
 
         // Schedule next frame FIRST — ensures loop never dies from render errors
-        const step = frame.z >= LANE_LENGTH_M - 0.5 ? 1 : 3;
+        const step = frame.z >= LANE_LENGTH_M - 0.5 ? 2 : 3;
         idx += step;
         requestAnimationFrame(animate);
 
@@ -918,9 +905,9 @@ export function SimulationView3D({ initialParams }: Props) {
           type="button"
           className="sim-btn"
           onClick={runSimulation}
-          disabled={simRunning || !workerReady}
+          disabled={simRunning || !physicsReady}
         >
-          {workerReady ? "LAUNCH BALL" : "Loading physics\u2026"}
+          {physicsReady ? "LAUNCH BALL" : "Loading physics\u2026"}
         </button>
 
         {summary && (
