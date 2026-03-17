@@ -21,10 +21,18 @@ from .api_models import (
     Ball,
     BallsResponse,
     CreateArsenalRequest,
+    DegradationCompareRequest,
+    DegradationCompareResponse,
     GapRequest,
     GapResponse,
+    OilPatternsResponse,
     RecommendRequest,
     RecommendResponse,
+    RecommendV2Request,
+    RecommendV2Response,
+    SlotAssignRequest,
+    SlotAssignResponse,
+    TrainModelRequest,
     UpdateArsenalRequest,
 )
 from .config import ALLOWED_ORIGIN, APP_ENV
@@ -36,14 +44,19 @@ from .services import (
     delete_arsenal as svc_delete_arsenal,
     get_arsenal as svc_get_arsenal,
     get_ball as svc_get_ball,
+    get_degradation_comparison as svc_get_degradation_comparison,
     get_gaps as svc_get_gaps,
     get_recommendations as svc_get_recommendations,
+    get_recommendations_v2 as svc_get_recommendations_v2,
+    get_slot_assignments as svc_get_slot_assignments,
     list_arsenals as svc_list_arsenals,
     list_balls as svc_list_balls,
+    list_oil_patterns as svc_list_oil_patterns,
+    train_two_tower as svc_train_two_tower,
     update_arsenal as svc_update_arsenal,
 )
 
-app = FastAPI(title="Bowling Ball Backend", version="1.0.0")
+app = FastAPI(title="Bowling Ball Backend", version="2.0.0")
 
 _DEV_ORIGINS = [
     "http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175",
@@ -406,6 +419,151 @@ def gaps(req: GapRequest, db=Depends(get_db)):
     return GapResponse(zones=zones)
 
 
+# ── Recommendations (v2 — Two-Tower + Enhanced KNN) ─────────────────────
+
+@app.post("/recommendations/v2", response_model=RecommendV2Response)
+def recommendations_v2(req: RecommendV2Request, db=Depends(get_db)):
+    """V2 recommendations with model selection (KNN, two-tower, or hybrid)."""
+    if req.arsenal_id and req.arsenal_ball_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide either arsenal_id or arsenal_ball_ids, not both",
+        )
+    if not req.arsenal_id and not req.arsenal_ball_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide arsenal_id or at least one arsenal_ball_id",
+        )
+    try:
+        result = svc_get_recommendations_v2(
+            db,
+            arsenal_id=req.arsenal_id,
+            arsenal_ball_ids=req.arsenal_ball_ids,
+            game_counts=req.game_counts,
+            k=req.k,
+            w_rg=req.w_rg,
+            w_diff=req.w_diff,
+            w_int=req.w_int,
+            w_cover=req.w_cover,
+            method=req.method,
+            metric=req.metric,
+            normalize=req.normalize,
+            degradation_model=req.degradation_model,
+            brand=req.brand,
+            coverstock_type=req.coverstock_type,
+            status=req.status,
+            diversity_min_distance=req.diversity_min_distance,
+        )
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={"message": e.message, **e.detail},
+        )
+    return result
+
+
+# ── Slot Assignment ──────────────────────────────────────────────────────
+
+@app.post("/slots", response_model=SlotAssignResponse)
+def slot_assignment(req: SlotAssignRequest, db=Depends(get_db)):
+    """Assign arsenal balls to the 6-ball slot system using K-Means + silhouette."""
+    if req.arsenal_id and req.arsenal_ball_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide either arsenal_id or arsenal_ball_ids, not both",
+        )
+    if not req.arsenal_id and not req.arsenal_ball_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide arsenal_id or at least one arsenal_ball_id",
+        )
+    try:
+        result = svc_get_slot_assignments(
+            db,
+            arsenal_id=req.arsenal_id,
+            arsenal_ball_ids=req.arsenal_ball_ids,
+            game_counts=req.game_counts,
+        )
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={"message": e.message, **e.detail},
+        )
+    return result
+
+
+# ── Degradation Comparison ───────────────────────────────────────────────
+
+@app.post("/degradation/compare", response_model=DegradationCompareResponse)
+def degradation_compare(req: DegradationCompareRequest, db=Depends(get_db)):
+    """Compare v1 (linear) vs v2 (logarithmic) degradation models."""
+    ball_row = {
+        "rg": req.rg,
+        "diff": req.diff,
+        "int_diff": req.int_diff,
+        "coverstock_type": req.coverstock_type,
+    }
+    if req.ball_id:
+        row = svc_get_ball(db, req.ball_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail=f"Ball not found: {req.ball_id}")
+        ball_row = dict(row)
+
+    result = svc_get_degradation_comparison(ball_row, req.game_count)
+
+    return DegradationCompareResponse(
+        original={
+            "rg": result["original"]["rg"],
+            "diff": result["original"]["diff"],
+            "int_diff": result["original"]["int_diff"],
+            "factor": 1.0,
+        },
+        v1_linear={
+            "rg": result["v1_linear"]["rg"],
+            "diff": result["v1_linear"]["diff"],
+            "int_diff": result["v1_linear"]["int_diff"],
+            "factor": result["v1_linear"]["factor"],
+        },
+        v2_logarithmic={
+            "rg": result["v2_logarithmic"]["rg"],
+            "diff": result["v2_logarithmic"]["diff"],
+            "int_diff": result["v2_logarithmic"]["int_diff"],
+            "factor": result["v2_logarithmic"]["factor"],
+        },
+        game_count=result["game_count"],
+        coverstock_type=result["v2_logarithmic"].get("coverstock_type"),
+        v2_lambda=result["v2_logarithmic"]["lambda"],
+    )
+
+
+# ── Oil Patterns ─────────────────────────────────────────────────────────
+
+@app.get("/oil-patterns", response_model=OilPatternsResponse)
+def oil_patterns(db=Depends(get_db)):
+    """List available oil patterns with friction zone data."""
+    try:
+        items = svc_list_oil_patterns(db)
+    except Exception:
+        # Table might not exist yet — return hardcoded defaults
+        items = [
+            {"id": 1, "name": "House Shot (38ft)", "length_ft": 38,
+             "description": "Standard recreational pattern",
+             "zones": [{"startFt": 0, "endFt": 38, "mu": 0.04}, {"startFt": 38, "endFt": 60, "mu": 0.20}]},
+            {"id": 2, "name": "Sport Shot — Badger (52ft)", "length_ft": 52,
+             "description": "PBA animal pattern. Long oil",
+             "zones": [{"startFt": 0, "endFt": 52, "mu": 0.04}, {"startFt": 52, "endFt": 60, "mu": 0.22}]},
+            {"id": 3, "name": "Sport Shot — Cheetah (33ft)", "length_ft": 33,
+             "description": "PBA animal pattern. Short oil",
+             "zones": [{"startFt": 0, "endFt": 33, "mu": 0.04}, {"startFt": 33, "endFt": 60, "mu": 0.18}]},
+            {"id": 4, "name": "Sport Shot — Chameleon (41ft)", "length_ft": 41,
+             "description": "PBA animal pattern. Medium length",
+             "zones": [{"startFt": 0, "endFt": 41, "mu": 0.04}, {"startFt": 41, "endFt": 60, "mu": 0.20}]},
+        ]
+    return {"items": items}
+
+
+# ── Admin ────────────────────────────────────────────────────────────────
+
 ADMIN_KEY = os.environ.get("ADMIN_KEY")
 
 
@@ -480,3 +638,22 @@ def refresh_catalog(_: None = Depends(_require_admin_key)):
         )
 
     return {"status": "ok", "message": "Catalog refreshed", "seed_output": seed.stdout}
+
+
+@app.post("/admin/train-model")
+def train_model(req: TrainModelRequest, db=Depends(get_db), _: None = Depends(_require_admin_key)):
+    """Train the two-tower recommendation model on synthetic arsenal data."""
+    result = svc_train_two_tower(
+        db,
+        n_arsenals=req.n_arsenals,
+        epochs=req.epochs,
+        batch_size=req.batch_size,
+        lr=req.lr,
+        neg_ratio=req.neg_ratio,
+    )
+    if "error" in result:
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "detail": result["error"]},
+        )
+    return {"status": "ok", **result}

@@ -13,6 +13,7 @@ SEED_SCRIPT = REPO_ROOT / "services" / "backend" / "scripts" / "seed_from_csv.py
 MIGRATE_SCRIPT = (
     REPO_ROOT / "services" / "backend" / "scripts" / "migrate_arsenals.py"
 )
+TRAIN_SCRIPT = REPO_ROOT / "services" / "backend" / "scripts" / "train_model.py"
 
 
 def main() -> None:
@@ -22,6 +23,7 @@ def main() -> None:
     for script, name in [
         (SEED_SCRIPT, "seed_from_csv"),
         (MIGRATE_SCRIPT, "migrate_arsenals"),
+        (TRAIN_SCRIPT, "train_model"),
     ]:
         if not script.exists():
             raise FileNotFoundError(f"Script not found: {script}")

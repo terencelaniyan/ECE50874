@@ -8,8 +8,11 @@ import { ArsenalPanel } from "./ArsenalPanel";
 import { RecommendationsListCompact } from "./RecommendationsListCompact";
 import { BallDatabaseView } from "./BallDatabaseView";
 import { SimulationView } from "./SimulationView";
+import { SlotAssignmentPanel } from "./SlotAssignmentPanel";
+import { AnalysisView } from "./AnalysisView";
+import { SimulationView3D } from "./SimulationView3D";
 
-type Tab = "catalog" | "grid" | "simulation" | "recommendations" | "gaps" | "database";
+type Tab = "catalog" | "grid" | "simulation" | "sim3d" | "analysis" | "recommendations" | "gaps" | "database";
 
 /**
  * Main application layout component.
@@ -18,9 +21,17 @@ type Tab = "catalog" | "grid" | "simulation" | "recommendations" | "gaps" | "dat
  * components (Grid, Simulation, Database, etc.). It also includes the shared
  * header and logo.
  */
+type RightPanel = "recs" | "slots";
+
 export function Layout() {
   const [tab, setTab] = useState<Tab>("grid");
+  const [rightPanel, setRightPanel] = useState<RightPanel>("recs");
   const [ballCount, setBallCount] = useState<number | null>(null);
+  const [simInitialParams, setSimInitialParams] = useState<{
+    speed: number;
+    revRate: number;
+    launchAngle: number;
+  } | null>(null);
 
   useEffect(() => {
     listBalls({ limit: 1 })
@@ -118,6 +129,28 @@ export function Layout() {
           <button
             type="button"
             role="tab"
+            aria-selected={tab === "sim3d"}
+            aria-controls="panel-sim3d"
+            id="tab-sim3d"
+            className={`nav-btn ${tab === "sim3d" ? "active" : ""}`}
+            onClick={() => setTab("sim3d")}
+          >
+            3D Sim
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "analysis"}
+            aria-controls="panel-analysis"
+            id="tab-analysis"
+            className={`nav-btn ${tab === "analysis" ? "active" : ""}`}
+            onClick={() => setTab("analysis")}
+          >
+            Analysis
+          </button>
+          <button
+            type="button"
+            role="tab"
             aria-selected={tab === "database"}
             aria-controls="panel-database"
             id="tab-database"
@@ -205,11 +238,28 @@ export function Layout() {
               </div>
               <div className="panel recs-panel-wrap">
                 <div className="panel-header">
-                  <div className="panel-title">Recommendations</div>
-                  <div className="panel-badge">K-NN RANKED</div>
+                  <div className="right-panel-toggle">
+                    <button
+                      type="button"
+                      className={`right-panel-btn ${rightPanel === "recs" ? "active" : ""}`}
+                      onClick={() => setRightPanel("recs")}
+                    >
+                      Recs
+                    </button>
+                    <button
+                      type="button"
+                      className={`right-panel-btn ${rightPanel === "slots" ? "active" : ""}`}
+                      onClick={() => setRightPanel("slots")}
+                    >
+                      Slots
+                    </button>
+                  </div>
+                  <div className="panel-badge">
+                    {rightPanel === "recs" ? "RANKED" : "6-BALL"}
+                  </div>
                 </div>
                 <div className="panel-body" id="recs-panel">
-                  <RecommendationsListCompact />
+                  {rightPanel === "recs" ? <RecommendationsListCompact /> : <SlotAssignmentPanel />}
                 </div>
               </div>
             </div>
@@ -222,7 +272,32 @@ export function Layout() {
               aria-labelledby="tab-simulation"
               className="view active"
             >
-              <SimulationView />
+              <SimulationView initialParams={simInitialParams ?? undefined} />
+            </div>
+          )}
+          {tab === "sim3d" && (
+            <div
+              id="panel-sim3d"
+              role="tabpanel"
+              aria-labelledby="tab-sim3d"
+              className="view active"
+            >
+              <SimulationView3D initialParams={simInitialParams ?? undefined} />
+            </div>
+          )}
+          {tab === "analysis" && (
+            <div
+              id="panel-analysis"
+              role="tabpanel"
+              aria-labelledby="tab-analysis"
+              className="view active"
+            >
+              <AnalysisView
+                onSimulateParams={(params) => {
+                  setSimInitialParams(params);
+                  setTab("simulation");
+                }}
+              />
             </div>
           )}
           {tab === "recommendations" && (

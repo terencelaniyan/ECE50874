@@ -1,5 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useBag } from "../context/BagContext";
+import { computeTrajectoryPath } from "../utils/parametric-physics";
+import { computePhaseRatios } from "../utils/phase-detector";
+import { analyzeSimulation } from "../utils/decision-framework";
+import type { SimulationAdvice } from "../utils/decision-framework";
+import type { Ball } from "../types/ball";
 
 const OIL_OPTIONS = [
   "House Shot (38ft)",
@@ -8,27 +13,26 @@ const OIL_OPTIONS = [
   "Sport Shot — Chameleon (41ft)",
 ];
 
-/**
- * SimulationView component provides a physics-based (simplified) lane
- * simulation to predict ball motion.
- *
- * Users can adjust delivery parameters (speed, rev rate, etc.) and oil
- * patterns to see how their balls might perform on the lane.
- *
- * The lane is drawn dynamically with board lines, oil/dry zones, labels,
- * and an animated trajectory + ball after launching.
- */
-export function SimulationView() {
+interface SimulationViewProps {
+  initialParams?: {
+    speed: number;
+    revRate: number;
+    launchAngle: number;
+  };
+}
+
+export function SimulationView({ initialParams }: SimulationViewProps = {}) {
   const { bag } = useBag();
-  const [speed, setSpeed] = useState(17);
-  const [revRate, setRevRate] = useState(280);
-  const [launchAngle, setLaunchAngle] = useState(3);
+  const [speed, setSpeed] = useState(initialParams?.speed ?? 17);
+  const [revRate, setRevRate] = useState(initialParams?.revRate ?? 280);
+  const [launchAngle, setLaunchAngle] = useState(initialParams?.launchAngle ?? 3);
   const [board, setBoard] = useState(15);
   const [oilPattern, setOilPattern] = useState(OIL_OPTIONS[0]);
   const [selectedBallName, setSelectedBallName] = useState<string>("");
   const [phaseLabel, setPhaseLabel] = useState("READY");
   const [simRunning, setSimRunning] = useState(false);
   const [trajectory, setTrajectory] = useState<string | null>(null);
+  const [phaseRatios, setPhaseRatios] = useState({ skid: 3, hook: 2, roll: 1.5 });
   const [results, setResults] = useState<{
     entryAngle: string;
     entryClass: "good" | "warn" | "bad";
@@ -37,7 +41,18 @@ export function SimulationView() {
     hookFt: number;
     outcome: string;
     outcomeClass: "good" | "warn" | "bad";
+    patternLength: number;
   } | null>(null);
+  const [advice, setAdvice] = useState<SimulationAdvice | null>(null);
+
+  // Update sliders when initialParams changes (from Analysis tab handoff)
+  useEffect(() => {
+    if (initialParams) {
+      setSpeed(Math.round(initialParams.speed * 2) / 2);
+      setRevRate(Math.round(initialParams.revRate / 10) * 10);
+      setLaunchAngle(Math.round(initialParams.launchAngle * 2) / 2);
+    }
+  }, [initialParams]);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
@@ -50,7 +65,6 @@ export function SimulationView() {
     selectedBallName ||
     (ballOptions[0] !== "No balls in bag" ? ballOptions[0] : "");
 
-  // Draw the lane whenever the SVG mounts or trajectory changes
   const drawLane = useCallback(() => {
     const svg = svgRef.current;
     if (!svg) return;
@@ -64,7 +78,6 @@ export function SimulationView() {
     const pad = 20;
     const laneX = (W - laneW) / 2;
 
-    // Clear dynamic elements (keep only the defs)
     const existing = svg.querySelectorAll(".lane-dynamic");
     existing.forEach((el) => el.remove());
 
@@ -82,7 +95,6 @@ export function SimulationView() {
       return el;
     };
 
-    // Background
     svg.appendChild(
       makeEl("rect", {
         width: String(W),
@@ -91,7 +103,6 @@ export function SimulationView() {
       })
     );
 
-    // Board lines
     for (let i = 0; i <= 39; i++) {
       const x = laneX + (i / 39) * laneW;
       const isMajor = i % 5 === 0;
@@ -109,15 +120,37 @@ export function SimulationView() {
       );
     }
 
-    // Oil zone (62% from foul line)
-    const oilEnd = H - pad - (H - 2 * pad) * 0.62;
+    // Compute oil zone from actual pattern length (lane = 60 ft)
+    let patternFt = 40;
+    if (oilPattern.includes("Badger")) patternFt = 52;
+    else if (oilPattern.includes("Cheetah")) patternFt = 33;
+    else if (oilPattern.includes("Chameleon")) patternFt = 41;
+    else if (oilPattern.includes("House")) patternFt = 38;
+    const oilRatio = patternFt / 60;
+    const laneLen = H - 2 * pad;
+    const oilEnd = H - pad - laneLen * oilRatio;
+
+    // Oil zone (blue tint)
     svg.appendChild(
       makeEl("rect", {
         x: String(laneX),
         y: String(oilEnd),
         width: String(laneW),
         height: String(H - pad - oilEnd),
-        fill: "rgba(56,201,255,0.06)",
+        fill: "rgba(56,201,255,0.08)",
+      })
+    );
+
+    // Oil zone top edge line
+    svg.appendChild(
+      makeEl("line", {
+        x1: String(laneX),
+        x2: String(laneX + laneW),
+        y1: String(oilEnd),
+        y2: String(oilEnd),
+        stroke: "rgba(56,201,255,0.35)",
+        "stroke-width": "1",
+        "stroke-dasharray": "4 3",
       })
     );
 
@@ -132,7 +165,6 @@ export function SimulationView() {
       })
     );
 
-    // Labels
     const addLabel = (
       x: number,
       y: number,
@@ -154,14 +186,12 @@ export function SimulationView() {
     };
 
     addLabel(laneX - 8, H - pad - 4, "FOUL", "#6a6a8a");
-    addLabel(laneX - 8, oilEnd + 4, "OIL END", "#38c9ff", {
+    addLabel(laneX - 8, oilEnd + 4, `OIL END ${patternFt}ft`, "#38c9ff", {
       "letter-spacing": "1",
     });
     addLabel(laneX - 8, pad + 10, "PINS", "#6a6a8a");
 
-    // Trajectory path
     if (trajectory) {
-      // Cancel any in-progress animation
       if (animFrameRef.current) {
         cancelAnimationFrame(animFrameRef.current);
         animFrameRef.current = 0;
@@ -179,16 +209,13 @@ export function SimulationView() {
       );
       svg.appendChild(pathEl);
 
-      // Animate stroke dash
       const totalLength = pathEl.getTotalLength();
       pathEl.style.strokeDasharray = String(totalLength);
       pathEl.style.strokeDashoffset = String(totalLength);
       pathEl.style.transition = "stroke-dashoffset 1.8s ease-out";
-      // Force reflow then animate
       void pathEl.getBoundingClientRect();
       pathEl.style.strokeDashoffset = "0";
 
-      // Animated ball circle
       const ballEl = document.createElementNS(ns, "circle");
       ballEl.classList.add("lane-dynamic");
       ballEl.setAttribute("r", "7");
@@ -210,15 +237,13 @@ export function SimulationView() {
       };
       animateBall();
 
-      // Store refs for cleanup
       (pathRef as React.MutableRefObject<SVGPathElement | null>).current =
         pathEl;
       (ballRef as React.MutableRefObject<SVGCircleElement | null>).current =
         ballEl;
     }
-  }, [trajectory]);
+  }, [trajectory, oilPattern]);
 
-  // Draw lane on mount and resize
   useEffect(() => {
     drawLane();
     const onResize = () => drawLane();
@@ -232,7 +257,7 @@ export function SimulationView() {
   const runSimulation = useCallback(() => {
     if (simRunning) return;
     setSimRunning(true);
-    setPhaseLabel("SIMULATING…");
+    setPhaseLabel("SIMULATING\u2026");
     setResults(null);
 
     const svg = svgRef.current;
@@ -241,92 +266,46 @@ export function SimulationView() {
     const H = svg.clientHeight;
     const laneW = 80;
     const pad = 20;
-    const laneX = (W - laneW) / 2;
 
     const selectedBall = bag.find((e) => (e.ball.name ?? "Custom") === selectedBallName)?.ball;
     const rg = selectedBall ? parseFloat(String(selectedBall.rg)) : 2.5;
     const diff = selectedBall ? parseFloat(String(selectedBall.diff)) : 0.04;
 
-    // Pattern impact (length in feet)
-    let patternLength = 40;
-    if (oilPattern.includes("Badger")) patternLength = 52;
-    if (oilPattern.includes("Cheetah")) patternLength = 33;
-    if (oilPattern.includes("Chameleon")) patternLength = 41;
-    if (oilPattern.includes("House")) patternLength = 38;
+    const { pathStr, result } = computeTrajectoryPath(
+      { rg, diff, speed, revRate, launchAngle, board, oilPattern },
+      { W, H, laneW, pad }
+    );
 
-    const boardX = laneX + (board / 39) * laneW;
-    const startY = H - pad;
-    
-    // Physics adjustment: 
-    // - Higher RG means the ball delays its hook (longer skid).
-    // - Higher Differential means the ball hooks more (larger hookAmt).
-    // - Oil pattern length determines when the ball starts to grab.
-    
-    const rgFactor = (rg - 2.45) * 5; // Normalized around 2.5
-    const diffFactor = diff * 50;     // Normalized around 0.04 (approx 2.0)
-    const revFactor = revRate / 200;  // Normalized around 300 (approx 1.5)
-    const speedFactor = 17 / speed;   // Normalized around 17 (approx 1.0)
-    
-    // Total hook potential (scaled down to prevent immediate 45 max)
-    const hookPotential = diffFactor * revFactor * speedFactor * 4;
-    
-    // Calculate skid length based on oil pattern + speed + RG
-    // 1 foot = approx (H - 2*pad) / 60 units (if H represents 60ft)
-    const unitsPerFoot = (H - 2 * pad) / 60;
-    const baseSkid = patternLength * unitsPerFoot;
-    const skidLen = baseSkid * (1 + (speed - 17) * 0.02) * (1 + rgFactor * 0.05);
-
-    // Final hook amount (boards moved)
-    // Scale hookPotential to pixels
-    const hookAmtRaw = hookPotential * 2.5; 
-    const hookAmt = Math.min(hookAmtRaw, 45); // Max hook cap still exists but is harder to hit
-    
-    const endX = boardX - hookAmt;
-    const endY = pad + 10;
-
-    // Control point 1 (Skid phase)
-    // Points toward launch angle, stays near original board
-    const cp1x = boardX + Math.tan((launchAngle * Math.PI) / 180) * skidLen;
-    const cp1y = startY - skidLen * 0.7;
-
-    // Control point 2 (Hook/Roll phase)
-    // Drags the curve toward the pocket
-    const cp2x = endX + (boardX - endX) * 0.1;
-    const cp2y = endY + (startY - endY) * 0.2;
-
-    const pathStr = `M${boardX},${startY} C${cp1x},${cp1y} ${cp2x},${cp2y} ${endX},${endY}`;
     setTrajectory(pathStr);
 
-    // Results
-    const entryAngle = 2.0 + (hookPotential * 0.4);
-    const entryAngleStr = entryAngle.toFixed(1);
-    const entryClass: "good" | "warn" | "bad" =
-      entryAngle >= 4.5 ? "good" : entryAngle >= 3 ? "warn" : "bad";
-    
-    const breakPt = `Board ${Math.round(board - hookAmt / 3)}`;
-    const skidFt = Math.round(patternLength + (speed - 17) + (rgFactor * 2));
-    const hookFt = Math.round(60 - skidFt);
-    
-    const outcome =
-      entryAngle >= 4.5
-        ? "✓ POCKET HIT"
-        : entryAngle >= 3
-          ? "⚠ LIGHT POCKET"
-          : "✗ CROSSOVER";
-    const outcomeClass: "good" | "warn" | "bad" =
-      entryAngle >= 4.5 ? "good" : entryAngle >= 3 ? "warn" : "bad";
+    const ratios = computePhaseRatios(result.skidFt, result.hookFt);
+    setPhaseRatios(ratios);
 
     setTimeout(() => {
-      setPhaseLabel(entryAngle >= 4 ? "STRIKE LINE ✓" : "LIGHT HIT");
+      setPhaseLabel(result.entryAngle >= 4 ? "STRIKE LINE \u2713" : "LIGHT HIT");
       setResults({
-        entryAngle: entryAngleStr + "°",
-        entryClass,
-        breakPt,
-        skidFt,
-        hookFt,
-        outcome,
-        outcomeClass,
+        entryAngle: result.entryAngle.toFixed(1) + "\u00B0",
+        entryClass: result.entryClass,
+        breakPt: result.breakPt,
+        skidFt: result.skidFt,
+        hookFt: result.hookFt,
+        outcome: result.outcome,
+        outcomeClass: result.outcomeClass,
+        patternLength: result.patternLength,
       });
+
+      // Decision Framework: analyze outcome and produce advice
+      const selectedEntry = bag.find((e) => (e.ball.name ?? "Custom") === selectedBallName);
+      const covType = selectedEntry?.type === "catalog"
+        ? (selectedEntry.ball as Ball).coverstock_type ?? undefined
+        : undefined;
+      const simAdvice = analyzeSimulation(result, {
+        rg, diff,
+        coverstockType: covType,
+        gameCount: selectedEntry?.game_count,
+      });
+      setAdvice(simAdvice);
+
       setSimRunning(false);
     }, 2000);
   }, [speed, revRate, launchAngle, board, simRunning, bag, selectedBallName, oilPattern]);
@@ -349,11 +328,11 @@ export function SimulationView() {
         </div>
         <div className="phase-bar">
           <span className="phase-label">SKID</span>
-          <div className="phase-seg skid" style={{ flex: 3 }} />
+          <div className="phase-seg skid" style={{ flex: phaseRatios.skid }} />
           <span className="phase-label">HOOK</span>
-          <div className="phase-seg hook" style={{ flex: 2 }} />
+          <div className="phase-seg hook" style={{ flex: phaseRatios.hook }} />
           <span className="phase-label">ROLL</span>
-          <div className="phase-seg roll" style={{ flex: 1.5 }} />
+          <div className="phase-seg roll" style={{ flex: phaseRatios.roll }} />
         </div>
       </div>
       <div className="sim-panel">
@@ -408,7 +387,7 @@ export function SimulationView() {
               value={launchAngle}
               onChange={(e) => setLaunchAngle(parseFloat(e.target.value))}
             />
-            <div className="slider-val">{launchAngle}°</div>
+            <div className="slider-val">{launchAngle}\u00B0</div>
           </div>
           <div className="slider-row">
             <div className="slider-label">Board #</div>
@@ -450,6 +429,10 @@ export function SimulationView() {
           <div className="result-card">
             <div className="result-card-title">Simulation Results</div>
             <div className="result-row">
+              <div className="result-key">Oil Pattern</div>
+              <div className="result-val">{results.patternLength} ft</div>
+            </div>
+            <div className="result-row">
               <div className="result-key">Entry Angle</div>
               <div className={`result-val ${results.entryClass}`}>
                 {results.entryAngle}
@@ -473,6 +456,29 @@ export function SimulationView() {
                 {results.outcome}
               </div>
             </div>
+          </div>
+        )}
+        {advice && (
+          <div className={`advice-card advice-${results?.entryClass ?? "warn"}`}>
+            <div className="advice-summary">{advice.summary}</div>
+            {advice.reasons.length > 0 && (
+              <ul className="advice-reasons">
+                {advice.reasons.map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
+              </ul>
+            )}
+            {advice.actions.length > 0 && (
+              <div className="advice-actions">
+                <div className="advice-actions-title">RECOMMENDED ACTIONS</div>
+                {advice.actions.map((a, i) => (
+                  <div key={i} className={`advice-action advice-action-${a.type}`}>
+                    <div className="advice-action-label">{a.label}</div>
+                    <div className="advice-action-detail">{a.detail}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

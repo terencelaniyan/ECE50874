@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bowling Alley Simulator — Rapier3D + Three.js</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #111; color: #eee; font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; }
+  #canvas { width: 100vw; height: 75vh; display: block; }
+  #controls {
+    padding: 8px 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    background: #1a1520; border-top: 1px solid #333;
+  }
+  label { font-size: 11px; color: #999; }
+  input[type=range] { width: 80px; accent-color: #e8ff3c; }
+  select { background: #222; color: #eee; border: 1px solid #444; padding: 3px 6px; font-size: 11px; border-radius: 3px; }
+  button { border: none; padding: 7px 16px; cursor: pointer; font-weight: 600; font-size: 12px; border-radius: 4px; }
+  .btn-launch { background: #e8ff3c; color: #111; }
+  .btn-launch:hover { background: #d4eb30; }
+  .btn-reset { background: #444; color: #ccc; }
+  .btn-reset:hover { background: #555; }
+  .btn-mute { background: #333; color: #aaa; font-size: 16px; padding: 5px 10px; }
+  .btn-mute:hover { background: #444; }
+  #info { padding: 4px 16px; font-size: 12px; color: #aaa; background: #151015; font-family: monospace; }
+  .ctrl { display: flex; flex-direction: column; gap: 1px; }
+  .val { font-size: 11px; color: #e8ff3c; font-weight: 600; }
+  .divider { width: 1px; height: 30px; background: #333; }
+
+  /* Score HUD overlay */
+  #scoreHud {
+    position: absolute; top: 16px; right: 16px; pointer-events: none;
+    display: none; text-align: center;
+  }
+  #scoreCount {
+    font-size: 48px; font-weight: 800; color: #fff;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  #scoreResult {
+    font-size: 28px; font-weight: 700; color: #e8ff3c;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    margin-top: 4px; opacity: 0; transition: opacity 0.3s;
+  }
+  #scoreResult.show { opacity: 1; }
+  #scoreResult.pulse {
+    animation: scorePulse 0.6s ease-out;
+  }
+  @keyframes scorePulse {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+  #pinDiagram {
+    margin-top: 8px; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .pin-row { display: flex; gap: 6px; }
+  .pin-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #fff; border: 1px solid #555;
+    transition: background 0.2s;
+  }
+  .pin-dot.fallen { background: #444; border-color: #333; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<!-- Score HUD overlay -->
+<div id="scoreHud">
+  <div id="scoreCount">0 / 10</div>
+  <div id="scoreResult"></div>
+  <div id="pinDiagram">
+    <div class="pin-row"><span class="pin-dot" data-pin="0"></span></div>
+    <div class="pin-row"><span class="pin-dot" data-pin="1"></span><span class="pin-dot" data-pin="2"></span></div>
+    <div class="pin-row"><span class="pin-dot" data-pin="3"></span><span class="pin-dot" data-pin="4"></span><span class="pin-dot" data-pin="5"></span></div>
+    <div class="pin-row"><span class="pin-dot" data-pin="6"></span><span class="pin-dot" data-pin="7"></span><span class="pin-dot" data-pin="8"></span><span class="pin-dot" data-pin="9"></span></div>
+  </div>
+</div>
+
+<div id="controls">
+  <div class="ctrl"><label>Speed: <span id="speedVal" class="val">17</span> mph</label>
+    <input type="range" id="speed" min="12" max="22" step="0.5" value="17"></div>
+  <div class="ctrl"><label>Revs: <span id="revVal" class="val">300</span> rpm</label>
+    <input type="range" id="revRate" min="100" max="500" step="10" value="300"></div>
+  <div class="ctrl"><label>Angle: <span id="angleVal" class="val">2</span>&deg;</label>
+    <input type="range" id="angle" min="-6" max="6" step="0.5" value="2"></div>
+  <div class="ctrl"><label>Board: <span id="boardVal" class="val">17</span></label>
+    <input type="range" id="board" min="1" max="39" step="1" value="17"></div>
+  <div class="divider"></div>
+  <div class="ctrl"><label>RG: <span id="rgVal" class="val">2.50</span></label>
+    <input type="range" id="rg" min="2.46" max="2.80" step="0.01" value="2.50"></div>
+  <div class="ctrl"><label>Diff: <span id="diffVal" class="val">0.040</span></label>
+    <input type="range" id="diff" min="0.008" max="0.060" step="0.002" value="0.040"></div>
+  <div class="ctrl"><label>Cover</label>
+    <select id="cover">
+      <option value="solid">Solid Reactive</option>
+      <option value="hybrid">Hybrid Reactive</option>
+      <option value="pearl">Pearl Reactive</option>
+      <option value="urethane">Urethane</option>
+      <option value="plastic">Plastic/Spare</option>
+    </select>
+  </div>
+  <div class="divider"></div>
+  <button class="btn-launch" id="launch">LAUNCH</button>
+  <button class="btn-reset" id="reset">RESET</button>
+  <div class="ctrl"><label>Speed: <span id="playSpeedVal" class="val">1.0</span>x</label>
+    <input type="range" id="playSpeed" min="0.1" max="2.0" step="0.1" value="1.0"></div>
+  <div class="divider"></div>
+  <select id="cam">
+    <option value="bowler">Bowler View</option>
+    <option value="overhead">Overhead</option>
+    <option value="chase">Chase Cam</option>
+    <option value="side">Side</option>
+    <option value="tv">TV Angle</option>
+  </select>
+  <button class="btn-mute" id="mute" title="Toggle sound">&#x1f50a;</button>
+</div>
+<div id="info">Loading...</div>
+<script type="module" src="/src/bowling-test.ts"></script>
+</body>
+</html>

@@ -11,7 +11,7 @@ from typing import Any, List, Optional, Tuple
 
 from psycopg import sql
 
-from .degradation import apply_degradation
+from .degradation import apply_degradation, apply_degradation_v2, compare_models
 from .exceptions import NotFoundError, ValidationError
 from .gap_engine import compute_gaps, group_gaps_by_zone, label_zone, zone_description
 from .recommendation_engine import recommend
@@ -644,3 +644,221 @@ def get_gaps(
         zone["label"] = label_zone(c[0], c[1])
         zone["description"] = zone_description(c[0], c[1])
     return zones
+
+
+# ── V2 Recommendations ──────────────────────────────────────────────────
+
+def _apply_degradation_v2_to_rows(rows_with_gc: List[Tuple[dict, int]]) -> List[dict]:
+    """Apply v2 degradation to each (row, game_count)."""
+    return [apply_degradation_v2(row, gc) for row, gc in rows_with_gc]
+
+
+def resolve_arsenal_rows_v2(
+    conn,
+    arsenal_id: Optional[str],
+    arsenal_ball_ids: List[str],
+    game_counts: Optional[dict],
+    degradation_model: str = "v1",
+) -> Tuple[List[dict], List[str]]:
+    """Like resolve_arsenal_rows but supports v2 degradation."""
+    if degradation_model == "v2":
+        if arsenal_id:
+            with conn.cursor() as cur:
+                catalog_loaded = load_arsenal_balls(cur, arsenal_id)
+                custom_loaded = load_custom_arsenal_balls(cur, arsenal_id)
+            custom_with_gc = [_custom_row_to_engine_row(d, gc) for d, gc in custom_loaded]
+            all_with_gc = catalog_loaded + custom_with_gc
+            effective = _apply_degradation_v2_to_rows(all_with_gc)
+            ids = [r["ball_id"] for r in effective]
+            return effective, ids
+        arsenal_ids = list(dict.fromkeys(arsenal_ball_ids))
+        if not arsenal_ids:
+            return [], []
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM balls WHERE ball_id = ANY(%s);", (arsenal_ids,))
+            rows = cur.fetchall()
+        if not game_counts:
+            return rows, arsenal_ids
+        count_map = {bid: game_counts.get(bid, 0) for bid in arsenal_ids}
+        effective = [apply_degradation_v2(r, count_map[r["ball_id"]]) for r in rows]
+        return effective, arsenal_ids
+    return resolve_arsenal_rows(conn, arsenal_id, arsenal_ball_ids, game_counts)
+
+
+def get_recommendations_v2(
+    conn,
+    arsenal_id: Optional[str],
+    arsenal_ball_ids: List[str],
+    game_counts: Optional[dict],
+    k: int,
+    w_rg: float = 1.0,
+    w_diff: float = 1.0,
+    w_int: float = 1.0,
+    w_cover: float = 0.3,
+    method: str = "knn",
+    metric: str = "l1",
+    normalize: bool = False,
+    degradation_model: str = "v1",
+    brand: Optional[str] = None,
+    coverstock_type: Optional[str] = None,
+    status: Optional[str] = None,
+    diversity_min_distance: float = 0.0,
+) -> dict:
+    """V2 recommendations with method selection (KNN, two-tower, or hybrid)."""
+    arsenal_rows, arsenal_ids = resolve_arsenal_rows_v2(
+        conn, arsenal_id, arsenal_ball_ids, game_counts, degradation_model
+    )
+    if arsenal_id and not arsenal_ids:
+        return {"items": [], "method": method, "degradation_model": degradation_model, "normalized": normalize}
+
+    brand = (brand or "").strip() or None
+    coverstock_type = (coverstock_type or "").strip() or None
+    status = (status or "").strip() or None
+
+    from psycopg import sql as psql
+    with conn.cursor() as cur:
+        if not arsenal_id and arsenal_ball_ids:
+            validate_ball_ids(cur, arsenal_ball_ids)
+        where = [psql.SQL("ball_id <> ALL(%(arsenal_ids)s)")]
+        params: dict = {"arsenal_ids": arsenal_ids}
+        if brand:
+            where.append(psql.SQL("brand ILIKE %(brand)s"))
+            params["brand"] = f"%{brand}%"
+        if coverstock_type:
+            where.append(psql.SQL("coverstock_type ILIKE %(coverstock_type)s"))
+            params["coverstock_type"] = f"%{coverstock_type}%"
+        if status:
+            where.append(psql.SQL("status = %(status)s"))
+            params["status"] = status
+        query = psql.SQL("SELECT * FROM balls WHERE {}").format(
+            psql.SQL(" AND ").join(where)
+        )
+        cur.execute(query, params)
+        candidate_rows = cur.fetchall()
+
+    actual_method = method
+    items = []
+
+    # Try two-tower if requested
+    if method in ("two_tower", "hybrid"):
+        try:
+            from .two_tower import get_two_tower_recommendations
+            tt_items = get_two_tower_recommendations(arsenal_rows, candidate_rows, k=k)
+            if tt_items:
+                items = [{"ball": b, "score": s, "method": "two_tower", "reason": None} for b, s in tt_items]
+                actual_method = "two_tower"
+        except Exception:
+            pass
+
+    # KNN fallback or explicit knn
+    if not items or method == "hybrid":
+        knn_items = recommend(
+            arsenal_rows=arsenal_rows,
+            candidate_rows=candidate_rows,
+            k=k,
+            w_rg=w_rg,
+            w_diff=w_diff,
+            w_int=w_int,
+            w_cover=w_cover,
+            normalize=normalize,
+            metric=metric,
+            diversity_min_distance=diversity_min_distance,
+        )
+        knn_results = [{"ball": b, "score": s, "method": "knn", "reason": None} for b, s in knn_items]
+
+        if method == "hybrid" and items:
+            # Merge: interleave two-tower and knn, deduplicate
+            seen = set()
+            merged = []
+            for item in items + knn_results:
+                bid = item["ball"]["ball_id"] if isinstance(item["ball"], dict) else item["ball"].ball_id
+                if bid not in seen:
+                    seen.add(bid)
+                    merged.append(item)
+            items = merged[:k]
+            actual_method = "hybrid"
+        elif not items:
+            items = knn_results
+            actual_method = "knn"
+
+    return {
+        "items": items,
+        "method": actual_method,
+        "degradation_model": degradation_model,
+        "normalized": normalize,
+    }
+
+
+# ── Slot Assignment ─────────────────────────────────────────────────────
+
+def get_slot_assignments(
+    conn,
+    arsenal_id: Optional[str],
+    arsenal_ball_ids: List[str],
+    game_counts: Optional[dict],
+) -> dict:
+    """Assign arsenal balls to the 6-ball slot system."""
+    from .slot_assignment import assign_slots
+    arsenal_rows, arsenal_ids = resolve_arsenal_rows(
+        conn, arsenal_id, arsenal_ball_ids, game_counts
+    )
+    if not arsenal_rows:
+        return {"assignments": [], "best_k": 0, "silhouette_score": 0.0, "slot_coverage": []}
+    return assign_slots(arsenal_rows)
+
+
+# ── Degradation Comparison ──────────────────────────────────────────────
+
+def get_degradation_comparison(ball_row: dict, game_count: int) -> dict:
+    """Compare v1 vs v2 degradation models for a given ball."""
+    return compare_models(ball_row, game_count)
+
+
+# ── Two-Tower Training ──────────────────────────────────────────────────
+
+def train_two_tower(
+    conn,
+    n_arsenals: int = 500,
+    epochs: int = 20,
+    batch_size: int = 64,
+    lr: float = 0.001,
+    neg_ratio: int = 3,
+) -> dict:
+    """Train the two-tower model on synthetic arsenal data."""
+    try:
+        from .two_tower import train_model
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM balls;")
+            catalog = cur.fetchall()
+        if not catalog:
+            return {"error": "No balls in catalog to train on"}
+        result = train_model(
+            catalog_rows=catalog,
+            n_arsenals=n_arsenals,
+            epochs=epochs,
+            batch_size=batch_size,
+            lr=lr,
+            neg_ratio=neg_ratio,
+        )
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ── Oil Patterns ────────────────────────────────────────────────────────
+
+def list_oil_patterns(conn) -> List[dict]:
+    """List all oil patterns from the database."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT id, name, length_ft, description, zones FROM oil_patterns ORDER BY length_ft;")
+        rows = cur.fetchall()
+    return [
+        {
+            "id": r["id"],
+            "name": r["name"],
+            "length_ft": r["length_ft"],
+            "description": r["description"],
+            "zones": r["zones"] if isinstance(r["zones"], list) else [],
+        }
+        for r in rows
+    ]
