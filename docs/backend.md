@@ -9,8 +9,9 @@ FastAPI application that serves the ball catalog and recommendation endpoint. Us
 | Variable     | Required | Description                                                                           |
 | ------------ | -------- | ------------------------------------------------------------------------------------- |
 | DATABASE_URL | yes      | Postgres connection string, e.g. `postgresql://postgres:postgres@localhost:5432/bowlingdb` |
+| ADMIN_KEY    | no       | Required for `POST /admin/*` to succeed: the request must send header `X-Admin-Key` with this exact value. If unset or empty, admin routes return **403** (the dependency treats a missing key as invalid). |
 
-The app fails to start if `DATABASE_URL` is missing or empty. No other env vars are required for basic run.
+The app fails to start if `DATABASE_URL` is missing or empty. `ADMIN_KEY` is optional for catalog/recommendation use; set it when you need catalog refresh or model training from the API.
 
 **Code:** `services/backend/app/config.py` loads dotenv and sets `DATABASE_URL`; `services/backend/app/db.py` uses it to open connections with a dict row factory.
 
@@ -164,6 +165,110 @@ Voronoi-based gap analysis in RG–Differential space (per project spec). Identi
 
 **Errors:** 400 if both provided or any ball ID not found. 404 if `arsenal_id` not found.
 
+---
+
+### POST /recommendations/v2
+
+V2 recommendations with selectable backend: **KNN**, **two_tower**, or **hybrid** (`method`). Supports optional **coverstock weight** (`w_cover`), **distance metric** (`l1` or `l2`), optional **min–max normalization** before distance, and **degradation model** `v1` (linear) vs `v2` (logarithmic). See [Recommendation engine](recommendation-engine.md) for algorithm context.
+
+**Request body:** Same mutual exclusion as `POST /recommendations`: provide **either** `arsenal_id` **or** `arsenal_ball_ids` (not both). You must provide at least one arsenal ball (via ID list or stored arsenal).
+
+| Field                    | Type            | Constraints | Description                                                                 |
+| ------------------------ | --------------- | ----------- | --------------------------------------------------------------------------- |
+| arsenal_ball_ids         | array of string | —           | Ball IDs when not using `arsenal_id`.                                      |
+| arsenal_id               | string (UUID)   | optional    | Stored arsenal; mutually exclusive with non-empty `arsenal_ball_ids`.       |
+| game_counts              | object          | optional    | Map `ball_id` → game count (with `arsenal_ball_ids`).                       |
+| k                        | int             | 1–50        | Number of recommendations. Default 5.                                     |
+| w_rg, w_diff, w_int      | float           | 0.1–10      | Spec weights. Default 1.0 each.                                            |
+| w_cover                  | float           | 0–10        | Coverstock ordinal weight. Default 0.3.                                     |
+| method                   | string          | —           | `knn`, `two_tower`, or `hybrid`. Default `knn`.                             |
+| metric                   | string          | —           | `l1` or `l2`. Default `l1`.                                                |
+| normalize                | bool            | —           | Min–max normalize features before distance. Default false.                  |
+| degradation_model        | string          | —           | `v1` or `v2`. Default `v1`.                                                |
+| brand                    | string          | optional    | Candidate filter (substring).                                              |
+| coverstock_type          | string          | optional    | Candidate filter (substring).                                              |
+| status                   | string          | optional    | Candidate filter (exact).                                                  |
+| diversity_min_distance   | float           | 0–1         | Min distance between picks in spec space; 0 = off. Default 0.                |
+
+**Response:** `items` (each entry: `ball`, `score`, per-item `method`, optional `reason`); top-level `method`, `degradation_model`, `normalized`.
+
+**Errors:** 400 for invalid arsenal combination or validation from the service. 404 if `arsenal_id` not found.
+
+---
+
+### POST /slots
+
+Assigns arsenal balls to the **6-ball slot system** using K-Means clustering and reports **silhouette** quality and **per-slot coverage**.
+
+**Request body:**
+
+| Field             | Type            | Description                                                                 |
+| ----------------- | --------------- | --------------------------------------------------------------------------- |
+| arsenal_ball_ids  | array of string | Use when not using `arsenal_id`.                                            |
+| arsenal_id        | string (UUID)   | Optional; mutually exclusive with using both sources incorrectly.           |
+| game_counts       | object          | Optional map `ball_id` → count for degradation-aware positions.             |
+
+Provide **either** `arsenal_id` **or** at least one `arsenal_ball_ids` entry (same rules as recommendations v2).
+
+**Response:** `assignments` (per ball: `ball_id`, `slot`, `slot_name`, `slot_description`, `rg`, `diff`); `best_k`; `silhouette_score`; `slot_coverage` (list of `slot`, `name`, `covered`).
+
+**Errors:** 400/404 analogous to other arsenal endpoints.
+
+---
+
+### POST /degradation/compare
+
+Compares **v1 linear** vs **v2 logarithmic** degradation on one ball at a given **game_count**.
+
+**Request body:**
+
+| Field             | Type   | Constraints | Description                                                                 |
+| ----------------- | ------ | ----------- | --------------------------------------------------------------------------- |
+| ball_id           | string | optional    | If set, loads RG/diff/int_diff/coverstock from catalog; overrides manual fields below when found. |
+| rg, diff, int_diff | float | see API     | Used when `ball_id` omitted (defaults in schema).                            |
+| coverstock_type   | string | optional    | Used for v2 λ when not loading from DB.                                    |
+| game_count        | int    | 0–500       | Games for degradation curve. Default 50.                                   |
+
+**Response:** `original` (rg, diff, int_diff, factor 1.0); `v1_linear` and `v2_logarithmic` (each rg, diff, int_diff, factor); `game_count`; `coverstock_type`; `v2_lambda`.
+
+**Errors:** 404 if `ball_id` is set but not found in `balls`.
+
+---
+
+### GET /oil-patterns
+
+Lists **oil patterns** for simulation / UI: each item has `id`, `name`, `length_ft`, optional `description`, and `zones` (friction segments with `startFt`, `endFt`, `mu`).
+
+If the backing table is missing or query fails, the handler returns a **small hardcoded set** of house/sport patterns (same shape as DB rows).
+
+**Response:** `{ "items": [ ... ] }`.
+
+---
+
+### Admin endpoints
+
+Both require **`ADMIN_KEY`** to be set in the environment and header **`X-Admin-Key`** on the request with the same value. If `ADMIN_KEY` is unset or the header does not match, the server returns **403** (`Invalid or missing X-Admin-Key`).
+
+#### POST /admin/refresh-catalog
+
+Runs **`scripts/scrape_btm.py`** at the repository root, then **`services/backend/scripts/seed_from_csv.py`**. **Long-running** (scrape timeout 600s, seed 120s). On success returns `status`, `message`, and `seed_output` (stdout from seed). On failure returns JSON with `status: "error"`, `step` (`scrape` or `seed`), and `detail`.
+
+#### POST /admin/train-model
+
+Trains the **two-tower** recommendation model on synthetic arsenal data.
+
+**Request body:**
+
+| Field        | Type | Constraints | Description                    |
+| ------------ | ---- | ----------- | ------------------------------ |
+| n_arsenals   | int  | 10–10000    | Default 500.                 |
+| epochs       | int  | 1–200       | Default 20.                  |
+| batch_size   | int  | 8–512       | Default 64.                    |
+| lr           | float| 0.0001–0.1  | Default 0.001.               |
+| neg_ratio    | int  | 1–10        | Negatives per positive. Default 3. |
+
+**Response:** `status: "ok"` plus training metrics from the service, or `500` with `status: "error"` and `detail` if training fails.
+
 ## Request/response models
 
 Defined in `services/backend/app/api_models.py`:
@@ -173,8 +278,16 @@ Defined in `services/backend/app/api_models.py`:
 - **ArsenalBallInput** — ball_id, game_count (optional, default 0). **CreateArsenalRequest** — name (optional), balls (list). **UpdateArsenalRequest** — name (optional), balls (optional). **ArsenalResponse** — id, name, balls (ball_id, game_count). **ArsenalSummary** — id, name, ball_count.
 - **RecommendRequest** — arsenal_ball_ids, optional arsenal_id, optional game_counts, k; optional w_rg, w_diff, w_int (similarity weights); optional brand, coverstock_type, status (candidate filters); optional diversity_min_distance.
 - **RecommendationItem** — ball, score. **RecommendResponse** — items.
+- **RecommendV2Request** — extends v1-style fields with w_cover, method, metric, normalize, degradation_model (and same arsenal/k/filter/diversity fields).
+- **RecommendV2Item** — ball, score, method, optional reason. **RecommendV2Response** — items, method, degradation_model, normalized.
 - **GapRequest** — arsenal_ball_ids, optional arsenal_id, optional game_counts, k, zone_threshold.
 - **GapItem** — ball, gap_score. **GapZone** — center, label, description, balls. **GapResponse** — zones.
+- **SlotAssignRequest** — arsenal_ball_ids, optional arsenal_id, optional game_counts.
+- **SlotAssignment** — ball_id, slot, slot_name, slot_description, rg, diff. **SlotCoverage** — slot, name, covered. **SlotAssignResponse** — assignments, best_k, silhouette_score, slot_coverage.
+- **DegradationCompareRequest** — optional ball_id; rg, diff, int_diff, optional coverstock_type, game_count.
+- **DegradationModelResult** — rg, diff, int_diff, factor. **DegradationCompareResponse** — original, v1_linear, v2_logarithmic, game_count, optional coverstock_type, v2_lambda.
+- **FrictionZone** — startFt, endFt, mu. **OilPattern** — id, name, length_ft, optional description, zones. **OilPatternsResponse** — items.
+- **TrainModelRequest** — n_arsenals, epochs, batch_size, lr, neg_ratio.
 
 ## Running the server
 

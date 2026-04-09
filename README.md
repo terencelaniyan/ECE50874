@@ -8,12 +8,12 @@ This repository contains the code for the **Bowling Bowl Grid** project for **EC
 The system is organized into:
 
 - `services/backend/`: FastAPI backend that exposes HTTP APIs, talks to PostgreSQL, and implements the gap/degradation and recommendation logic.
-- `services/frontend/`: Frontend application for interacting with the backend (framework-agnostic in this repo; see that directory for details).
+- `services/frontend/`: React + TypeScript + Vite SPA for interacting with the backend (see that directory for details).
 - `data/`: Data assets and experiment outputs (often git-ignored in practice).
-- `docs/`: Project documentation (backend architecture, data collection, recommendation engine).
+- `docs/`: Project documentation (API, frontend, data pipeline, recommendations, deployment, testing, simulation validation, course deliverables).
 - `docker-compose.yml`: Local PostgreSQL instance used by the backend.
 
-You can run the backend against a local PostgreSQL database (via Docker) and connect any frontend you build under `frontend/`.
+You can run the backend against a local PostgreSQL database (via Docker) and use the included UI under `services/frontend/`.
 
 ---
 
@@ -41,9 +41,16 @@ High-level layout:
   - `frontend.md` – Frontend architecture, structure, and usage.
   - `data-collection.md` – Data collection pipeline and formats.
   - `recommendation-engine.md` – Recommendation engine design and math.
+  - `deploy.md` – Production single-server deploy (.env, Caddy, seeding).
+  - `E2E_TEST_PLAN.md` – End-to-end test plan.
+  - `PHASE1_IMPLEMENTATION_GUIDE.md` – Phase 1 (physics / simulation) implementation guide.
+  - `PROJECT_STATUS.md` – Reconciled feature status, backlog, and testing overview.
+  - `TECH_DEBT.md` – Open shortcuts and their cost (see `PROJECT_STATUS.md` for status).
+  - `simulation/` – Simulation validation notes (physics audit, USBC specs, test matrix, deflection analysis).
+  - Course HTML exports in `docs/` (e.g. project report pages) as needed for submission.
 - `docker-compose.yml` – Local PostgreSQL service definition.
 
-For deeper technical details, start with the documents under `docs/`.
+For deeper technical details, start with the documents under `docs/`. With the backend running, the interactive OpenAPI UI is at `http://localhost:8000/docs` (see **Backend – local development** below).
 
 **Production (single-server):** See [docs/deploy.md](docs/deploy.md) for .env checklist, Caddyfile domain, and the one-off seed command.
 
@@ -58,11 +65,9 @@ To run the backend locally:
 - **PostgreSQL**: via Docker (using `docker-compose.yml`) or your own instance
 - **Git**
 
-If you have a JavaScript/TypeScript frontend under `services/frontend/`, you will typically also need:
+To work on the React + Vite frontend under `services/frontend/`, you will typically need:
 
 - **Node.js** (LTS) and **npm** or **yarn**
-
-Adjust the frontend instructions below to match your chosen framework and tooling.
 
 ---
 
@@ -200,6 +205,12 @@ Refer to:
 - `docs/recommendation-engine.md` – how data feeds into the recommendation engine.
 - `docs/backend.md` – backend endpoints that read/write data.
 - `docs/frontend.md` – frontend structure, data flow, and usage.
+- `docs/deploy.md` – production deployment.
+- `docs/E2E_TEST_PLAN.md` – Playwright E2E layout, how to run, backlog.
+- `docs/PHASE1_IMPLEMENTATION_GUIDE.md` – Phase 1 simulation guide.
+- `docs/PROJECT_STATUS.md` – project status and backlog.
+- `docs/TECH_DEBT.md` – technical debt (shortcuts and cost).
+- `docs/simulation/` – simulation validation and analysis notes.
 
 Large or sensitive files should **not** be committed to Git. Use `.gitignore` to exclude them.
 
@@ -259,7 +270,7 @@ Development workflow
 5. **Run tests**
 
    - Backend: `pytest` from `services/backend/`.
-   - Frontend: project-specific test command once you have one.
+   - Frontend: `npm run test:run` or `npm test` (watch) from `services/frontend/`.
 
 ---
 
@@ -272,6 +283,12 @@ For deeper details, see:
 - `docs/frontend.md` – frontend architecture, structure, and usage.
 - `docs/data-collection.md` – data sources, schemas, and pipelines.
 - `docs/recommendation-engine.md` – algorithms, metrics, and implementation notes.
+- `docs/deploy.md` – production deployment.
+- `docs/E2E_TEST_PLAN.md` – E2E testing.
+- `docs/PHASE1_IMPLEMENTATION_GUIDE.md` – Phase 1 simulation guide.
+- `docs/PROJECT_STATUS.md` – project status and backlog.
+- `docs/TECH_DEBT.md` – technical debt (shortcuts and cost).
+- `docs/simulation/` – simulation validation and analysis notes.
 
 Keep this `README.md` and the `docs/` folder up to date as the project evolves.
 
