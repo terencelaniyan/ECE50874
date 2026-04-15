@@ -10,10 +10,6 @@ from fastapi.testclient import TestClient
 pytestmark = pytest.mark.integration
 
 
-@pytest.fixture
-def client():
-    from app.main import app
-    return TestClient(app)
 
 
 def test_gaps_both_arsenal_id_and_ball_ids_returns_400(client):

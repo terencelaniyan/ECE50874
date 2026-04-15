@@ -1,11 +1,11 @@
 """Unit tests for degradation.apply_degradation (FR5)."""
 import pytest
 
-from app.degradation import apply_degradation
+from app.degradation import apply_degradation, apply_degradation_v2, compare_models, _get_lambda, DEFAULT_LAMBDA
 
 
-def _ball(rg: float, diff: float, int_diff: float = 0.015):
-    return {"ball_id": "B1", "rg": rg, "diff": diff, "int_diff": int_diff}
+def _ball(rg: float, diff: float, int_diff: float = 0.015, coverstock_type: str = ""):
+    return {"ball_id": "B1", "rg": rg, "diff": diff, "int_diff": int_diff, "coverstock_type": coverstock_type}
 
 
 def test_zero_games_no_change():
@@ -48,3 +48,29 @@ def test_copy_unchanged_fields():
     assert out["name"] == "Test"
     assert out["rg"] != 2.5
     assert out["diff"] != 0.04
+
+def test_get_lambda():
+    assert _get_lambda("Solid Reactive") == 0.065
+    assert _get_lambda("pearl reactive (hybrid)") == 0.055
+    assert _get_lambda(None) == DEFAULT_LAMBDA
+
+def test_apply_degradation_v2_zero_games():
+    row = _ball(2.50, 0.040, 0.015, "urethane")
+    out = apply_degradation_v2(row, 0)
+    assert out["_degradation_factor"] == 1.0
+    assert out["_degradation_lambda"] == 0.035
+    assert out["rg"] == 2.50
+
+def test_apply_degradation_v2_active_games():
+    row = _ball(2.50, 0.040, 0.015, "solid reactive")
+    out = apply_degradation_v2(row, 100)
+    assert out["_degradation_factor"] < 1.0
+    assert out["rg"] < 2.50
+    assert out["int_diff"] < 0.015
+
+def test_compare_models():
+    row = _ball(2.50, 0.040, 0.015, "plastic")
+    res = compare_models(row, 50)
+    assert "v1_linear" in res
+    assert "v2_logarithmic" in res
+    assert res["v2_logarithmic"]["coverstock_type"] == "plastic"

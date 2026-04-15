@@ -139,13 +139,61 @@ As of last reconciliation: **108** backend tests collected; **11** Playwright te
 
 ---
 
-## 7. Archive — sprint file inventory (≈2026-03)
+## 7. Archive
 
-*Historical record of files touched when adding v2 recommendations, slots, degradation compare, and simulation refactors. Current code may have diverged; use git for truth.*
+*Historical snapshots. Current code and test counts may differ; use §4 commands and git for truth.*
+
+### 7.1 Sprint file inventory (≈2026-03)
 
 **Added (representative):** `app/two_tower.py`, `app/synthetic_data.py`, `app/slot_assignment.py`, `tests/test_slot_assignment.py`, `tests/test_two_tower.py`, `frontend/src/api/recommendations-v2.ts`, `slots.ts`, `degradation.ts`, `SlotAssignmentPanel.tsx`, `DegradationCompareView.tsx`, `parametric-physics.ts`, `phase-detector.ts`.
 
 **Modified (representative):** `degradation.py`, `recommendation_engine.py`, `api_models.py`, `services.py`, `main.py`, `RecommendationsListCompact.tsx`, `Layout.tsx`, `ArsenalPanel.tsx`, `SimulationView.tsx`, tests for degradation and recommendation engine.
+
+### 7.2 Full test matrix (legacy TECH_DEBT §4.1, ≈2026-03-14)
+
+| Module | Test File | # Tests | Type | What It Covers |
+|--------|-----------|---------|------|----------------|
+| Degradation V1 (linear) | `test_degradation.py` | 5 | Unit | Zero/negative games, 87-game cap, factor=0.78, field preservation |
+| Degradation V2 (logarithmic) | `test_degradation.py` | 7 | Unit | Log decay shape, coverstock-dependent λ, metadata fields, formula verification, min-factor floor |
+| Degradation comparison | `test_degradation.py` | 2 | Unit | V1 vs V2 structure and divergence |
+| Lambda lookup | `test_degradation.py` | 3 | Unit | Exact match, case-insensitive, unknown→default |
+| Gap engine (Voronoi) | `test_gap_engine.py` | 11 | Unit | Empty catalog, all-in-arsenal, sorted output, jitter determinism, zone grouping, zone labeling |
+| Recommendation (L1 KNN) | `test_recommendation_engine.py` | 11 | Unit | Zero distance, positive distance, weights, empty arsenal/candidates, k-limit, min-distance, diversity, score=min |
+| Recommendation (L2) | `test_recommendation_engine.py` | 4 | Unit | L2 zero, single-dim, multi-dim, L2-with-weights |
+| Normalization | `test_recommendation_engine.py` | 4 | Unit | Empty, single-row, scale-to-01, recommend-with-normalization |
+| Slot assignment (K-Means) | `test_slot_assignment.py` | 6 | Unit | Empty arsenal, single ball→slot 1, two-ball different slots, 6-ball coverage, metadata, coverage tracking |
+| K-Means algorithm | `test_slot_assignment.py` | 3 | Unit | Single cluster, two clusters separation, fewer-than-k points |
+| Silhouette score | `test_slot_assignment.py` | 3 | Unit | Single point, single cluster, well-separated clusters |
+| Feature normalization | `test_slot_assignment.py` | 1 | Unit | Min-max to [0,1] |
+| Feature encoding | `test_two_tower.py` | 7 | Unit | Ball→5 features, None handling, arsenal→15 features, coverstock encoding (known/case/unknown), brand encoding |
+| Slot fitting | `test_two_tower.py` | 3 | Unit | Ball fits slot 1, doesn't fit wrong slot, fits slot 5 |
+| Synthetic data | `test_two_tower.py` | 3 | Unit | Produces data, deterministic with seed, empty catalog |
+| Two-tower inference | `test_two_tower.py` | 3 | Unit | No model→empty, empty arsenal→empty, empty candidates→empty |
+| PyTorch model | `test_two_tower.py` | 3 | Unit (conditional) | Forward pass shape, embedding L2 norm=1, small training smoke test |
+| Arsenal CRUD API | `test_arsenals_api.py` | 6 | Integration | Create empty/with-balls/with-custom, list, update+delete, invalid ball ID |
+| Gaps API | `test_gaps_api.py` | 3 | Integration | Both params→400, empty arsenal→200, invalid→400 |
+| Recommendations API | `test_recommendations_api.py` | 4 | Integration | Neither/both params→400, invalid ball→400, valid→200 |
+| Frontend: BallCard | `BallCard.test.tsx` | 4 | Unit | Renders name/brand/specs, add-to-bag callback |
+| Frontend: VirtualBag | `VirtualBag.test.tsx` | 3 | Unit | Empty state, renders entries, remove callback |
+| Frontend: BallCatalog | `BallCatalog.test.tsx` | 5 | Unit | Loads on mount, search debounce, brand filter |
+| Frontend: BagContext | `BagContext.test.tsx` | 4 | Unit | Add/remove/set game count, duplicate prevention |
+| Frontend: API client | `client.test.tsx` | 5 | Unit | GET/POST success, error handling, network error |
+| Frontend: API balls | `balls.test.ts` | 3 | Unit | listBalls params, getBall by ID |
+| Frontend: API arsenals | `arsenals.test.ts` | 5 | Unit | CRUD operations |
+| Frontend: API gaps | `gaps.test.ts` | 2 | Unit | getGaps request/response |
+| Frontend: App integration | `App.integration.test.tsx` | 1 | Integration | App mounts and renders |
+
+*Legacy rollup from same report:* 108 backend + 103 frontend + 24 integration + 11 E2E = **246** tests. Frontend row counts predate added suites (e.g. `parametric-physics`, `phase-detector`, `decision-framework`, kinematics); see §4 for refresh commands.
+
+### 7.3 How tests were layered (legacy TECH_DEBT §4.2)
+
+| Layer | Framework | Strategy |
+|-------|-----------|----------|
+| Backend unit tests | pytest | Direct function calls with in-memory dicts (no DB). Covers engine modules. |
+| Backend integration tests | pytest + httpx TestClient | HTTP round-trip against FastAPI with real PostgreSQL. Requires `DATABASE_URL`. Skipped in CI. |
+| Frontend unit tests | Vitest + Testing Library | Components + MSW stubs from `test/handlers.ts`. |
+| Frontend integration test | Vitest | App mount with `BagProvider`, smoke render. |
+| CI pipeline | GitHub Actions | Backend: `pytest tests/` (unit). Frontend: `npm run test:run` (Vitest). |
 
 ---
 

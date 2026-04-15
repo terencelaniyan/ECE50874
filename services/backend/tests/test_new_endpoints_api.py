@@ -10,10 +10,6 @@ from fastapi.testclient import TestClient
 pytestmark = pytest.mark.integration
 
 
-@pytest.fixture
-def client():
-    from app.main import app
-    return TestClient(app)
 
 
 def _get_one_ball_id(client: TestClient) -> str:

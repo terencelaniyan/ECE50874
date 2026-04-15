@@ -1,7 +1,3 @@
-# CI: run backend and frontend tests on push/PR.
-# Backend: unit tests only (no DATABASE_URL); integration tests are skipped.
-# Frontend: Vitest run.
-
 name: CI
 
 on:
