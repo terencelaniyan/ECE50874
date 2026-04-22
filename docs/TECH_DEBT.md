@@ -14,13 +14,17 @@
 
 ---
 
-## 2. Two-tower checkpoint not part of default clone setup
+## 2. Two-tower checkpoint and training assumptions
 
-**What:** `POST /admin/train-model` (or a shipped `models/two_tower.pt`) is required for full two-tower/hybrid behavior; otherwise v2 routes **fall back to KNN** without a loud user-facing warning in all paths.
+**What (layers):**
+
+1. **Host `setup_db.py`** already runs `train_model.py` after seed + arsenals — but **`torch` is not listed in** `services/backend/requirements.txt`, so a developer who only `pip install -r requirements.txt` may get a failed or skipped training step unless PyTorch is installed separately.
+2. **Checkpoint:** Full two-tower/hybrid behavior still needs a usable `services/backend/models/two_tower.pt` (from successful training or checked in). Without it, v2 routes **fall back toward KNN** without a loud user-facing warning on every path.
+3. **Docker / production images** copy `app/` only; they do not bundle `scripts/` or a trained checkpoint by default ([deploy.md](deploy.md)), so container-only runs differ from a fully seeded host.
 
 **Cost:** Demos and fresh installs behave differently; harder to grade or reproduce "neural" results.
 
-**Direction:** Train in `setup_db.py`, commit a small checkpoint, or surface explicit UI when the model file is missing.
+**Direction:** Add `torch` to tracked deps or document it explicitly; commit a small baseline checkpoint or gate UI on missing model; keep `POST /admin/train-model` for retraining when `ADMIN_KEY` is set.
 
 ---
 

@@ -300,7 +300,7 @@ cd services/backend && uvicorn app.main:app --reload
 - `--reload` enables auto-reload on code changes.
 - Default host/port: `127.0.0.1:8000`. Override with `--host` and `--port` if needed.
 
-**Dependencies:** See `services/backend/requirements.txt` (fastapi, uvicorn, psycopg[binary], pydantic, python-dotenv, scipy, pytest).
+**Dependencies:** See `services/backend/requirements.txt` (fastapi, uvicorn, psycopg[binary], pydantic, python-dotenv, scipy, pytest, httpx). **PyTorch** is not pinned there; two-tower training (`train_model.py`, `POST /admin/train-model`) and several `test_two_tower.py` cases expect `torch` to be installed in the environment when you want training or full neural inference. See [TECH_DEBT.md](TECH_DEBT.md) §2.
 
 ## Tests
 

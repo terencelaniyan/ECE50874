@@ -1,16 +1,16 @@
 # Frontend
 
-React + TypeScript SPA built with Vite. It is the Bowling Bowl Grid UI: users browse the ball catalog, build an arsenal (virtual bag), view an RG–Differential coverage map (Voronoi), get recommendations and gap analysis, and run wear/degradation simulation. All data comes from the backend API; see [Backend](backend.md) for endpoints.
+React + TypeScript SPA built with Vite. Bowling Bowl Grid UI: catalog browse, virtual bag (arsenal), RG–Differential Voronoi grid, recommendations (v1 compact + v2 method toggle), 6-ball slot assignment, gap analysis components, 2D and 3D simulation, video-based pose analysis with optional handoff to simulation, and degradation tooling. Data comes from the FastAPI backend; see [Backend](backend.md) for endpoints.
 
 ## Configuration
 
 **Environment:** The frontend reads `VITE_API_BASE` at build time. In development, the Vite dev server proxies `/api` to the backend, so you typically do not set it.
 
-| Variable        | Required | Description                                                                 |
-| --------------- | -------- | --------------------------------------------------------------------------- |
-| VITE_API_BASE   | no       | Base URL for API requests. Default: `/api`. Set to e.g. `http://localhost:8000` if not using the proxy. |
+| Variable      | Required | Description                                                                 |
+| ------------- | -------- | --------------------------------------------------------------------------- |
+| VITE_API_BASE | no       | Base URL for API requests. Default: `/api`. Set to e.g. `http://localhost:8000` if not using the proxy. |
 
-**Code:** `services/frontend/src/api/client.ts` uses `import.meta.env.VITE_API_BASE`; `apiUrl(path)` builds the full URL. Dev proxy is in `services/frontend/vite.config.ts`: `/api` → `http://localhost:8000` (rewrite strips `/api` so backend sees paths like `/balls`).
+**Code:** `services/frontend/src/api/client.ts` uses `import.meta.env.VITE_API_BASE`; `apiUrl(path)` builds the full URL. Dev proxy is in `services/frontend/vite.config.ts`: `/api` → `http://localhost:8000` (rewrite strips `/api` so the backend sees paths like `/balls`).
 
 ## Project structure
 
@@ -18,16 +18,18 @@ High-level layout under `services/frontend/`:
 
 - **Entry:** `index.html` → `src/main.tsx` mounts the app into `#root`.
 - **Root component:** `src/App.tsx` wraps the tree in `BagProvider` and renders `Layout`.
-- **Layout:** `src/components/Layout.tsx` — header, tab navigation (Grid View, Simulation, Ball Database), and the active view. No router; tab state is local `useState`.
-- **Components:** `src/components/` — `Layout`, `GridView`, `ArsenalPanel`, `RecommendationsListCompact`, `BallDatabaseView`, `SimulationView`, `BallCatalog`, `BallCard`, `VirtualBag`, `GapsPanel`, `RecommendationsPanel`, `BallComparisonTable`, etc.
-- **State:** `src/context/BagContext.tsx` — bag (arsenal) state: list of balls with optional game count, saved arsenal ID, and methods: `addToBag`, `removeFromBag`, `setGameCount`, `setBag`, `setSavedArsenalId`. Consumed via `useBag()`.
-- **API layer:** `src/api/` — `client.ts` (get, post, patch, del, ApiError, apiUrl); `balls.ts`, `arsenals.ts`, `recommendations.ts`, `gaps.ts` call the client and return typed responses.
-- **Types:** `src/types/ball.ts` — mirrors backend models: Ball, BallsResponse, ArsenalBallInput, ArsenalResponse, ArsenalSummary, RecommendationItem, RecommendResponse, GapItem, GapZone, GapResponse.
-- **Tests:** `src/test/setup.ts` (MSW server, jest-dom, ResizeObserver mock); `server.ts`, `handlers.ts`, `fixtures.ts`. Test files live next to source: `**/*.test.{ts,tsx}`.
+- **Layout:** `src/components/Layout.tsx` — header, **tab navigation** (no client-side router; `useState` for the active tab). Default tab is **Grid View**. On the grid, a **right-hand panel** toggles between compact recommendations and slot assignment (`Recs` / `Slots` buttons).
+- **Main views (by tab):** `GridView`, `BallCatalog`, `SimulationView`, `SimulationView3D`, `AnalysisView`, `BallDatabaseView`. Full-width `RecommendationsPanel` and `GapsPanel` are still rendered when internal tab state is `recommendations` or `gaps`, but **the header does not expose buttons** for those values today; primary UX for recs/slots is the grid + right panel.
+- **Components (representative):** `ArsenalPanel`, `RecommendationsListCompact`, `SlotAssignmentPanel`, `RecommendationsPanel`, `GapsPanel`, `BallCard`, `VirtualBag`, `BallComparisonTable`, `DegradationCompareView`, analysis subcomponents under `src/components/analysis/`, etc.
+- **State:** `src/context/BagContext.tsx` — arsenal (bag) entries with optional game count, saved arsenal id, and mutators (`addToBag`, `removeFromBag`, `setGameCount`, `setBag`, `setSavedArsenalId`). Use `useBag()`.
+- **API layer:** `src/api/` — `client.ts` (get, post, patch, del, `ApiError`, `apiUrl`); `balls.ts`, `arsenals.ts`, `recommendations.ts`, `recommendations-v2.ts`, `gaps.ts`, `slots.ts`, `degradation.ts`.
+- **Physics / vision utilities:** `src/utils/parametric-physics.ts`, `phase-detector.ts`, `bowling-kinematics.ts`, `decision-framework.ts`, `calibration.ts`; `src/physics/bowling-physics.ts`; workers `src/workers/physics-worker.ts`, `src/workers/vision-worker.ts` (MediaPipe PoseLandmarker path for uploaded video).
+- **Types:** `src/types/ball.ts`, `src/types/simulation.ts`, `src/types/analysis.ts` — align with backend payloads where applicable.
+- **Tests:** `src/test/setup.ts` (MSW, jest-dom, mocks); `server.ts`, `handlers.ts`, `fixtures.ts`. Colocated tests: `**/*.test.{ts,tsx}`. Playwright E2E: `tests/e2e/` (see [E2E_TEST_PLAN](E2E_TEST_PLAN.md)).
 
 ## Architecture and data flow
 
-The app is a single tree: `App` → `BagProvider` → `Layout`. Layout switches views by tab; each view is a component that may use `useBag()` and the API modules. The API layer uses `apiUrl()` and `fetch`; network errors and non-OK responses are turned into `ApiError`. The backend is the source of truth for balls, arsenals, recommendations, and gaps; the frontend does not persist the bag except by calling the arsenals CRUD API.
+Single tree: `App` → `BagProvider` → `Layout`. Each view uses `useBag()` and/or API modules as needed. The API layer uses `fetch` via `client.ts`; failures become `ApiError`. The backend is the source of truth for balls, arsenals, recommendations, gaps, v2 recs, slots, degradation compare, and oil patterns; the bag persists through the arsenals CRUD API when the user saves.
 
 ```mermaid
 flowchart LR
@@ -35,14 +37,17 @@ flowchart LR
     App[App]
     BagProvider[BagProvider]
     Layout[Layout]
-    Views[Grid / Simulation / Database]
+    Views[Tabs: Grid / Catalog / Sim / 3D / Analysis / DB]
   end
   subgraph api [API layer]
     client[client.ts]
     balls[balls.ts]
     arsenals[arsenals.ts]
     recs[recommendations.ts]
+    recsv2[recommendations-v2.ts]
     gaps[gaps.ts]
+    slots[slots.ts]
+    deg[degradation.ts]
   end
   App --> BagProvider
   BagProvider --> Layout
@@ -51,31 +56,36 @@ flowchart LR
   balls --> client
   arsenals --> client
   recs --> client
+  recsv2 --> client
   gaps --> client
+  slots --> client
+  deg --> client
   client -->|fetch| Backend[Backend :8000]
 ```
 
-## Main views
+## Main tabs (header)
 
-- **Grid View (default):** RG–Differential coverage map (Voronoi diagram via d3-delaunay), colored by slot (heavy oil, med-heavy, benchmark, med-light, spare). Side panels: current arsenal (add/remove balls, game counts) and a compact recommendations list (K-NN ranked). Uses `GridView`, `ArsenalPanel`, `RecommendationsListCompact`.
-- **Simulation:** Wear/degradation simulation over the current bag; uses backend degradation logic. Implemented in `SimulationView`.
-- **Ball Database:** Catalog browse/search; list and detail of balls from the backend. Implemented in `BallDatabaseView`.
-
-Other views (Recommendations full panel, Gaps panel, Ball Catalog) are in the codebase and can be wired to tabs if needed; Layout currently exposes Grid, Simulation, and Ball Database.
+| Tab            | Purpose |
+| -------------- | ------- |
+| **Grid View**  | Voronoi RG–diff map (`GridView`), arsenal column, right panel: **Recs** (`RecommendationsListCompact`, v2 method / degradation controls) or **Slots** (`SlotAssignmentPanel`). |
+| **Catalog**    | Browse/search balls and add to bag (`BallCatalog`). |
+| **Simulation** | 2D parametric lane + trajectory (`SimulationView`). Accepts optional initial params from Analysis via `simInitialParams`. |
+| **3D Sim**     | Three.js lane + Rapier worker (`SimulationView3D`, `physics-worker.ts`). |
+| **Analysis**   | Uploaded video, pose pipeline, kinematics, baselines (`AnalysisView`); can send delivery params to the Simulation tab. |
+| **Ball Database** | Table-oriented catalog (`BallDatabaseView`). |
 
 ## Testing
 
-- **Runner:** Vitest. Config: `services/frontend/vitest.config.ts` (jsdom, React plugin, `src/test/setup.ts`, `@` → `src`).
-- **Setup:** `src/test/setup.ts` — MSW server listen/reset/close; `@testing-library/jest-dom`; ResizeObserver mock for components that measure layout.
-- **Commands:** From `services/frontend/`: `npm run test` (watch), `npm run test:run` (single run).
-- **Location:** Tests live beside source: `src/**/*.test.{ts,tsx}` and `src/**/*.spec.{ts,tsx}`. API and context tests use MSW handlers in `src/test/`.
+- **Unit / component:** Vitest. Config: `services/frontend/vitest.config.ts` (jsdom, React plugin, `src/test/setup.ts`, `@` → `src`).
+- **Commands:** `npm run test` (watch), `npm run test:run` (CI-style single run).
+- **E2E:** `npm run test:e2e` / `npm run test:e2e:ui` — Playwright, see [E2E_TEST_PLAN](E2E_TEST_PLAN.md).
 
 ## Build and run
 
-For clone-and-run steps (install, start Postgres, backend, frontend), see the root [README](../README.md).
+Clone-and-run steps: root [README](../README.md).
 
-- **Develop:** From repo root, `cd services/frontend && npm install && npm run dev`. Dev server runs at `http://localhost:5173`. The backend must be running (e.g. `uvicorn app.main:app --reload` in `services/backend`) so `/api` requests succeed.
-- **Build:** `npm run build` — TypeScript compile and Vite build; output in `dist/`.
-- **Preview:** `npm run preview` — serve `dist/` locally to verify production build.
+- **Develop:** `cd services/frontend && npm install && npm run dev` → `http://localhost:5173`. Backend on port 8000 so `/api` proxy works.
+- **Build:** `npm run build` — `tsc -b` and Vite; output `dist/`.
+- **Preview:** `npm run preview`.
 
-Production deployment (Docker, nginx serving the built SPA and proxying `/api` to the backend): see [Deploy](deploy.md).
+Production (Docker nginx + `/api` proxy): [Deploy](deploy.md).

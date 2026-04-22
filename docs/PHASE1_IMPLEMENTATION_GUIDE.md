@@ -1,37 +1,21 @@
 # Phase 1 Implementation Guide — 3D Physics Simulation
 
-**Date:** 2026-03-14
-**Status:** PLANNED — Current implementation is 2D parametric fallback only.
-
-This document provides the technical specification for completing Phase 1 as defined in the proposal: *"Rapier3D rigid-body simulation with a dual-friction model, Three.js rendering pipeline, and a manual parameter input interface."*
+**Date:** 2026-03-14 (spec); **status note:** 2026-04-22 — **Major items are implemented** in the repo (2D + 3D sim tabs, worker, phase detection, backend oil patterns API). This file remains the **proposal-aligned technical spec** (equations, validation targets, worker message shapes). For shipping status see [PROJECT_STATUS.md](./PROJECT_STATUS.md). For duplicate oil-pattern definitions in UI vs DB, see [TECH_DEBT.md](./TECH_DEBT.md).
 
 ---
 
-## 1. Current State vs. Target
+## 1. Current state vs. this document
 
-### What Exists (2D Parametric — `SimulationView.tsx`)
+### Implemented in code (summary)
 
-```
-User Input → Parametric Math (Bézier) → SVG Path → Animated Ball
-```
+- **2D tab (`SimulationView.tsx`):** Parametric lane + `parametric-physics.ts`, dynamic phase ratios, optional handoff from `AnalysisView`.
+- **3D tab (`SimulationView3D.tsx`):** Three.js scene + `physics-worker.ts` (Rapier3D WASM), dual-friction style stepping, phase labels in worker output.
+- **Phase detection:** `phase-detector.ts` (and worker-side phase) — skid / hook / roll from motion data, not a fixed 3:2:1.5 bar only.
+- **Oil patterns:** `GET /oil-patterns`; table via `services/backend/scripts/migrate_oil_patterns.py`. Some UI paths still embed parallel pattern data ([TECH_DEBT.md](./TECH_DEBT.md) §1).
 
-- **Rendering:** 2D top-down SVG (80px wide lane, board lines, oil/dry zone rectangles)
-- **Physics:** Heuristic Bézier curve computed from tuning factors (not physics equations)
-- **Trajectory:** Single cubic Bézier `M start C cp1 cp2 end` with 4 control points
-- **Phase detection:** Static 3:2:1.5 ratio bar (not computed from simulation)
-- **Oil patterns:** 4 hardcoded strings with extracted length-in-feet
+### What this guide still defines
 
-### What Must Be Built (3D Rapier3D + Three.js)
-
-```
-User Input → Physics Worker (Rapier3D WASM) → Position Time Series → Three.js Scene → WebGL Canvas
-```
-
-- **Rendering:** 3D lane with perspective camera, pin deck, ball mesh, trajectory trail
-- **Physics:** Rigid-body dynamics with dual-state friction (kinetic + rolling), Euler equations for rotation
-- **Trajectory:** Time-stepped position/velocity/angular-velocity arrays from Rapier3D solver
-- **Phase detection:** Computed from velocity data (skid: v > Rω, hook: ω accelerating, roll: v ≈ Rω)
-- **Oil patterns:** Fetched from `oil_patterns` DB table with per-zone friction coefficients
+Target physics detail, worker **message contracts**, Three.js scene notes, and **validation criteria** from the proposal — useful for audits, tuning, and coursework writeups even where the live implementation simplifies or diverges slightly.
 
 ---
 
@@ -55,25 +39,20 @@ User Input → Physics Worker (Rapier3D WASM) → Position Time Series → Three
 └─────────────────┘                      └──────────────────┘
 ```
 
-### New Files
+### Key files (present in repo)
 
 | File | Purpose |
 |---|---|
-| `src/workers/physics-worker.ts` | Rapier3D WASM physics simulation loop |
-| `src/components/SimulationView3D.tsx` | Three.js 3D lane scene + controls |
-| `src/utils/parametric-physics.ts` | Extracted 2D fallback physics (from current SimulationView) |
-| `src/utils/phase-detector.ts` | Classify skid/hook/roll from velocity data |
-| `src/types/simulation.ts` | TypeScript types for physics messages and results |
-
-### Modified Files
-
-| File | Change |
-|---|---|
-| `src/components/Layout.tsx` | Add "3D SIM" tab or replace existing simulation tab |
-| `package.json` | Add `three`, `@types/three`, `@dimforge/rapier3d-compat` |
-| Backend: `scripts/migrate_oil_patterns.py` | Create `oil_patterns` table |
-| Backend: `app/main.py` | Add `GET /oil-patterns` endpoint |
-| Backend: `app/api_models.py` | Add `OilPattern` and `OilPatternsResponse` schemas |
+| `services/frontend/src/workers/physics-worker.ts` | Rapier3D WASM physics simulation loop |
+| `services/frontend/src/components/SimulationView3D.tsx` | Three.js 3D lane scene + controls |
+| `services/frontend/src/utils/parametric-physics.ts` | 2D parametric physics helpers |
+| `services/frontend/src/utils/phase-detector.ts` | Classify skid/hook/roll from velocity data |
+| `services/frontend/src/types/simulation.ts` | TypeScript types for physics messages and results |
+| `services/frontend/src/components/Layout.tsx` | **3D Sim** tab alongside 2D Simulation |
+| `services/frontend/package.json` | `three`, `@types/three`, `@dimforge/rapier3d-compat` (see file for exact versions) |
+| `services/backend/scripts/migrate_oil_patterns.py` | Create / seed `oil_patterns` |
+| `services/backend/app/main.py` | `GET /oil-patterns` |
+| `services/backend/app/api_models.py` | `OilPattern`, `OilPatternsResponse` |
 
 ---
 
@@ -282,25 +261,12 @@ function animate() {
 
 ## 7. Fallback Strategy
 
-If Rapier3D integration proves unstable or too slow:
+**As shipped:** the 2D **Simulation** tab remains the parametric path; **3D Sim** is a separate tab (Rapier + Three.js). Parametric helpers live in `parametric-physics.ts` with unit tests.
 
-1. **Keep the current 2D parametric model** as the default simulation tab
-2. **Add the 3D view as a separate "3D SIM (Beta)" tab** so users can opt in
-3. **Extract the parametric physics** into `src/utils/parametric-physics.ts` with a clean interface so it can be unit-tested independently
-
-The proposal explicitly identifies this fallback:
-> "If rigid-body solver coupling proves unstable, fallback to a simplified kinematic model with parabolic trajectory approximation."
+If Rapier3D proves unstable in the field, the proposal still recommends leaning on the 2D kinematic / parametric path and tightening the worker interface rather than blocking the whole app.
 
 ---
 
-## 8. Dependencies to Add
+## 8. Frontend dependencies
 
-```json
-{
-  "three": "^0.170.0",
-  "@types/three": "^0.170.0",
-  "@dimforge/rapier3d-compat": "^0.14.0"
-}
-```
-
-**Bundle size impact:** Three.js ~600KB gzip, Rapier3D WASM ~400KB. Total ~1MB additional. Acceptable for a desktop-first application. Consider lazy loading the simulation tab.
+Use the versions pinned in [`services/frontend/package.json`](../services/frontend/package.json) (`three`, `@types/three`, `@dimforge/rapier3d-compat`). Rough bundle impact: Three.js on the order of hundreds of KB gzip plus Rapier WASM; consider lazy-loading heavy simulation code if bundle size becomes an issue.
