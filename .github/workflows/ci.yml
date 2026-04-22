@@ -10,6 +10,22 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bowlingdb
+      APP_ENV: development
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bowlingdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d bowlingdb"
+          --health-interval 4s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -24,13 +40,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Seed database (balls + arsenals)
+        run: |
+          python services/backend/scripts/seed_from_csv.py
+          python services/backend/scripts/migrate_arsenals.py
+
       - name: Run backend tests
         run: |
           cd services/backend
           python -m pytest tests/ -v
-        env:
-          # DATABASE_URL unset: unit tests run; integration tests skip
-          APP_ENV: development
 
   frontend:
     runs-on: ubuntu-latest
