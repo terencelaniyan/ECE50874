@@ -1,6 +1,6 @@
 # Project Status — Bowling Ball Grid Generator
 
-**Last reconciled:** 2026-04-08  
+**Last reconciled:** 2026-04-22  
 **Authors:** Sajan Kumar, Fahd Laniyan  
 **Course:** ECE 595/50874 — Advanced Software Engineering, Purdue University Indianapolis
 
@@ -70,7 +70,7 @@ Unified web platform with three modules:
 
 1. **Playwright gaps** — Voronoi/grid interactions, save/load arsenal, Ball Database tab, optional API-only matrices. See [E2E_TEST_PLAN.md §5](./E2E_TEST_PLAN.md).
 2. **HTTP integration tests** — `POST /recommendations/v2`, `POST /slots`, `POST /degradation/compare`, `POST /admin/train-model` (today mostly unit-tested engines + v1 rec integration).
-3. **Two-tower onboarding** — Train during `setup_db.py` or ship `models/two_tower.pt` so v2 is not silently KNN-only on fresh clones.
+3. **Two-tower reliability** — `setup_db.py` already runs `train_model.py`, but **PyTorch is not in** `services/backend/requirements.txt`, so a minimal `pip install -r requirements.txt` clone may skip successful training; Docker images also omit scripts/checkpoints by default. Ship or document `models/two_tower.pt`, add `torch` to deps, or surface a loud UI when two-tower is unavailable ([TECH_DEBT.md](./TECH_DEBT.md) §2).
 
 ### Medium / polish
 
@@ -104,7 +104,7 @@ cd services/frontend && npm run test:run
 cd services/frontend && npm run test:e2e
 ```
 
-As of last reconciliation: **108** backend tests collected; **11** Playwright tests across **8** spec files; frontend Vitest count is **110+** (includes `parametric-physics`, `phase-detector`, `decision-framework`, kinematics, etc.).
+As of last reconciliation: **121** backend tests collected; **11** Playwright tests across **8** spec files; frontend Vitest count — re-run `npm run test:run` for the current total (suites include `parametric-physics`, `phase-detector`, `decision-framework`, kinematics, etc.).
 
 ### 4.2 What still lacks coverage
 
@@ -145,7 +145,7 @@ As of last reconciliation: **108** backend tests collected; **11** Playwright te
 
 ### 7.1 Sprint file inventory (≈2026-03)
 
-**Added (representative):** `app/two_tower.py`, `app/synthetic_data.py`, `app/slot_assignment.py`, `tests/test_slot_assignment.py`, `tests/test_two_tower.py`, `frontend/src/api/recommendations-v2.ts`, `slots.ts`, `degradation.ts`, `SlotAssignmentPanel.tsx`, `DegradationCompareView.tsx`, `parametric-physics.ts`, `phase-detector.ts`.
+**Added (representative):** `services/backend/app/two_tower.py`, `synthetic_data.py`, `slot_assignment.py`, `services/backend/tests/test_slot_assignment.py`, `test_two_tower.py`, `services/frontend/src/api/recommendations-v2.ts`, `slots.ts`, `degradation.ts`, `SlotAssignmentPanel.tsx`, `DegradationCompareView.tsx`, `parametric-physics.ts`, `phase-detector.ts`.
 
 **Modified (representative):** `degradation.py`, `recommendation_engine.py`, `api_models.py`, `services.py`, `main.py`, `RecommendationsListCompact.tsx`, `Layout.tsx`, `ArsenalPanel.tsx`, `SimulationView.tsx`, tests for degradation and recommendation engine.
 

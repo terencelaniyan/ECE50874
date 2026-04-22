@@ -11,7 +11,7 @@ The system is organized into:
 - `services/frontend/`: React + TypeScript + Vite SPA for interacting with the backend (see that directory for details).
 - `data/`: Data assets and experiment outputs (often git-ignored in practice).
 - `docs/`: Project documentation (API, frontend, data pipeline, recommendations, deployment, testing, simulation validation, course deliverables).
-- `docker-compose.yml`: Local PostgreSQL instance used by the backend.
+- `docker-compose.yml`: Compose stack (PostgreSQL, FastAPI backend, nginx-served SPA, Caddy). For host-run backend/frontend you often start **only** Postgres, e.g. `docker compose up -d postgres`.
 
 You can run the backend against a local PostgreSQL database (via Docker) and use the included UI under `services/frontend/`.
 
@@ -31,7 +31,12 @@ High-level layout:
     - `degradation.py` – Degradation modeling logic for bowling balls.
     - `gap_engine.py` – Gap computation over the catalog/arsenal.
     - `recommendation_engine.py` – Recommendation logic on top of ball catalog and arsenal.
-  - `requirements.txt` – Python backend dependencies.
+    - `services.py` – Service layer used by routes (arsenals, gaps, recommendations v1/v2, slots, degradation, oil patterns, admin).
+    - `slot_assignment.py` – 6-ball slot clustering / silhouette.
+    - `two_tower.py` – Two-tower model (optional **PyTorch**).
+    - `synthetic_data.py` – Synthetic arsenal data for training.
+    - `exceptions.py` – HTTP-facing errors.
+  - `requirements.txt` – Python backend dependencies (see [docs/TECH_DEBT.md](docs/TECH_DEBT.md): **PyTorch** is not pinned; needed for two-tower training).
   - `scripts/` – Backend-related helper scripts.
   - `tests/` – Backend tests.
 - `services/frontend/` – React + TypeScript + Vite SPA (see that directory for details).
@@ -48,7 +53,7 @@ High-level layout:
   - `TECH_DEBT.md` – Open shortcuts and their cost (see `PROJECT_STATUS.md` for status).
   - `simulation/` – Simulation validation notes (physics audit, USBC specs, test matrix, deflection analysis).
   - Course HTML exports in `docs/` (e.g. project report pages) as needed for submission.
-- `docker-compose.yml` – Local PostgreSQL service definition.
+- `docker-compose.yml` – Postgres, backend, frontend, Caddy (see file).
 
 For deeper technical details, start with the documents under `docs/`. With the backend running, the interactive OpenAPI UI is at `http://localhost:8000/docs` (see **Backend – local development** below).
 
@@ -114,7 +119,7 @@ From the repo root:
 docker compose up -d
 ```
 
-This will start a local Postgres 16 instance named `bowlingdb` with user `postgres`, database `bowlingdb`. The default compose does not expose Postgres on the host. For local development with host access (e.g. running migrations from your machine), add a `docker-compose.override.yml` that sets `ports: ["5433:5432"]` on the postgres service and use `DATABASE_URL=...@localhost:5433/...` in your `.env`.
+This starts **all** services in the file (Postgres, backend on 8000, frontend on 3000, Caddy on 80/443). Postgres uses database `bowlingdb` / user `postgres` per compose env. The default compose does not expose Postgres on the host. For **DB only**: `docker compose up -d postgres`. For local development with host access to Postgres (e.g. running migrations from your machine), add a `docker-compose.override.yml` that sets `ports: ["5433:5432"]` on the postgres service and use `DATABASE_URL=...@localhost:5433/...` in your `.env`.
 
 You can stop it later with:
 
@@ -124,19 +129,29 @@ docker compose down
 
 ### 5. Apply database schema
 
-Run these scripts **in order** from the repo root. Running them in the wrong order will fail because `arsenal_balls` references `balls(ball_id)`.
+**One-shot (recommended):** from the repo root, with `DATABASE_URL` set:
 
-1. **seed_from_csv.py** — creates and fills the `balls` table (requires `data/balls.csv`).
-2. **migrate_arsenals.py** — creates `arsenals` and `arsenal_balls`; must run after balls exist.
+```bash
+python services/backend/scripts/setup_db.py
+```
 
-From the repo root:
+This runs **in order**: (1) `seed_from_csv.py` — `balls` from `data/balls.csv`; (2) `migrate_arsenals.py` — arsenals tables; (3) `train_model.py` — two-tower training and `models/two_tower.pt`. Step (3) expects **PyTorch** installed in your environment (`torch` is not in `requirements.txt` by default; install separately or see [docs/TECH_DEBT.md](docs/TECH_DEBT.md)).
+
+**Manual same order** (wrong order fails because `arsenal_balls` references `balls`):
 
 ```bash
 python services/backend/scripts/seed_from_csv.py
 python services/backend/scripts/migrate_arsenals.py
+# optional: python services/backend/scripts/train_model.py
 ```
 
-Alternatively, run `python services/backend/scripts/setup_db.py` once to run both in the correct order.
+**Oil patterns (optional):** not run by `setup_db.py`. For DB-backed `oil_patterns` used by `GET /oil-patterns`:
+
+```bash
+python services/backend/scripts/migrate_oil_patterns.py
+```
+
+Details: [docs/data-collection.md](docs/data-collection.md).
 
 ### 6. Run the backend server
 
@@ -157,7 +172,7 @@ Then open:
 Frontend – local development
 ---------------------------
 
-The frontend is a React + TypeScript SPA built with Vite. It talks to the backend for balls, arsenals, recommendations, and gap analysis.
+The frontend is a React + TypeScript SPA built with Vite. Tabs include **Grid** (Voronoi + recs/slots), **Catalog**, **Simulation** (2D), **3D Sim** (Rapier/Three.js), **Analysis** (video / pose / kinematics), and **Ball Database**. It talks to the backend for balls, arsenals, recommendations (v1/v2), slots, degradation compare, gaps, and oil patterns. See [docs/frontend.md](docs/frontend.md).
 
 **Prerequisites:** Node.js (LTS) and npm.
 
@@ -187,6 +202,15 @@ npm run test:run
 ```
 
 Or `npm test` for watch mode.
+
+**End-to-end (Playwright):** requires seeded DB + backend on 8000 + Vite on 5173. From `services/frontend/`:
+
+```bash
+npm run test:e2e
+npm run test:e2e:ui
+```
+
+See [docs/E2E_TEST_PLAN.md](docs/E2E_TEST_PLAN.md).
 
 ---
 
@@ -234,7 +258,7 @@ pytest tests/test_gap_engine.py
 pytest tests/test_recommendation_engine.py -k "some_test_name"
 ```
 
-Frontend tests (Vitest): from `services/frontend/`, run `npm run test:run` or `npm test` (watch mode).
+Frontend tests (Vitest): from `services/frontend/`, run `npm run test:run` or `npm test` (watch mode). Playwright: `npm run test:e2e` (see [docs/E2E_TEST_PLAN.md](docs/E2E_TEST_PLAN.md)).
 
 ---
 
@@ -259,7 +283,7 @@ Development workflow
    - Create and activate a virtual environment under `services/backend/`.
    - Install dependencies with `pip install -r requirements.txt`.
    - Create a `.env` file with `DATABASE_URL` and other settings.
-   - Apply the database schema (run `python services/backend/scripts/setup_db.py` or the two scripts in order: `seed_from_csv.py` then `migrate_arsenals.py`).
+   - Apply the database schema (`python services/backend/scripts/setup_db.py`, or `seed_from_csv.py` then `migrate_arsenals.py` manually; optional `migrate_oil_patterns.py`; see §5 above).
    - Run `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`.
 
 4. **Set up the frontend (optional)**
@@ -270,7 +294,7 @@ Development workflow
 5. **Run tests**
 
    - Backend: `pytest` from `services/backend/`.
-   - Frontend: `npm run test:run` or `npm test` (watch) from `services/frontend/`.
+   - Frontend: `npm run test:run` or `npm test` (watch) from `services/frontend/`; E2E: `npm run test:e2e` when API + DB are up.
 
 ---
 

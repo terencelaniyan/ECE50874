@@ -111,11 +111,38 @@ Interpretation: first ball has the smallest distance to your arsenal (most simil
 
 The backend also exposes **POST /gaps**, which implements Voronoi-based **gap analysis** in RG–Differential space: it partitions the catalog by (rg, diff), finds Voronoi cells not covered by the user’s arsenal, and recommends the “owner” balls of those cells as gap fillers. See [Backend](backend.md#post-gaps) for the API.
 
+---
+
+## V2 recommendations (`POST /recommendations/v2`)
+
+**Orchestration:** `services/backend/app/services.py` (e.g. `recommend_v2`) — resolves arsenal rows, applies degradation (`degradation.py`, v1 vs v2 model), loads candidates, then dispatches by **`method`**.
+
+**Endpoint:** `POST /recommendations/v2` — same arsenal mutual-exclusion rules as v1 (`arsenal_id` **or** `arsenal_ball_ids` + optional `game_counts`). Full fields and errors: [Backend – POST /recommendations/v2](backend.md#post-recommendationsv2).
+
+| Method        | Behavior (summary) |
+| ------------- | -------------------- |
+| `knn` (default) | Weighted **L1** or **L2** on rg/diff/int_diff; optional **min–max normalization**. Optional **`w_cover`** adds coverstock-aware signal alongside the three spec weights. |
+| `two_tower`   | Neural two-tower scorer (`two_tower.py`); needs **PyTorch** and checkpoint `services/backend/models/two_tower.pt`. If the model or Torch is unavailable, behavior falls back (see [TECH_DEBT](TECH_DEBT.md)). |
+| `hybrid`      | Combines KNN and two-tower signals per service logic. |
+
+**Degradation:** Request field **`degradation_model`**: `v1` (linear) vs `v2` (logarithmic).
+
+**Frontend:** `src/api/recommendations-v2.ts` and compact list on the Grid tab (`RecommendationsListCompact`).
+
+---
+
+## Slots (`POST /slots`)
+
+**Location:** `services/backend/app/slot_assignment.py` — K-means style assignment into the **6-ball slot system**, silhouette score, per-slot coverage. **HTTP:** [Backend – POST /slots](backend.md#post-slots). **Frontend:** `src/api/slots.ts`, `SlotAssignmentPanel.tsx`.
+
+---
+
 ## Implemented options
 
 - **Weights:** `w_rg`, `w_diff`, `w_int` are exposed in the request body (default 1.0, range 0.1–10).
 - **Filtering:** Optional `brand`, `coverstock_type`, and `status` restrict the candidate set before scoring.
 - **Diversity:** `diversity_min_distance` (0–1) ensures selected balls are at least that far apart in spec space (0 = off).
+- **V2-only:** `method`, `metric` (`l1` / `l2`), `normalize`, `w_cover`, `degradation_model` on `/recommendations/v2`.
 
 ## Possible extensions
 

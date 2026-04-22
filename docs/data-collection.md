@@ -133,3 +133,43 @@ python scripts/manual_entry.py --from-json input.json  # batch import
 ```
 
 JSON batch format: array of objects with `name`, `brand`, `rg`, `diff`, and optional `int_diff`, `coverstock_type`, `surface_grit`, `release_date`.
+
+## User arsenals (migration)
+
+**Script:** `services/backend/scripts/migrate_arsenals.py`
+
+Run **after** `balls` exists (`seed_from_csv.py`), because `arsenal_balls.ball_id` references `balls(ball_id)`.
+
+Creates persisted arsenals and membership:
+
+- `arsenals` — id (UUID), name, timestamps
+- `arsenal_balls` — arsenal_id, ball_id, game_count (for degradation-aware flows)
+- `arsenal_custom_balls` — optional custom ball rows tied to an arsenal (see script for schema)
+
+```bash
+python services/backend/scripts/migrate_arsenals.py
+```
+
+## Oil patterns (migration)
+
+**Script:** `services/backend/scripts/migrate_oil_patterns.py`
+
+Creates `oil_patterns` and seeds built-in house/sport-style rows (JSON friction **zones** per pattern). Used by `GET /oil-patterns` and simulation UIs. Requires `DATABASE_URL`.
+
+**Not** run by `setup_db.py` — run explicitly when you want DB-backed patterns (API can still return a small hardcoded set if the table is missing; see backend handler).
+
+```bash
+python services/backend/scripts/migrate_oil_patterns.py
+```
+
+## One-shot database setup (`setup_db.py`)
+
+**Script:** `services/backend/scripts/setup_db.py`
+
+From repo root, runs **in order**:
+
+1. `seed_from_csv.py` — `balls` table + CSV load  
+2. `migrate_arsenals.py` — arsenal tables  
+3. `train_model.py` — two-tower training (`models/two_tower.pt`); needs a working **PyTorch** install for training to succeed (`torch` is not listed in `services/backend/requirements.txt`; see [TECH_DEBT](TECH_DEBT.md))
+
+Oil patterns remain a **separate** optional step (`migrate_oil_patterns.py`) after the above.

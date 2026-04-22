@@ -1,6 +1,6 @@
 # End-to-End Test Plan — Bowling Ball Grid
 
-**Date:** 2026-04-08  
+**Date:** 2026-04-22  
 **Status:** IMPLEMENTED (partial) — Playwright tests live under `services/frontend/tests/e2e/`. This document describes what runs today, how to run it, and what is still manual or backlog.
 
 ---
@@ -36,7 +36,7 @@ The Playwright suite closes part of that gap. Flows such as **save/load arsenal*
 
 ### Prerequisites
 
-1. **PostgreSQL** with a seeded `balls` table (typical clone setup: `data/balls.csv` + `python services/backend/scripts/setup_db.py` from repo root, or `seed_from_csv.py` then `migrate_arsenals.py` per [README.md](../README.md)). The smoke test waits for copy like `DB: N BALLS LOADED` on the UI.
+1. **PostgreSQL** with a seeded `balls` table (typical clone: `data/balls.csv` + `python services/backend/scripts/setup_db.py` from repo root — runs **seed**, **migrate_arsenals**, then **train_model**; see [data-collection.md](data-collection.md)). Alternatively run `seed_from_csv.py` then `migrate_arsenals.py` per [README.md](../README.md). Optional: `python services/backend/scripts/migrate_oil_patterns.py` if you need DB-backed `oil_patterns` beyond API fallbacks. The smoke test waits for copy like `DB: N BALLS LOADED` on the UI.
 2. **Backend** on port **8000** (e.g. `cd services/backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`, or start the `backend` service via Docker Compose and expose 8000).
 
 ### Commands
@@ -65,7 +65,7 @@ Spec files use `test.describe("TC-…")` titles. **TC numbers here match the rep
 
 | File | Suite title | What it covers |
 |------|-------------|----------------|
-| [smoke.spec.ts](../services/frontend/tests/e2e/smoke.spec.ts) | TC-01 | App load: header (`.logo` / BBG), DB badge, **Grid View** default tab, **My Arsenal**, **0 / 6 SLOTS**, four tabs including **Catalog**, **Simulation**, **Ball Database** |
+| [smoke.spec.ts](../services/frontend/tests/e2e/smoke.spec.ts) | TC-01 | App load: header (`.logo` / BBG), DB badge, **Grid View** default tab, **My Arsenal**, **0 / 6 SLOTS**. The **product** header has **six** tabs (Grid, Catalog, Simulation, **3D Sim**, **Analysis**, Ball Database); this spec currently asserts **four** of them (**Catalog**, **Simulation**, **Ball Database** plus Grid) — extend smoke when you want full tab coverage. |
 | [catalog-add-ball.spec.ts](../services/frontend/tests/e2e/catalog-add-ball.spec.ts) | TC-02 | Catalog: ball cards, search/filter, **Add to bag**, slot count on Grid View |
 | [recommendations.spec.ts](../services/frontend/tests/e2e/recommendations.spec.ts) | TC-03 | Recommendations panel (Recs toggle, `.rec-list-compact`, KNN badge, `% MATCH`, **Add to bag**); **V2 / Hybrid method toggle** via UI |
 | [slots.spec.ts](../services/frontend/tests/e2e/slots.spec.ts) | TC-05 | Slot assignment panel (6-ball system, silhouette, coverage) wired to the UI |
@@ -102,7 +102,11 @@ These were in the original proposal but **do not** have dedicated Playwright fil
 docker compose up -d postgres
 # Point DATABASE_URL at the running instance (see README for port overrides).
 python services/backend/scripts/setup_db.py
+# Optional: DB oil_patterns rows (not part of setup_db.py)
+# python services/backend/scripts/migrate_oil_patterns.py
 ```
+
+`setup_db.py` runs **seed**, **migrate_arsenals**, and **train_model** (two-tower training expects **PyTorch** installed if training should succeed; see [TECH_DEBT.md](TECH_DEBT.md) §2).
 
 The backend **Docker image** copies `app/` only ([services/backend/Dockerfile](../services/backend/Dockerfile)); it does **not** bundle `scripts/`. Seeding from **inside** the backend container using repo scripts is not supported unless you change the image. Prefer host-run `setup_db.py` / `seed_from_csv.py` as documented in the README.
 
