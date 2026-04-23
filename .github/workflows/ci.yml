@@ -45,10 +45,16 @@ jobs:
           python services/backend/scripts/seed_from_csv.py
           python services/backend/scripts/migrate_arsenals.py
 
-      - name: Run backend tests
+      - name: Run backend tests with coverage
         run: |
           cd services/backend
-          python -m pytest tests/ -v
+          python -m pytest tests/ -v --cov-report=xml
+      - name: Upload backend coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: services/backend/coverage.xml
+          if-no-files-found: warn
 
   frontend:
     runs-on: ubuntu-latest
@@ -67,7 +73,13 @@ jobs:
           cd services/frontend
           npm ci
 
-      - name: Run frontend tests
+      - name: Run frontend tests with coverage
         run: |
           cd services/frontend
-          npm run test:run
+          npm run test:coverage
+      - name: Upload frontend coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: services/frontend/coverage
+          if-no-files-found: warn
