@@ -102,16 +102,33 @@ pip install -r requirements.txt
 
 ### 3. Configure environment
 
-Create a `.env` file in `services/backend/` (or wherever `config.py` expects it). At minimum, define:
+**Where settings are read:** the backend loads `DATABASE_URL` and related variables in this order (see `services/backend/app/config.py`):
+
+1. Process environment (e.g. variables injected by Docker Compose).
+2. `services/backend/.env`
+3. Repository root `.env` (next to `docker-compose.yml`)
+
+For local development you can use either (2) or (3). **Docker Compose** reads a `.env` file at the **repository root** for substitutions in `docker-compose.yml` (`POSTGRES_PASSWORD`, `DATABASE_URL`, `APP_ENV`, `ADMIN_KEY`), so keep a root `.env` when using Compose.
+
+**First-time setup:** copy [.env.template](.env.template) to `.env` at the repo root, set real values, and do not commit `.env`. Use a `DATABASE_URL` whose password matches `POSTGRES_PASSWORD`. For production deployment, see [docs/deploy.md](docs/deploy.md).
+
+**`DATABASE_URL` depends on how the backend runs:**
+
+- **Backend in Compose:** use hostname `postgres` (the DB service name), e.g. `postgresql://postgres:YOUR_PASSWORD@postgres:5432/bowlingdb`, with `YOUR_PASSWORD` equal to `POSTGRES_PASSWORD`.
+- **Backend on your machine** (`uvicorn` on the host): use `localhost` (or `127.0.0.1`) and a port where PostgreSQL is reachable. The default `docker-compose.yml` does **not** publish Postgres on the host; add `docker-compose.override.yml` with `ports: ["5433:5432"]` on `postgres` and point `DATABASE_URL` at `@localhost:5433/...` if you want the DB only in Docker while running scripts or uvicorn locally.
+
+Example when Postgres is available on the host at port 5432 (your own install or a published port):
 
 ```bash
 APP_ENV=development
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/bowlingdb
 ```
 
-The example URL matches the credentials and database name from `docker-compose.yml`. If you use a different Postgres setup, update `DATABASE_URL` accordingly.
+Adjust user, password, host, and port to match your database.
 
 ### 4. Start PostgreSQL via Docker (recommended)
+
+Before `docker compose up`, ensure the **repo root** `.env` defines at least `POSTGRES_PASSWORD` and a `DATABASE_URL` the backend container can use (hostname `postgres`, same password). Set `ADMIN_KEY` if you use admin-only API routes from the containerized backend.
 
 From the repo root:
 
@@ -172,7 +189,7 @@ Then open:
 Frontend – local development
 ---------------------------
 
-The frontend is a React + TypeScript SPA built with Vite. Tabs include **Grid** (Voronoi + recs/slots), **Catalog**, **Simulation** (2D), **3D Sim** (Rapier/Three.js), **Analysis** (video / pose / kinematics), and **Ball Database**. It talks to the backend for balls, arsenals, recommendations (v1/v2), slots, degradation compare, gaps, and oil patterns. See [docs/frontend.md](docs/frontend.md).
+The frontend is a React + TypeScript SPA built with Vite. Tabs include **Grid** (Voronoi + recs/slots), **Catalog**, **Simulation** (2D), **3D Sim** (Rapier/Three.js), **Analysis** (video / pose / kinematics), and **Ball Database**. Recommendations and gaps also have dedicated panel components in code, but the main nav is the list above; ranked recs and slot assignment live on **Grid** via the Recs / Slots toggle. It talks to the backend for balls, arsenals, recommendations (v1/v2), slots, degradation compare, gaps, and oil patterns. See [docs/frontend.md](docs/frontend.md).
 
 **Prerequisites:** Node.js (LTS) and npm.
 
@@ -260,6 +277,8 @@ pytest tests/test_recommendation_engine.py -k "some_test_name"
 
 Frontend tests (Vitest): from `services/frontend/`, run `npm run test:run` or `npm test` (watch mode). Playwright: `npm run test:e2e` (see [docs/E2E_TEST_PLAN.md](docs/E2E_TEST_PLAN.md)).
 
+**CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on push and pull requests to `main` and `master` (and on manual dispatch). The backend job installs dependencies, seeds the database (`seed_from_csv.py` then `migrate_arsenals.py`), and runs `pytest` with coverage from `services/backend/`. The frontend job uses Node 20, runs `npm ci` and `npm run test:coverage` under `services/frontend/`.
+
 ---
 
 Development workflow
@@ -272,7 +291,10 @@ Development workflow
    cd ECE50874
    ```
 
-2. **Start PostgreSQL**
+2. **Configure env and start PostgreSQL**
+
+   - Copy `.env.template` to `.env` at the repo root and set `POSTGRES_PASSWORD`, `DATABASE_URL`, and other values (see **Backend – §3** and **§4**).
+   - Start services (or DB only):
 
    ```bash
    docker compose up -d
@@ -282,7 +304,7 @@ Development workflow
 
    - Create and activate a virtual environment under `services/backend/`.
    - Install dependencies with `pip install -r requirements.txt`.
-   - Create a `.env` file with `DATABASE_URL` and other settings.
+   - Ensure a `.env` file (repo root and/or `services/backend/`) provides `DATABASE_URL` and other settings for **host-run** uvicorn (see **§3**).
    - Apply the database schema (`python services/backend/scripts/setup_db.py`, or `seed_from_csv.py` then `migrate_arsenals.py` manually; optional `migrate_oil_patterns.py`; see §5 above).
    - Run `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`.
 
