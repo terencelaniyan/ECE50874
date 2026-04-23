@@ -8,12 +8,15 @@ from fastapi.testclient import TestClient
 def pytest_configure(config):
     config.addinivalue_line(
         "markers",
-        "integration: marks tests that require DATABASE_URL and a seeded balls table",
+        (
+            "integration: marks tests that require DATABASE_URL and a "
+            "seeded balls table"
+        ),
     )
 
 
 def _needs_db():
-    # In some places we skip if no db url, we will keep this for backward compat
+    # Backward compat: skip when no db url (unused by current tests).
     return not os.getenv("DATABASE_URL", "").strip()
 
 
@@ -56,13 +59,37 @@ def override_get_db(mock_conn):
 
 
 @pytest.fixture
-def client(override_get_db):
-    """Yields a TestClient with the mocked database dependency applied."""
+def client():
+    """TestClient with real Postgres if DATABASE_URL is set; else mocked DB."""
     from app.main import app
-    return TestClient(app)
+    from app.db import get_db
+
+    if os.getenv("DATABASE_URL", "").strip():
+        yield TestClient(app)
+        return
+
+    mock_cursor = MagicMock()
+    mock_cursor.fetchall.return_value = []
+    mock_cursor.fetchone.return_value = None
+    mock_cursor.__enter__.return_value = mock_cursor
+    mock_cursor.__exit__.return_value = None
+    conn_mock = MagicMock()
+    conn_mock.cursor.return_value = mock_cursor
+    conn_mock.__enter__.return_value = conn_mock
+    conn_mock.__exit__.return_value = None
+
+    def _mock_get_db():
+        yield conn_mock
+
+    app.dependency_overrides[get_db] = _mock_get_db
+    try:
+        yield TestClient(app)
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
 
 @pytest.fixture
 def mock_connect(mock_conn):
-    """Patches app.db._connect globally for tests that don't go through FastAPI Depends."""
+    """Patch app.db._connect for tests that bypass FastAPI Depends."""
     with patch("app.db._connect", return_value=mock_conn) as p:
         yield p
