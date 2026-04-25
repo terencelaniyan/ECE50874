@@ -7,69 +7,80 @@ classDiagram
     %% Frontend
     namespace Frontend {
         class App {
-            +renders BagProvider
-            +renders Layout
+            +renderBagProvider()
+            +renderLayout()
         }
         class Layout {
-            +tabs: grid, catalog, simulation, sim3d, analysis, database
-            +contains view components
+            +tabGrid
+            +tabCatalog
+            +tabSimulation
+            +tabSim3d
+            +tabAnalysis
+            +tabDatabase
         }
         class ViewComponents {
-            +ArsenalPanel
-            +GridView
-            +RecommendationsListCompact
-            +SlotAssignmentPanel
-            +SimulationView
-            +SimulationView3D
-            +AnalysisView
-            +BallCatalog
-            +BallDatabaseView
+            +arsenalPanel()
+            +gridView()
+            +recommendationsListCompact()
+            +slotAssignmentPanel()
+            +simulationView()
+            +simulationView3d()
+            +analysisView()
+            +ballCatalog()
+            +ballDatabaseView()
         }
         class BagContext {
-            +bag state
+            +bagState
             +savedArsenalId
             +arsenalBallIds
             +gameCounts
         }
         class FrontendApiClient {
-            +get(), post(), patch(), del()
+            +get()
+            +post()
+            +patch()
+            +del()
             +apiUrl()
         }
         class FrontendPhysics {
-            +bowling-physics
-            +parametric-physics
-            +workers
+            +bowlingPhysics()
+            +parametricPhysics()
+            +physicsWorkers()
         }
     }
 
     %% Backend
     namespace Backend {
         class FastAPIApp {
-            +GET /health
-            +GET /balls
-            +GET /balls/{ball_id}
-            +POST/PATCH/GET/DELETE /arsenals...
-            +POST /recommendations
-            +POST /recommendations/v2
-            +POST /gaps
-            +POST /slots
-            +POST /degradation/compare
-            +GET /oil-patterns
-            +POST /admin/refresh-catalog
-            +POST /admin/train-model
+            +healthRoute()
+            +ballsRoutes()
+            +arsenalsRoutes()
+            +recommendationsRoutes()
+            +gapsRoute()
+            +slotsRoute()
+            +degradationCompareRoute()
+            +oilPatternsRoute()
+            +adminRoutes()
         }
         class ServiceLayer {
-            +list_balls(), get_ball()
-            +create/get/update/delete_arsenal()
-            +get_recommendations(), get_recommendations_v2()
-            +get_gaps(), get_slot_assignments()
+            +listBalls()
+            +getBall()
+            +createArsenal()
+            +getArsenal()
+            +updateArsenal()
+            +deleteArsenal()
+            +getRecommendations()
+            +getRecommendationsV2()
+            +getGaps()
+            +getSlotAssignments()
             +get_degradation_comparison()
-            +list_oil_patterns(), train_two_tower()
+            +listOilPatterns()
+            +trainTwoTower()
         }
         class DbConnectionLayer {
-            +psycopg connection
-            +get_db() dependency
-            +get_conn() context manager
+            +psycopgConnection
+            +getDb()
+            +getConn()
         }
         class PostgreSQL {
             +balls
@@ -108,12 +119,12 @@ classDiagram
     App --> Layout : renders
     Layout *-- ViewComponents : contains
     ViewComponents --> FrontendApiClient : calls
-    ViewComponents --> FrontendPhysics : runs simulations
+    ViewComponents --> FrontendPhysics : simulates
 
-    FrontendApiClient --> FastAPIApp : HTTP via /api proxy
+    FrontendApiClient --> FastAPIApp : httpApiProxy
     FastAPIApp --> ServiceLayer : delegates
-    FastAPIApp --> DbConnectionLayer : Depends(get_db)
-    ServiceLayer --> DbConnectionLayer : uses cursors
+    FastAPIApp --> DbConnectionLayer : usesGetDb
+    ServiceLayer --> DbConnectionLayer : usesCursor
     DbConnectionLayer --> PostgreSQL : queries
 
     ServiceLayer --> RecommendationEngine : uses
@@ -132,7 +143,7 @@ classDiagram
    `BagContext` is the shared arsenal state source of truth. API calls are centralized in `src/api/client.ts` and feature-specific API modules.
 
 3. **Backend API (FastAPI)**  
-   `app/main.py` defines route handlers for health, catalog, arsenals, recommendations (v1 and v2), gaps, slots, degradation comparison, oil patterns, and admin actions.
+   `app/main.py` defines route groups for health, balls, arsenals, recommendations (v1 and v2), gaps, slots, degradation comparison, oil patterns, and admin actions.
 
 4. **Service and Engine Layer**  
    `app/services.py` contains business logic and composes domain engines (`recommendation_engine`, `gap_engine`, `degradation`, `slot_assignment`, and optional `two_tower`).
