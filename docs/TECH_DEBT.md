@@ -28,13 +28,13 @@
 
 ---
 
-## 3. Postgres integration tests off default CI
+## 3. CI runtime and flake risk (after enabling integration + E2E)
 
-**What:** Integration tests that need `DATABASE_URL` are **skipped** in typical CI; only unit pytest + Vitest run automatically.
+**What:** CI now runs backend unit + integration tests and a dedicated Playwright E2E job with Postgres + seeded data. The debt moved from "not enforced" to "enforced but heavier": longer runtimes and higher sensitivity to environment/startup timing.
 
-**Cost:** HTTP + DB regressions may only appear on developer machines or manual runs.
+**Cost:** Slower feedback loops and occasional flaky failures can block merges even when core logic is unchanged.
 
-**Direction:** CI job with service container Postgres + seed (see template in [E2E_TEST_PLAN.md §7](./E2E_TEST_PLAN.md)).
+**Direction:** Keep smoke coverage stable-first (deterministic selectors, explicit waits), monitor runtime trends, and split fast-vs-deep suites if queue time grows.
 
 ---
 

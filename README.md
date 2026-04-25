@@ -277,7 +277,7 @@ pytest tests/test_recommendation_engine.py -k "some_test_name"
 
 Frontend tests (Vitest): from `services/frontend/`, run `npm run test:run` or `npm test` (watch mode). Playwright: `npm run test:e2e` (see [docs/E2E_TEST_PLAN.md](docs/E2E_TEST_PLAN.md)).
 
-**CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on push and pull requests to `main` and `master` (and on manual dispatch). The backend job installs dependencies, seeds the database (`seed_from_csv.py` then `migrate_arsenals.py`), and runs `pytest` with coverage from `services/backend/`. The frontend job uses Node 20, runs `npm ci` and `npm run test:coverage` under `services/frontend/`.
+**CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on push and pull requests to `main` and `master` (and on manual dispatch). It has three jobs: **backend** (Postgres service + seed + unit and integration pytest phases), **frontend** (Vitest coverage), and **e2e** (Postgres + backend startup + Playwright `npm run test:e2e` + Playwright report artifact upload).
 
 ---
 

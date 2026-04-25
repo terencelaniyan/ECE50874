@@ -112,56 +112,22 @@ The backend **Docker image** copies `app/` only ([services/backend/Dockerfile](.
 
 ---
 
-## 7. CI integration (example)
+## 7. CI integration (current workflow)
 
-This repository may or may not define a workflow; below is a **template** for a job that runs Playwright against Vite + API:
+The repository already defines a dedicated `e2e` job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) and runs Playwright automatically on pushes/PRs to `main` and `master`.
 
-```yaml
-e2e:
-  runs-on: ubuntu-latest
-  services:
-    postgres:
-      image: postgres:16-alpine
-      env:
-        POSTGRES_PASSWORD: postgres
-        POSTGRES_DB: bowlingdb
-      ports:
-        - 5432:5432
-  steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
-      with:
-        python-version: "3.12"
-    - uses: actions/setup-node@v4
-      with:
-        node-version: "20"
-        cache: npm
-        cache-dependency-path: services/frontend/package-lock.json
-    - name: Install backend deps and seed DB
-      run: |
-        pip install -r services/backend/requirements.txt
-        export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/bowlingdb
-        python services/backend/scripts/setup_db.py
-    - name: Start FastAPI
-      run: |
-        cd services/backend && uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-        sleep 3
-    - name: Install frontend deps and Playwright
-      run: |
-        cd services/frontend && npm ci
-        npx playwright install --with-deps chromium
-    - name: Run E2E
-      run: cd services/frontend && npm run test:e2e
-      env:
-        CI: true
-    - uses: actions/upload-artifact@v4
-      if: failure()
-      with:
-        name: playwright-report
-        path: services/frontend/playwright-report/
-```
+As of 2026-04-25, the CI E2E path is:
 
-Adjust Postgres networking, `DATABASE_URL`, and artifact paths to match your pipeline.
+1. Start Postgres service and export `DATABASE_URL`.
+2. Install backend dependencies.
+3. Seed DB (`seed_from_csv.py`) and apply arsenal migration (`migrate_arsenals.py`).
+4. Start FastAPI on port `8000`.
+5. Install frontend dependencies.
+6. Install Chromium via Playwright.
+7. Run `npm run test:e2e`.
+8. Upload Playwright HTML report artifact (`playwright-report`), with `if: always()` for post-failure debugging.
+
+This means E2E is now CI-enforced; remaining E2E work is about expanding coverage depth (see §5), not pipeline wiring.
 
 ---
 

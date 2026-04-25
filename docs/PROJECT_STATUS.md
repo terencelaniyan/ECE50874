@@ -1,6 +1,6 @@
 # Project Status — Bowling Ball Grid Generator
 
-**Last reconciled:** 2026-04-22  
+**Last reconciled:** 2026-04-25  
 **Authors:** Sajan Kumar, Fahd Laniyan  
 **Course:** ECE 595/50874 — Advanced Software Engineering, Purdue University Indianapolis
 
@@ -92,9 +92,9 @@ Unified web platform with three modules:
 | Layer | Tool | Notes |
 |-------|------|--------|
 | Backend unit | pytest | Engine + API-focused unit tests under `services/backend/tests/` |
-| Backend integration | pytest + httpx + Postgres | Needs `DATABASE_URL`; skipped in default CI |
+| Backend integration | pytest + httpx + Postgres | Requires `DATABASE_URL`; runs in CI backend job with Postgres service + seeded DB |
 | Frontend unit | Vitest + RTL + MSW | Under `services/frontend/src/**/*.test.ts(x)` |
-| E2E | Playwright | `services/frontend/tests/e2e/` — Chromium, Vite on 5173 + API on 8000 |
+| E2E | Playwright | `services/frontend/tests/e2e/` — Chromium, Vite on 5173 + API on 8000; runs in dedicated CI `e2e` job |
 
 **Counts:** Re-run after changes:
 
@@ -113,6 +113,25 @@ As of last reconciliation: **121** backend tests collected; **11** Playwright te
 | Full-stack flows in E2E (grid hover, arsenal persistence, DB tab) | Medium |
 | v2 / slots / degradation / train-model **HTTP** integration | Medium |
 | Visual regression, a11y, load/latency benchmarks | Low |
+
+---
+
+### 4.3 CI enforcement snapshot (2026-04-25)
+
+- **Backend job:** starts Postgres service, exports `DATABASE_URL`, seeds balls + arsenal schema, runs unit (`-m "not integration"`) and integration (`-m "integration"`) pytest phases.
+- **Frontend job:** runs Vitest coverage (`npm run test:coverage`).
+- **E2E job:** starts Postgres + backend, installs Playwright Chromium, runs `npm run test:e2e`, uploads Playwright report artifact.
+
+---
+
+### 4.4 Validation evidence split (Simulation / Vision)
+
+| Area | Implemented capability | Validation evidence available now | Validation gap / next step |
+|------|------------------------|----------------------------------|----------------------------|
+| Simulation (2D/3D) | Parametric lane model, phase detector, 3D Rapier worker, UI launch flow | Unit tests for physics helpers (`parametric-physics`, `phase-detector`), Playwright smoke/flow coverage for 2D + 3D tabs | Limited empirical validation against external ground truth trajectories or benchmark datasets |
+| Vision / Pose | MediaPipe worker pipeline, kinematics extraction, release heuristic, analysis UI | Unit tests for kinematics/math helpers and app-level integration smoke paths | No formal latency benchmark evidence in this status file; no controlled user study validating coaching quality |
+
+This split is intentional: implemented functionality is broader than currently proven performance/accuracy, especially for simulation realism and pose-analysis outcomes.
 
 ---
 
@@ -190,10 +209,10 @@ As of last reconciliation: **121** backend tests collected; **11** Playwright te
 | Layer | Framework | Strategy |
 |-------|-----------|----------|
 | Backend unit tests | pytest | Direct function calls with in-memory dicts (no DB). Covers engine modules. |
-| Backend integration tests | pytest + httpx TestClient | HTTP round-trip against FastAPI with real PostgreSQL. Requires `DATABASE_URL`. Skipped in CI. |
+| Backend integration tests | pytest + httpx TestClient | HTTP round-trip against FastAPI with real PostgreSQL. Requires `DATABASE_URL`. Runs in current backend CI job (legacy table originally said skipped). |
 | Frontend unit tests | Vitest + Testing Library | Components + MSW stubs from `test/handlers.ts`. |
 | Frontend integration test | Vitest | App mount with `BagProvider`, smoke render. |
-| CI pipeline | GitHub Actions | Backend: `pytest tests/` (unit). Frontend: `npm run test:run` (Vitest). |
+| CI pipeline | GitHub Actions | Current workflow has three jobs: backend (unit + integration), frontend (Vitest coverage), and e2e (Playwright). |
 
 ---
 
@@ -209,3 +228,16 @@ As of last reconciliation: **121** backend tests collected; **11** Playwright te
 | Arsenals / gaps / recommendations API | `test_*_api.py` | Selected HTTP contracts |
 
 Frontend tests span API clients, bag context, catalog, simulation helpers, decision framework, kinematics, and integration smoke.
+
+---
+
+## 9. Informal usability evidence (optional add-on)
+
+No informal usability notes have been recorded in this document yet.
+
+Suggested lightweight format before final submission:
+
+1. **Participants:** count + profile (e.g., classmates familiar with bowling / not familiar).
+2. **Tasks:** find recommendations, add/remove arsenal balls, run simulation, read analysis.
+3. **Observations:** completion blockers, confusing labels, missing affordances.
+4. **Actions taken:** concrete UI/doc tweaks resulting from observations.
