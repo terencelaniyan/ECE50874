@@ -36,7 +36,7 @@ The Playwright suite closes part of that gap. Flows such as **save/load arsenal*
 
 ### Prerequisites
 
-1. **PostgreSQL** with a seeded `balls` table (typical clone: `data/balls.csv` + `python services/backend/scripts/setup_db.py` from repo root — runs **seed**, **migrate_arsenals**, then **train_model**; see [data-collection.md](data-collection.md)). Alternatively run `seed_from_csv.py` then `migrate_arsenals.py` per [README.md](../README.md). Optional: `python services/backend/scripts/migrate_oil_patterns.py` if you need DB-backed `oil_patterns` beyond API fallbacks. The smoke test waits for copy like `DB: N BALLS LOADED` on the UI.
+1. **PostgreSQL** with a seeded `balls` table (typical clone: `data/balls.csv` + `python services/backend/scripts/setup_db.py` from repo root — runs **seed**, **migrate_arsenals**, then **train_model**; see [data-collection.md](data-collection.md)). Alternatively run `seed_from_csv.py` then `migrate_arsenals.py` per [README.md](../README.md). `python services/backend/scripts/migrate_oil_patterns.py` if you need DB-backed `oil_patterns` beyond API fallbacks. The smoke test waits for copy like `DB: N BALLS LOADED` on the UI.
 2. **Backend** on port **8000** (e.g. `cd services/backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`, or start the `backend` service via Docker Compose and expose 8000).
 
 ### Commands
@@ -102,7 +102,7 @@ These were in the original proposal but **do not** have dedicated Playwright fil
 docker compose up -d postgres
 # Point DATABASE_URL at the running instance (see README for port overrides).
 python services/backend/scripts/setup_db.py
-# Optional: DB oil_patterns rows (not part of setup_db.py)
+# DB oil_patterns rows (not part of setup_db.py)
 # python services/backend/scripts/migrate_oil_patterns.py
 ```
 

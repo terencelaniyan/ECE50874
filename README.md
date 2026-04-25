@@ -162,7 +162,7 @@ python services/backend/scripts/migrate_arsenals.py
 python services/backend/scripts/train_model.py
 ```
 
-**Oil patterns (optional):** not run by `setup_db.py`. For DB-backed `oil_patterns` used by `GET /oil-patterns`:
+**Oil patterns:** not run by `setup_db.py`. For DB-backed `oil_patterns` used by `GET /oil-patterns`:
 
 ```bash
 python services/backend/scripts/migrate_oil_patterns.py
@@ -305,10 +305,10 @@ Development workflow
    - Create and activate a virtual environment under `services/backend/`.
    - Install dependencies with `pip install -r requirements.txt`.
    - Ensure a `.env` file (repo root and/or `services/backend/`) provides `DATABASE_URL` and other settings for **host-run** uvicorn (see **§3**).
-   - Apply the database schema (`python services/backend/scripts/setup_db.py`, or `seed_from_csv.py` then `migrate_arsenals.py` manually; optional `migrate_oil_patterns.py`; see §5 above).
+   - Apply the database schema (`python services/backend/scripts/setup_db.py`, or `seed_from_csv.py` then `migrate_arsenals.py` manually; `migrate_oil_patterns.py`; see §5 above).
    - Run `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`.
 
-4. **Set up the frontend (optional)**
+4. **Set up the frontend**
 
    - The project includes a React + TypeScript + Vite app under `services/frontend/`.
    - Install dependencies (`npm install`) and run the dev server (`npm run dev`).

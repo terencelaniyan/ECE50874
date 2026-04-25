@@ -1,6 +1,6 @@
 # Frontend
 
-React + TypeScript SPA built with Vite. Bowling Bowl Grid UI: catalog browse, virtual bag (arsenal), RG–Differential Voronoi grid, recommendations (v1 compact + v2 method toggle), 6-ball slot assignment, gap analysis components, 2D and 3D simulation, video-based pose analysis with optional handoff to simulation, and degradation tooling. Data comes from the FastAPI backend; see [Backend](backend.md) for endpoints.
+React + TypeScript SPA built with Vite. Bowling Bowl Grid UI: catalog browse, virtual bag (arsenal), RG–Differential Voronoi grid, recommendations (v1 compact + v2 method toggle), 6-ball slot assignment, gap analysis components, 2D and 3D simulation, video-based pose analysis with handoff to simulation, and degradation tooling. Data comes from the FastAPI backend; see [Backend](backend.md) for endpoints.
 
 ## Configuration
 
@@ -21,7 +21,7 @@ High-level layout under `services/frontend/`:
 - **Layout:** `src/components/Layout.tsx` — header, **tab navigation** (no client-side router; `useState` for the active tab). Default tab is **Grid View**. On the grid, a **right-hand panel** toggles between compact recommendations and slot assignment (`Recs` / `Slots` buttons).
 - **Main views (by tab):** `GridView`, `BallCatalog`, `SimulationView`, `SimulationView3D`, `AnalysisView`, `BallDatabaseView`. Full-width `RecommendationsPanel` and `GapsPanel` are still rendered when internal tab state is `recommendations` or `gaps`, but **the header does not expose buttons** for those values today; primary UX for recs/slots is the grid + right panel.
 - **Components (representative):** `ArsenalPanel`, `RecommendationsListCompact`, `SlotAssignmentPanel`, `RecommendationsPanel`, `GapsPanel`, `BallCard`, `VirtualBag`, `BallComparisonTable`, `DegradationCompareView`, analysis subcomponents under `src/components/analysis/`, etc.
-- **State:** `src/context/BagContext.tsx` — arsenal (bag) entries with optional game count, saved arsenal id, and mutators (`addToBag`, `removeFromBag`, `setGameCount`, `setBag`, `setSavedArsenalId`). Use `useBag()`.
+- **State:** `src/context/BagContext.tsx` — arsenal (bag) entries with game count, saved arsenal id, and mutators (`addToBag`, `removeFromBag`, `setGameCount`, `setBag`, `setSavedArsenalId`). Use `useBag()`.
 - **API layer:** `src/api/` — `client.ts` (get, post, patch, del, `ApiError`, `apiUrl`); `balls.ts`, `arsenals.ts`, `recommendations.ts`, `recommendations-v2.ts`, `gaps.ts`, `slots.ts`, `degradation.ts`.
 - **Physics / vision utilities:** `src/utils/parametric-physics.ts`, `phase-detector.ts`, `bowling-kinematics.ts`, `decision-framework.ts`, `calibration.ts`; `src/physics/bowling-physics.ts`; workers `src/workers/physics-worker.ts`, `src/workers/vision-worker.ts` (MediaPipe PoseLandmarker path for uploaded video).
 - **Types:** `src/types/ball.ts`, `src/types/simulation.ts`, `src/types/analysis.ts` — align with backend payloads where applicable.
@@ -69,7 +69,7 @@ flowchart LR
 | -------------- | ------- |
 | **Grid View**  | Voronoi RG–diff map (`GridView`), arsenal column, right panel: **Recs** (`RecommendationsListCompact`, v2 method / degradation controls) or **Slots** (`SlotAssignmentPanel`). |
 | **Catalog**    | Browse/search balls and add to bag (`BallCatalog`). |
-| **Simulation** | 2D parametric lane + trajectory (`SimulationView`). Accepts optional initial params from Analysis via `simInitialParams`. |
+| **Simulation** | 2D parametric lane + trajectory (`SimulationView`). Accepts initial params from Analysis via `simInitialParams`. |
 | **3D Sim**     | Three.js lane + Rapier worker (`SimulationView3D`, `physics-worker.ts`). |
 | **Analysis**   | Uploaded video, pose pipeline, kinematics, baselines (`AnalysisView`); can send delivery params to the Simulation tab. |
 | **Ball Database** | Table-oriented catalog (`BallDatabaseView`). |

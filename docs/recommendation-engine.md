@@ -4,7 +4,7 @@ The backend recommends bowling balls by **similarity to the user’s current ars
 
 ## Idea
 
-- **Input:** User’s arsenal (by **arsenal_id** for a stored arsenal, or by **arsenal_ball_ids**) and desired number of recommendations `k`. Optional **game_counts** per ball for degradation (FR5). Optional **w_rg**, **w_diff**, **w_int** to weight the similarity dimensions; optional **brand**, **coverstock_type**, **status** to filter candidates; optional **diversity_min_distance** to space out picks.
+- **Input:** User’s arsenal (by **arsenal_id** for a stored arsenal, or by **arsenal_ball_ids**) and desired number of recommendations `k`. **game_counts** per ball for degradation (FR5). **w_rg**, **w_diff**, **w_int** to weight the similarity dimensions; **brand**, **coverstock_type**, **status** to filter candidates; **diversity_min_distance** to space out picks.
 - **Output:** Up to `k` balls not in the arsenal, ordered by how similar they are (closest first).
 - **Similarity:** Based only on the numeric core specs: **RG**, **differential**, and **intermediate differential**. When game counts are provided (via `arsenal_id` or `game_counts`), arsenal specs are degraded before scoring (effective = catalog × decay factor). No learning or user history; purely spec-based.
 
@@ -20,7 +20,7 @@ The backend recommends bowling balls by **similarity to the user’s current ars
    dist(a, b) = w_rg * |a.rg - b.rg| + w_diff * |a.diff - b.diff| + w_int * |a.int_diff - b.int_diff|
    ```
 
-   Default weights are 1.0 for all three. The API accepts optional `w_rg`, `w_diff`, `w_int` (0.1–10) so callers can tune importance of each dimension.
+   Default weights are 1.0 for all three. The API accepts `w_rg`, `w_diff`, `w_int` (0.1–10) so callers can tune importance of each dimension.
 
 2. **Score of a candidate ball**
 
@@ -30,14 +30,14 @@ The backend recommends bowling balls by **similarity to the user’s current ars
 
    Sort candidates by this score ascending.
 
-4. **Diversity (optional)**
+4. **Diversity**
 
    If `diversity_min_distance` > 0, a post-pass ensures no two selected balls are closer than that distance in (rg, diff, int_diff) space. Otherwise the first k from the ranked list are returned. Lower score means more similar to the arsenal.
 
 **Edge cases:**
 
 - Empty arsenal: returns an empty list.
-- Candidate set: all balls in the DB except those in the arsenal list, optionally filtered by `brand`, `coverstock_type`, and `status`. If there are fewer than k candidates (after filtering and diversity), all are returned.
+- Candidate set: all balls in the DB except those in the arsenal list, filtered by `brand`, `coverstock_type`, and `status` when those fields are provided. If there are fewer than k candidates (after filtering and diversity), all are returned.
 
 ## API usage
 
@@ -103,7 +103,7 @@ Interpretation: first ball has the smallest distance to your arsenal (most simil
 
 ## Implementation details
 
-- **Data flow (in `main.py` and `services.py`):** Resolve arsenal from `arsenal_id` (DB) or `arsenal_ball_ids` (+ optional `game_counts`). Apply FR5 degradation when game counts exist (`services/backend/app/degradation.py`). Load candidates from Postgres, optionally filtered by `brand`, `coverstock_type`, and `status`; then call `recommend(arsenal_rows, candidate_rows, k, w_rg, w_diff, w_int, diversity_min_distance)`; return the list of (ball, score).
+- **Data flow (in `main.py` and `services.py`):** Resolve arsenal from `arsenal_id` (DB) or `arsenal_ball_ids` (+ `game_counts`). Apply FR5 degradation when game counts exist (`services/backend/app/degradation.py`). Load candidates from Postgres, filtered by `brand`, `coverstock_type`, and `status` when provided; then call `recommend(arsenal_rows, candidate_rows, k, w_rg, w_diff, w_int, diversity_min_distance)`; return the list of (ball, score).
 - **Validation:** Either `arsenal_id` or at least one `arsenal_ball_id`; all referenced ball IDs must exist; otherwise 400 with missing IDs or 404 for unknown arsenal_id.
 - **Performance:** In-memory comparison. Fine for hundreds of balls; for much larger catalogs, consider indexing or precomputation.
 
@@ -117,11 +117,11 @@ The backend also exposes **POST /gaps**, which implements Voronoi-based **gap an
 
 **Orchestration:** `services/backend/app/services.py` (e.g. `recommend_v2`) — resolves arsenal rows, applies degradation (`degradation.py`, v1 vs v2 model), loads candidates, then dispatches by **`method`**.
 
-**Endpoint:** `POST /recommendations/v2` — same arsenal mutual-exclusion rules as v1 (`arsenal_id` **or** `arsenal_ball_ids` + optional `game_counts`). Full fields and errors: [Backend – POST /recommendations/v2](backend.md#post-recommendationsv2).
+**Endpoint:** `POST /recommendations/v2` — same arsenal mutual-exclusion rules as v1 (`arsenal_id` **or** `arsenal_ball_ids` + `game_counts`). Full fields and errors: [Backend – POST /recommendations/v2](backend.md#post-recommendationsv2).
 
 | Method        | Behavior (summary) |
 | ------------- | -------------------- |
-| `knn` (default) | Weighted **L1** or **L2** on rg/diff/int_diff; optional **min–max normalization**. Optional **`w_cover`** adds coverstock-aware signal alongside the three spec weights. |
+| `knn` (default) | Weighted **L1** or **L2** on rg/diff/int_diff; **min–max normalization**. **`w_cover`** adds coverstock-aware signal alongside the three spec weights. |
 | `two_tower`   | Neural two-tower scorer (`two_tower.py`); needs **PyTorch** and checkpoint `services/backend/models/two_tower.pt`. If the model or Torch is unavailable, behavior falls back (see [TECH_DEBT](TECH_DEBT.md)). |
 | `hybrid`      | Combines KNN and two-tower signals per service logic. |
 
@@ -140,7 +140,7 @@ The backend also exposes **POST /gaps**, which implements Voronoi-based **gap an
 ## Implemented options
 
 - **Weights:** `w_rg`, `w_diff`, `w_int` are exposed in the request body (default 1.0, range 0.1–10).
-- **Filtering:** Optional `brand`, `coverstock_type`, and `status` restrict the candidate set before scoring.
+- **Filtering:** `brand`, `coverstock_type`, and `status` restrict the candidate set before scoring.
 - **Diversity:** `diversity_min_distance` (0–1) ensures selected balls are at least that far apart in spec space (0 = off).
 - **V2-only:** `method`, `metric` (`l1` / `l2`), `normalize`, `w_cover`, `degradation_model` on `/recommendations/v2`.
 
