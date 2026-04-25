@@ -33,7 +33,7 @@ High-level layout:
     - `recommendation_engine.py` – Recommendation logic on top of ball catalog and arsenal.
     - `services.py` – Service layer used by routes (arsenals, gaps, recommendations v1/v2, slots, degradation, oil patterns, admin).
     - `slot_assignment.py` – 6-ball slot clustering / silhouette.
-    - `two_tower.py` – Two-tower model (optional **PyTorch**).
+    - `two_tower.py` – Two-tower model (**PyTorch**).
     - `synthetic_data.py` – Synthetic arsenal data for training.
     - `exceptions.py` – HTTP-facing errors.
   - `requirements.txt` – Python backend dependencies (see [docs/TECH_DEBT.md](docs/TECH_DEBT.md): **PyTorch** is not pinned; needed for two-tower training).
@@ -159,7 +159,7 @@ This runs **in order**: (1) `seed_from_csv.py` — `balls` from `data/balls.csv`
 ```bash
 python services/backend/scripts/seed_from_csv.py
 python services/backend/scripts/migrate_arsenals.py
-# optional: python services/backend/scripts/train_model.py
+python services/backend/scripts/train_model.py
 ```
 
 **Oil patterns (optional):** not run by `setup_db.py`. For DB-backed `oil_patterns` used by `GET /oil-patterns`:

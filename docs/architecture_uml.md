@@ -131,7 +131,7 @@ classDiagram
     ServiceLayer --> GapEngine : uses
     ServiceLayer --> DegradationEngine : uses
     ServiceLayer --> SlotAssignmentEngine : uses
-    ServiceLayer --> TwoTowerModel : optional v2 path
+    ServiceLayer --> TwoTowerModel : v2 path
     RecommendationEngine --> TwoTowerModel : hybrid/v2 integration
 ```
 
@@ -146,7 +146,7 @@ classDiagram
    `app/main.py` defines route groups for health, balls, arsenals, recommendations (v1 and v2), gaps, slots, degradation comparison, oil patterns, and admin actions.
 
 4. **Service and Engine Layer**  
-   `app/services.py` contains business logic and composes domain engines (`recommendation_engine`, `gap_engine`, `degradation`, `slot_assignment`, and optional `two_tower`).
+   `app/services.py` contains business logic and composes domain engines (`recommendation_engine`, `gap_engine`, `degradation`, `slot_assignment`, and `two_tower`).
 
 5. **Database Access (PostgreSQL + psycopg)**  
    `app/db.py` provides psycopg connections (`get_db`, `get_conn`). The service layer executes SQL directly against PostgreSQL tables.
