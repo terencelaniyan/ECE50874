@@ -45,10 +45,15 @@ jobs:
           python services/backend/scripts/seed_from_csv.py
           python services/backend/scripts/migrate_arsenals.py
 
-      - name: Run backend tests with coverage
+      - name: Run backend unit tests
         run: |
           cd services/backend
-          python -m pytest tests/ -v --cov-report=xml
+          python -m pytest tests/ -m "not integration" -v
+
+      - name: Run backend integration tests
+        run: |
+          cd services/backend
+          python -m pytest tests/ -m "integration" -v --cov-append --cov-report=xml
       - name: Upload backend coverage artifact
         uses: actions/upload-artifact@v4
         with:
@@ -83,3 +88,76 @@ jobs:
           name: frontend-coverage
           path: services/frontend/coverage
           if-no-files-found: warn
+
+  e2e:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bowlingdb
+      APP_ENV: development
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bowlingdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d bowlingdb"
+          --health-interval 4s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install backend dependencies
+        run: |
+          cd services/backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Seed database (balls + arsenals)
+        run: |
+          python services/backend/scripts/seed_from_csv.py
+          python services/backend/scripts/migrate_arsenals.py
+
+      - name: Start backend
+        run: |
+          cd services/backend
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          sleep 5
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: services/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd services/frontend
+          npm ci
+
+      - name: Install Playwright Browsers
+        run: |
+          cd services/frontend
+          npx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E tests
+        run: |
+          cd services/frontend
+          npm run test:e2e
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: services/frontend/playwright-report/
+          retention-days: 14
