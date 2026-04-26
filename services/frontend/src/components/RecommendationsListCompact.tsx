@@ -203,9 +203,13 @@ export function RecommendationsListCompact() {
                 >
                   {isGapFill ? "GAP FILL" : "REPLACEMENT"}
                 </div>
-                <div className={`rec-badge method method-${itemMethod}`}>
-                  {itemMethod === "knn" ? "KNN" : itemMethod === "two_tower" ? "V2" : "HYBRID"}
-                </div>
+                {method !== "knn" && itemMethod === "knn" ? (
+                  <div className="rec-fallback-badge">KNN FALLBACK</div>
+                ) : (
+                  <div className={`rec-badge method method-${itemMethod}`}>
+                    {itemMethod === "knn" ? "KNN" : itemMethod === "two_tower" ? "V2" : "HYBRID"}
+                  </div>
+                )}
               </div>
               <div className="rec-name">{item.ball.name}</div>
               <div className="rec-reason">{reason}</div>
