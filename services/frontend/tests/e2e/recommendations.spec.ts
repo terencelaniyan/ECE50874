@@ -25,9 +25,22 @@ test.describe("TC-03: Recommendations Appear", () => {
     ).toBeVisible();
 
     // Wait for recommendations to load
+    const recommendationsResponsePromise = page.waitForResponse((response) => {
+      return (
+        response.request().method() === "POST" &&
+        response.url().includes("/api/recommendations")
+      );
+    });
     await expect(page.locator(".rec-list-compact")).toBeVisible({
       timeout: 15_000,
     });
+    const recommendationsResponse = await recommendationsResponsePromise;
+    expect(recommendationsResponse.ok()).toBe(true);
+    const recommendationsPayload = await recommendationsResponse.json();
+    expect(Array.isArray(recommendationsPayload.items)).toBe(true);
+    expect(recommendationsPayload.items.length).toBeGreaterThan(0);
+    expect(recommendationsPayload.items[0]).toHaveProperty("ball");
+    expect(recommendationsPayload.items[0]).toHaveProperty("score");
 
     // At least one recommendation item should appear
     const recItems = page.locator(".rec-item");
@@ -63,6 +76,12 @@ test.describe("TC-03: Recommendations Appear", () => {
     });
 
     // Click V2 method toggle button
+    const v2ResponsePromise = page.waitForResponse((response) => {
+      return (
+        response.request().method() === "POST" &&
+        response.url().includes("/api/recommendations/v2")
+      );
+    });
     await page.locator(".rec-method-btn").filter({ hasText: "V2" }).click();
 
     // Recommendations should reload; wait for the list to appear again.
@@ -70,6 +89,12 @@ test.describe("TC-03: Recommendations Appear", () => {
     await expect(page.locator(".rec-item").first()).toBeVisible({
       timeout: 15_000,
     });
+    const v2Response = await v2ResponsePromise;
+    expect(v2Response.ok()).toBe(true);
+    const v2Payload = await v2Response.json();
+    expect(Array.isArray(v2Payload.items)).toBe(true);
+    expect(v2Payload).toHaveProperty("method");
+    expect(v2Payload).toHaveProperty("degradation_model");
 
     // Check that a method badge (V2 or KNN) is shown on the first item
     const hasMethodBadge = await page

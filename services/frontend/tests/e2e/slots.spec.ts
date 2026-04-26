@@ -20,6 +20,12 @@ test.describe("TC-05: Slot Assignment Panel", () => {
     await expect(page.getByText("2 / 6 SLOTS")).toBeVisible();
 
     // Click the "Slots" toggle on the right panel
+    const slotsResponsePromise = page.waitForResponse((response) => {
+      return (
+        response.request().method() === "POST" &&
+        response.url().includes("/api/slots")
+      );
+    });
     await page.locator(".right-panel-btn").filter({ hasText: "Slots" }).click();
 
     // The right panel badge should now say "6-BALL"
@@ -29,6 +35,13 @@ test.describe("TC-05: Slot Assignment Panel", () => {
 
     // Wait for slot panel content to load
     await expect(page.locator(".slot-panel")).toBeVisible({ timeout: 10_000 });
+    const slotsResponse = await slotsResponsePromise;
+    expect(slotsResponse.ok()).toBe(true);
+    const slotsPayload = await slotsResponse.json();
+    expect(Array.isArray(slotsPayload.assignments)).toBe(true);
+    expect(slotsPayload.assignments.length).toBeGreaterThanOrEqual(1);
+    expect(slotsPayload).toHaveProperty("silhouette_score");
+    expect(Array.isArray(slotsPayload.slot_coverage)).toBe(true);
 
     // Silhouette score should be displayed
     await expect(page.getByText("SILHOUETTE SCORE")).toBeVisible();
