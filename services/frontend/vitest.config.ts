@@ -10,6 +10,7 @@ export default defineConfig({
     setupFiles: ["src/test/setup.ts"],
     globals: true,
     pool: "forks",
+    fileParallelism: false,
     coverage: {
       provider: "v8",
       reporter: ["text", "text-summary", "lcov"],
