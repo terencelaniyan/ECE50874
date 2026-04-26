@@ -1647,14 +1647,6 @@ body::before {
   color: var(--accent);
 }
 
-.rec-fallback-badge {
-  font-size: 9px;
-  padding: 2px 8px;
-  border-radius: 20px;
-  background: rgba(255, 92, 56, 0.15);
-  color: var(--accent2);
-  letter-spacing: 1px;
-}
 
 .rec-badges-row {
   display: flex;

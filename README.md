@@ -21,6 +21,7 @@ You can run the backend against a local PostgreSQL database (via Docker) and use
 High-level layout:
 
 - `services/backend/`
+  - `README.md` – Backend-only local setup, run/test commands, and troubleshooting links.
   - `app/`
     - `main.py` – FastAPI application (`app`) exposing the HTTP API.
     - `api_models.py` – Pydantic models for requests/responses.
@@ -42,6 +43,7 @@ High-level layout:
 - `docs/`
   - `backend.md` – Backend architecture and API details.
   - `frontend.md` – Frontend architecture, structure, and usage.
+  - `troubleshooting.md` – Common local/CI-like failures with command-first fixes.
   - `data-collection.md` – Data collection pipeline and formats.
   - `recommendation-engine.md` – Recommendation engine design and math.
   - `deploy.md` – Production single-server deploy (.env, Caddy, seeding).
@@ -312,8 +314,11 @@ Frontend tests (Vitest): from `services/frontend/`, run `npm run test:run` or `n
 
 For deeper details, see:
 
+- `services/backend/README.md` – backend contributor quickstart and command reference.
+- `CONTRIBUTING.md` – branch/PR workflow, test expectations, and definition-of-done.
 - `docs/backend.md` – backend modules, routing, and configuration.
 - `docs/frontend.md` – frontend architecture, structure, and usage.
+- `docs/troubleshooting.md` – symptom → cause → fix runbook for common failures.
 - `docs/data-collection.md` – data sources, schemas, and pipelines.
 - `docs/recommendation-engine.md` – algorithms, metrics, and implementation notes.
 - `docs/deploy.md` – production deployment.

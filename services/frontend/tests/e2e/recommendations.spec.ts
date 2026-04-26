@@ -71,18 +71,13 @@ test.describe("TC-03: Recommendations Appear", () => {
       timeout: 15_000,
     });
 
-    // Check that either V2 badges appear, or a KNN fallback badge is shown
-    const hasV2Badge = await page
-      .locator(".rec-badge.method-two_tower")
+    // Check that a method badge (V2 or KNN) is shown on the first item
+    const hasMethodBadge = await page
+      .locator(".rec-badge.method")
       .first()
       .isVisible()
       .catch(() => false);
-    const hasFallbackBadge = await page
-      .locator(".rec-fallback-badge")
-      .isVisible()
-      .catch(() => false);
 
-    // One of these must be true
-    expect(hasV2Badge || hasFallbackBadge).toBe(true);
+    expect(hasMethodBadge).toBe(true);
   });
 });
