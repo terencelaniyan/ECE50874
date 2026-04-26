@@ -22,10 +22,20 @@ function GapCalloutBanner() {
   const [zones, setZones] = useState<GapZone[]>([]);
 
   useEffect(() => {
+    const clearZones = () => {
+      setZones((prevZones) => (prevZones.length === 0 ? prevZones : []));
+    };
+
     // Filter custom balls: backend has no record of them
     const catalogIds = arsenalBallIds.filter((id) => !id.startsWith("custom-"));
-    if (bag.length === 0 && !savedArsenalId) { setZones([]); return; }
-    if (catalogIds.length === 0 && !savedArsenalId) { setZones([]); return; }
+    if (bag.length === 0 && !savedArsenalId) {
+      clearZones();
+      return;
+    }
+    if (catalogIds.length === 0 && !savedArsenalId) {
+      clearZones();
+      return;
+    }
     let cancelled = false;
     const filteredGameCounts = Object.fromEntries(
       Object.entries(gameCounts).filter(([id]) => !id.startsWith("custom-"))
@@ -34,8 +44,12 @@ function GapCalloutBanner() {
       ? { arsenal_id: savedArsenalId, k: 5 }
       : { arsenal_ball_ids: catalogIds, game_counts: Object.keys(filteredGameCounts).length ? filteredGameCounts : undefined, k: 5 };
     getGaps(body)
-      .then((res) => { if (!cancelled) setZones(res.zones ?? []); })
-      .catch(() => { if (!cancelled) setZones([]); });
+      .then((res) => {
+        if (!cancelled) setZones(res.zones ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setZones([]);
+      });
     return () => { cancelled = true; };
   }, [arsenalBallIds, gameCounts, savedArsenalId, bag.length]);
 

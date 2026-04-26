@@ -17,14 +17,16 @@ vi.mock("./SlotAssignmentPanel", () => ({ SlotAssignmentPanel: () => <div data-t
 vi.mock("./AnalysisView", () => ({ AnalysisView: () => <div data-testid="analysis-view" /> }));
 vi.mock("./SimulationView3D", () => ({ SimulationView3D: () => <div data-testid="sim-3d-view" /> }));
 
+const emptyBagState = vi.hoisted(() => ({
+  bag: [],
+  arsenalBallIds: [],
+  gameCounts: {},
+  savedArsenalId: null,
+}));
+
 // Mock generic BagContext wrapper if needed by Layout directly (usually not)
 vi.mock("../context/BagContext", () => ({
-  useBag: () => ({
-    bag: [],
-    arsenalBallIds: [],
-    gameCounts: {},
-    savedArsenalId: null,
-  }),
+  useBag: () => emptyBagState,
 }));
 
 // Mock the api call taking place in useEffect
@@ -63,9 +65,13 @@ describe("Layout Component", () => {
     });
   });
 
-  it("switches tabs correctly", () => {
+  it("switches tabs correctly", async () => {
     vi.mocked(api.listBalls).mockResolvedValueOnce({ items: [], count: 10 });
     render(<Layout />);
+
+    await waitFor(() => {
+      expect(screen.getByText("DB: 10 BALLS LOADED")).toBeInTheDocument();
+    });
 
     // Click Catalog
     const catalogTab = screen.getByRole("tab", { name: "Catalog" });
@@ -82,9 +88,13 @@ describe("Layout Component", () => {
     expect(screen.getByTestId("analysis-view")).toBeInTheDocument();
   });
 
-  it("switches right panels in Grid view", () => {
+  it("switches right panels in Grid view", async () => {
     vi.mocked(api.listBalls).mockResolvedValueOnce({ items: [], count: 10 });
     render(<Layout />);
+
+    await waitFor(() => {
+      expect(screen.getByText("DB: 10 BALLS LOADED")).toBeInTheDocument();
+    });
 
     const slotsBtn = screen.getByRole("button", { name: "Slots" });
     fireEvent.click(slotsBtn);
