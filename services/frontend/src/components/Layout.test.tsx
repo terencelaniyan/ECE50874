@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { Layout } from "./Layout";
 import * as api from "../api/balls";
+import * as gapsApi from "../api/gaps";
 
 // Mock child components to keep the test isolated
 vi.mock("./BallCatalog", () => ({ BallCatalog: () => <div data-testid="ball-catalog" /> }));
@@ -18,7 +19,12 @@ vi.mock("./SimulationView3D", () => ({ SimulationView3D: () => <div data-testid=
 
 // Mock generic BagContext wrapper if needed by Layout directly (usually not)
 vi.mock("../context/BagContext", () => ({
-  useBag: () => ({ activeArsenalId: null }),
+  useBag: () => ({
+    bag: [],
+    arsenalBallIds: [],
+    gameCounts: {},
+    savedArsenalId: null,
+  }),
 }));
 
 // Mock the api call taking place in useEffect
@@ -26,9 +32,14 @@ vi.mock("../api/balls", () => ({
   listBalls: vi.fn(),
 }));
 
+vi.mock("../api/gaps", () => ({
+  getGaps: vi.fn(),
+}));
+
 describe("Layout Component", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(gapsApi.getGaps).mockResolvedValue({ zones: [] });
   });
 
   it("renders GridView initially and calls listBalls for badging", async () => {
