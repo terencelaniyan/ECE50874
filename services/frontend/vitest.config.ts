@@ -12,12 +12,14 @@ export default defineConfig({
     pool: "forks",
     coverage: {
       provider: "v8",
-      reporter: ["text", "text-summary", "html"],
+      reporter: ["text", "text-summary", "lcov"],
       reportsDirectory: "./coverage",
+      include: ["src/**/*.{ts,tsx}"],
       exclude: [
         "node_modules/**",
         "src/test/**",
         "src/workers/**",
+        "src/**/*.{test,spec}.{ts,tsx}",
         "tests/**",
         "**/*.d.ts",
         "dist/**",

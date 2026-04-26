@@ -81,7 +81,7 @@ jobs:
       - name: Run frontend tests with coverage
         run: |
           cd services/frontend
-          NODE_OPTIONS=--max-old-space-size=4096 npm run test:coverage
+          NODE_OPTIONS=--max-old-space-size=8192 npm run test:coverage
       - name: Upload frontend coverage artifact
         uses: actions/upload-artifact@v4
         with:

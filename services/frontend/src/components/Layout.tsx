@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { listBalls } from "../api/balls";
 import { getGaps } from "../api/gaps";
 import { BallCatalog } from "./BallCatalog";
@@ -11,10 +11,16 @@ import { BallDatabaseView } from "./BallDatabaseView";
 import { SimulationView } from "./SimulationView";
 import { SlotAssignmentPanel } from "./SlotAssignmentPanel";
 import { AnalysisView } from "./AnalysisView";
-import { SimulationView3D } from "./SimulationView3D";
 import { useBag } from "../context/BagContext";
 import { SLOT_LABELS, SLOT_COLORS } from "../constants/slots";
 import type { GapZone } from "../types/ball";
+
+// Lazy-loaded: pulls in three.js and rapier3d-compat (~MBs of WASM-as-JS).
+// Loading on demand keeps the initial bundle small and prevents test runs
+// that never visit the 3D tab from paying the parse/heap cost.
+const SimulationView3D = lazy(() =>
+  import("./SimulationView3D").then((m) => ({ default: m.SimulationView3D }))
+);
 
 /** Fetches gap zones and renders a pill row showing which slots are uncovered. */
 function GapCalloutBanner() {
@@ -363,7 +369,9 @@ export function Layout() {
               aria-labelledby="tab-sim3d"
               className="view active"
             >
-              <SimulationView3D initialParams={simInitialParams ?? undefined} />
+              <Suspense fallback={<div className="view-loading">Loading 3D simulator…</div>}>
+                <SimulationView3D initialParams={simInitialParams ?? undefined} />
+              </Suspense>
             </div>
           )}
           {tab === "analysis" && (
