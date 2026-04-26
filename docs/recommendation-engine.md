@@ -4,7 +4,7 @@ The backend recommends bowling balls by **similarity to the user’s current ars
 
 ## Idea
 
-- **Input:** User’s arsenal (by **arsenal_id** for a stored arsenal, or by **arsenal_ball_ids**) and desired number of recommendations `k`. **game_counts** per ball for degradation (FR5). **w_rg**, **w_diff**, **w_int** to weight the similarity dimensions; **brand**, **coverstock_type**, **status** to filter candidates; **diversity_min_distance** to space out picks.
+- **Input:** User’s arsenal (by **arsenal_id** for a stored arsenal, or by **arsenal_ball_ids**) and desired number of recommendations `k`. **game_counts** per ball for degradation (FR5). **w_rg**, **w_diff**, **w_int** to weight the similarity dimensions; **brand**, **coverstock_type**, **status** to filter candidates; **diversity_min_distance** to space out picks. Stored arsenals can contain both catalog balls and custom balls; only catalog candidates are returned.
 - **Output:** Up to `k` balls not in the arsenal, ordered by how similar they are (closest first).
 - **Similarity:** Based only on the numeric core specs: **RG**, **differential**, and **intermediate differential**. When game counts are provided (via `arsenal_id` or `game_counts`), arsenal specs are degraded before scoring (effective = catalog × decay factor). No learning or user history; purely spec-based.
 
@@ -103,7 +103,7 @@ Interpretation: first ball has the smallest distance to your arsenal (most simil
 
 ## Implementation details
 
-- **Data flow (in `main.py` and `services.py`):** Resolve arsenal from `arsenal_id` (DB) or `arsenal_ball_ids` (+ `game_counts`). Apply FR5 degradation when game counts exist (`services/backend/app/degradation.py`). Load candidates from Postgres, filtered by `brand`, `coverstock_type`, and `status` when provided; then call `recommend(arsenal_rows, candidate_rows, k, w_rg, w_diff, w_int, diversity_min_distance)`; return the list of (ball, score).
+- **Data flow (in `main.py` and `services.py`):** Resolve arsenal from `arsenal_id` (DB, including custom-ball rows when present) or `arsenal_ball_ids` (+ `game_counts`). Apply FR5 degradation when game counts exist (`services/backend/app/degradation.py`). Load candidates from Postgres, filtered by `brand`, `coverstock_type`, and `status` when provided; then call `recommend(arsenal_rows, candidate_rows, k, w_rg, w_diff, w_int, diversity_min_distance)`; return the list of (ball, score).
 - **Validation:** Either `arsenal_id` or at least one `arsenal_ball_id`; all referenced ball IDs must exist; otherwise 400 with missing IDs or 404 for unknown arsenal_id.
 - **Performance:** In-memory comparison. Fine for hundreds of balls; for much larger catalogs, consider indexing or precomputation.
 

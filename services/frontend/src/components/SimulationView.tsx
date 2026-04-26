@@ -350,6 +350,11 @@ export function SimulationView({ initialParams }: SimulationViewProps = {}) {
               </option>
             ))}
           </select>
+          {bag.length === 0 && (
+            <p className="sim-no-bag-hint">
+              💡 Add balls in the <strong>Catalog</strong> tab to simulate with your actual specs. Using default values for now.
+            </p>
+          )}
         </div>
         <div className="control-group">
           <label>Delivery Parameters</label>
@@ -387,7 +392,7 @@ export function SimulationView({ initialParams }: SimulationViewProps = {}) {
               value={launchAngle}
               onChange={(e) => setLaunchAngle(parseFloat(e.target.value))}
             />
-            <div className="slider-val">{launchAngle}\u00B0</div>
+            <div className="slider-val">{launchAngle}°</div>
           </div>
           <div className="slider-row">
             <div className="slider-label">Board #</div>

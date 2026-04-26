@@ -9,8 +9,7 @@ import {
   evaluateForm,
   detectBowlingHand,
 } from "./bowling-kinematics";
-import { POSE_LANDMARKS, FORM_THRESHOLDS } from "../constants/baselines";
-import { DEFAULT_CONFIG } from "./calibration";
+import { POSE_LANDMARKS } from "../constants/baselines";
 
 // ── Helpers for synthetic landmark data ─────────────────────────────────
 
@@ -287,7 +286,6 @@ describe("computeLaunchAngle", () => {
      */
     const poses = buildDeliverySequence({ frames: 10 });
     const releaseIdx = 5;
-    const hand = "right";
     const wristIdx = POSE_LANDMARKS.RIGHT_WRIST;
     const elbowIdx = POSE_LANDMARKS.RIGHT_ELBOW;
 

@@ -16,7 +16,10 @@
 # ===========================================================================
 
 from contextlib import contextmanager
-from typing import Generator
+import json
+from typing import Generator, Any, Dict
+from pathlib import Path
+from time import time
 
 import psycopg
 from psycopg import Connection
@@ -24,13 +27,68 @@ from psycopg.rows import dict_row
 
 from .config import DATABASE_URL
 
+DEBUG_LOG_PATH = Path("/Users/fahdlaniyan/Documents/ECE50874/.cursor/debug-e4a33a.log")
+DEBUG_SESSION_ID = "e4a33a"
 
-def _connect() -> Connection:
+
+# region agent log
+def _debug_log(hypothesis_id: str, location: str, message: str, data: dict) -> None:
+    payload = {
+        "sessionId": DEBUG_SESSION_ID,
+        "runId": "initial",
+        "hypothesisId": hypothesis_id,
+        "location": location,
+        "message": message,
+        "data": data,
+        "timestamp": int(time() * 1000),
+    }
+    try:
+        with DEBUG_LOG_PATH.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(payload) + "\n")
+    except Exception:
+        pass
+
+
+# endregion
+
+
+def _connect() -> Connection[Dict[str, Any]]:
     """Open psycopg connection with dict_row; single place for connection config."""
-    return psycopg.connect(DATABASE_URL, row_factory=dict_row)
+    # region agent log
+    _debug_log(
+        "H4",
+        "app/db.py:_connect",
+        "opening database connection",
+        {
+            "databaseUrlPresent": bool(DATABASE_URL),
+            "databaseUrlPrefix": (DATABASE_URL or "")[:32],
+        },
+    )
+    # endregion
+    try:
+        conn = psycopg.connect(DATABASE_URL, row_factory=dict_row)
+        # region agent log
+        _debug_log(
+            "H4",
+            "app/db.py:_connect",
+            "database connection opened",
+            {"connected": True},
+        )
+        # endregion
+        return conn
+    except Exception as exc:
+        # region agent log
+        _debug_log(
+            "H5",
+            "app/db.py:_connect",
+            "database connection failed",
+            {"errorType": type(exc).__name__, "error": str(exc)[:240]},
+        )
+        # endregion
+        raise
 
 
-def get_db() -> Generator[Connection, None, None]:
+def get_db() -> Generator[Connection[Dict[str, Any]], None, None]:
     """FastAPI dependency: yield one connection per request; closed after response."""
     conn = _connect()
     try:

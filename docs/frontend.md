@@ -1,6 +1,6 @@
 # Frontend
 
-React + TypeScript SPA built with Vite. Bowling Bowl Grid UI: catalog browse, virtual bag (arsenal), RG–Differential Voronoi grid, recommendations (v1 compact + v2 method toggle), 6-ball slot assignment, gap analysis components, 2D and 3D simulation, video-based pose analysis with handoff to simulation, and degradation tooling. Data comes from the FastAPI backend; see [Backend](backend.md) for endpoints.
+React + TypeScript SPA built with Vite. Bowling Bowl Grid UI: catalog browse, virtual bag (arsenal), RG–Differential Voronoi grid, recommendations (v1 compact + v2 method toggle), 6-ball slot assignment, gap analysis components, 2D and 3D simulation, video-based pose analysis with handoff to simulation, and degradation tooling. Arsenal save/edit flows support both catalog balls and custom user-defined balls. Data comes from the FastAPI backend; see [Backend](backend.md) for endpoints.
 
 ## Configuration
 
@@ -21,7 +21,7 @@ High-level layout under `services/frontend/`:
 - **Layout:** `src/components/Layout.tsx` — header, **tab navigation** (no client-side router; `useState` for the active tab). Default tab is **Grid View**. On the grid, a **right-hand panel** toggles between compact recommendations and slot assignment (`Recs` / `Slots` buttons).
 - **Main views (by tab):** `GridView`, `BallCatalog`, `SimulationView`, `SimulationView3D`, `AnalysisView`, `BallDatabaseView`. Full-width `RecommendationsPanel` and `GapsPanel` are still rendered when internal tab state is `recommendations` or `gaps`, but **the header does not expose buttons** for those values today; primary UX for recs/slots is the grid + right panel.
 - **Components (representative):** `ArsenalPanel`, `RecommendationsListCompact`, `SlotAssignmentPanel`, `RecommendationsPanel`, `GapsPanel`, `BallCard`, `VirtualBag`, `BallComparisonTable`, `DegradationCompareView`, analysis subcomponents under `src/components/analysis/`, etc.
-- **State:** `src/context/BagContext.tsx` — arsenal (bag) entries with game count, saved arsenal id, and mutators (`addToBag`, `removeFromBag`, `setGameCount`, `setBag`, `setSavedArsenalId`). Use `useBag()`.
+- **State:** `src/context/BagContext.tsx` — arsenal (bag) entries with game count, saved arsenal id, and mutators (`addToBag`, `removeFromBag`, `setGameCount`, `setBag`, `setSavedArsenalId`). Bag items include catalog entries and custom-ball entries when loaded from a saved arsenal. Use `useBag()`.
 - **API layer:** `src/api/` — `client.ts` (get, post, patch, del, `ApiError`, `apiUrl`); `balls.ts`, `arsenals.ts`, `recommendations.ts`, `recommendations-v2.ts`, `gaps.ts`, `slots.ts`, `degradation.ts`.
 - **Physics / vision utilities:** `src/utils/parametric-physics.ts`, `phase-detector.ts`, `bowling-kinematics.ts`, `decision-framework.ts`, `calibration.ts`; `src/physics/bowling-physics.ts`; workers `src/workers/physics-worker.ts`, `src/workers/vision-worker.ts` (MediaPipe PoseLandmarker path for uploaded video).
 - **Types:** `src/types/ball.ts`, `src/types/simulation.ts`, `src/types/analysis.ts` — align with backend payloads where applicable.
@@ -29,7 +29,7 @@ High-level layout under `services/frontend/`:
 
 ## Architecture and data flow
 
-Single tree: `App` → `BagProvider` → `Layout`. Each view uses `useBag()` and/or API modules as needed. The API layer uses `fetch` via `client.ts`; failures become `ApiError`. The backend is the source of truth for balls, arsenals, recommendations, gaps, v2 recs, slots, degradation compare, and oil patterns; the bag persists through the arsenals CRUD API when the user saves.
+Single tree: `App` → `BagProvider` → `Layout`. Each view uses `useBag()` and/or API modules as needed. The API layer uses `fetch` via `client.ts`; failures become `ApiError`. The backend is the source of truth for balls, arsenals (catalog + custom entries), recommendations, gaps, v2 recs, slots, degradation compare, and oil patterns; the bag persists through the arsenals CRUD API when the user saves.
 
 ```mermaid
 flowchart LR

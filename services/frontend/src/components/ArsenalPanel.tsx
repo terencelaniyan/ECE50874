@@ -12,6 +12,7 @@ import {
   getArsenal,
 } from "../api/arsenals";
 import { getBall } from "../api/balls";
+import html2canvas from "html2canvas";
 import { compareDegradation } from "../api/degradation";
 import type { Ball, BagEntry, ArsenalSummary, DegradationCompareResponse } from "../types/ball";
 import { bagEntriesToArsenalBallInputs } from "../types/ball";
@@ -30,9 +31,10 @@ interface ArsenalCardProps {
   degModel: DegModel;
   v2Data: DegradationCompareResponse | null;
   onClickCompare: () => void;
+  onRemove: () => void;
 }
 
-function ArsenalCard({ entry, slot, degModel, v2Data, onClickCompare }: ArsenalCardProps) {
+function ArsenalCard({ entry, slot, degModel, v2Data, onClickCompare, onRemove }: ArsenalCardProps) {
   const { ball, game_count } = entry;
   const slotLabel = getSlotLabel(slot);
   const displayName = ball.name ?? "Custom";
@@ -62,13 +64,13 @@ function ArsenalCard({ entry, slot, degModel, v2Data, onClickCompare }: ArsenalC
         )}
       </div>
       <div className="arsenal-card-stats">
-        <span className="stat-chip">
-          RG <b>{ball.rg}</b>
+        <span className="stat-chip" title="Radius of Gyration — how far the mass is from the center. Lower RG = earlier rev-up, hooks sooner.">
+          RG <b>{Number(ball.rg).toFixed(2)}</b>
         </span>
-        <span className="stat-chip">
-          Diff <b>{ball.diff}</b>
+        <span className="stat-chip" title="Differential — difference between high and low RG. Higher differential = stronger flare potential and more hook.">
+          Diff <b>{Number(ball.diff).toFixed(3)}</b>
         </span>
-        <span className="stat-chip">{coverstock}</span>
+        <span className="stat-chip" title="Coverstock material and finish — determines how the ball interacts with lane oil.">{coverstock}</span>
       </div>
       <div className="health-bar-wrap">
         <div className="health-label">
@@ -87,9 +89,14 @@ function ArsenalCard({ entry, slot, degModel, v2Data, onClickCompare }: ArsenalC
         {lambdaIndicator && (
           <div className="lambda-indicator">{lambdaIndicator} &middot; {coverstock}</div>
         )}
-        <button type="button" className="deg-compare-link" onClick={onClickCompare}>
-          Compare V1/V2
-        </button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
+          <button type="button" className="deg-compare-link" onClick={onClickCompare} style={{ padding: 0, margin: 0 }}>
+            Compare V1/V2
+          </button>
+          <button type="button" className="deg-compare-link" onClick={onRemove} style={{ padding: 0, margin: 0, color: "var(--text-muted)" }}>
+            Remove
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -106,7 +113,7 @@ const INITIAL_CUSTOM_FORM = {
 };
 
 export function ArsenalPanel() {
-  const { bag, setBag, setSavedArsenalId, addCustomToBag } = useBag();
+  const { bag, setBag, setSavedArsenalId, addCustomToBag, removeFromBag, clearBag, reorderBag } = useBag();
   const filledSlots = Math.min(bag.length, BAG_CAPACITY);
 
   const [saveOpen, setSaveOpen] = useState(false);
@@ -120,6 +127,64 @@ export function ArsenalPanel() {
   const [degModel, setDegModel] = useState<DegModel>("v1");
   const [v2Results, setV2Results] = useState<Record<string, DegradationCompareResponse>>({});
   const [compareEntry, setCompareEntry] = useState<BagEntry | null>(null);
+
+  // Drag and drop state
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex !== null && draggedIndex !== dropIndex) {
+      reorderBag(draggedIndex, dropIndex);
+    }
+    setDraggedIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
+  const handleExport = async () => {
+    try {
+      setLoading(true);
+      const element = document.querySelector(".grid-layout") as HTMLElement;
+      if (!element) {
+        throw new Error("Grid layout not found");
+      }
+      
+      // Temporarily add a class to adjust styling for export if needed
+      element.classList.add("exporting");
+      
+      const canvas = await html2canvas(element, {
+        backgroundColor: "#0a0c10",
+        scale: 2,
+        useCORS: true,
+      });
+      
+      element.classList.remove("exporting");
+      
+      const image = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = image;
+      link.download = `my_arsenal_${new Date().toISOString().split('T')[0]}.png`;
+      link.click();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Export failed");
+      const element = document.querySelector(".grid-layout");
+      if (element) element.classList.remove("exporting");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Fetch V2 degradation data when model is switched to V2
   useEffect(() => {
@@ -216,7 +281,25 @@ export function ArsenalPanel() {
     setError(null);
     try {
       const list = await listArsenals({ limit: 50 });
-      setSavedList(list);
+      
+      // Deduplicate by name (or id if name is null) to remove repetitive test entries
+      const uniqueList: typeof list = [];
+      const seen = new Set<string>();
+      for (const a of list) {
+        const key = a.name || a.id;
+        if (!seen.has(key)) {
+          seen.add(key);
+          uniqueList.push(a);
+        }
+      }
+      
+      if (uniqueList.length === 0) {
+        alert("You don't have any saved arsenals yet!");
+        setLoadOpen(false);
+        return;
+      }
+      
+      setSavedList(uniqueList);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Load list failed");
     }
@@ -304,6 +387,24 @@ export function ArsenalPanel() {
           <button
             type="button"
             className="arsenal-save-load-btn"
+            onClick={clearBag}
+            disabled={!bag.length || loading}
+            style={{ color: "var(--color-error, #ff5c38)", borderColor: "var(--color-error, #ff5c38)" }}
+          >
+            Clear All
+          </button>
+          <button
+            type="button"
+            className="arsenal-save-load-btn"
+            onClick={handleExport}
+            disabled={!bag.length || loading}
+            style={{ color: "var(--accent, #4cff8a)", borderColor: "var(--accent, #4cff8a)" }}
+          >
+            Export Image
+          </button>
+          <button
+            type="button"
+            className="arsenal-save-load-btn"
             onClick={() => { setCustomFormOpen(true); setError(null); }}
             disabled={bag.length >= BAG_CAPACITY || loading}
           >
@@ -323,14 +424,28 @@ export function ArsenalPanel() {
           bag.map((entry, i) => {
             const slot = i + 1;
             return (
-              <ArsenalCard
+              <div
                 key={entry.ball.ball_id}
-                entry={entry}
-                slot={slot}
-                degModel={degModel}
-                v2Data={v2Results[entry.ball.ball_id] ?? null}
-                onClickCompare={() => setCompareEntry(entry)}
-              />
+                draggable
+                onDragStart={(e) => handleDragStart(e, i)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, i)}
+                onDragEnd={handleDragEnd}
+                style={{
+                  opacity: draggedIndex === i ? 0.5 : 1,
+                  cursor: draggedIndex === i ? "grabbing" : "grab",
+                  transition: "opacity 0.2s"
+                }}
+              >
+                <ArsenalCard
+                  entry={entry}
+                  slot={slot}
+                  degModel={degModel}
+                  v2Data={v2Results[entry.ball.ball_id] ?? null}
+                  onClickCompare={() => setCompareEntry(entry)}
+                  onRemove={() => removeFromBag(entry.ball.ball_id)}
+                />
+              </div>
             );
           })
         )}

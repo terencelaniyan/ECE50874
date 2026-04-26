@@ -416,7 +416,7 @@ def gaps(req: GapRequest, db=Depends(get_db)):
             status_code=400,
             detail={"message": e.message, **e.detail},
         )
-    return GapResponse(zones=zones)
+    return GapResponse.model_validate({"zones": zones})
 
 
 # ── Recommendations (v2 — Two-Tower + Enhanced KNN) ─────────────────────
@@ -511,29 +511,29 @@ def degradation_compare(req: DegradationCompareRequest, db=Depends(get_db)):
 
     result = svc_get_degradation_comparison(ball_row, req.game_count)
 
-    return DegradationCompareResponse(
-        original={
+    return DegradationCompareResponse.model_validate({
+        "original": {
             "rg": result["original"]["rg"],
             "diff": result["original"]["diff"],
             "int_diff": result["original"]["int_diff"],
             "factor": 1.0,
         },
-        v1_linear={
+        "v1_linear": {
             "rg": result["v1_linear"]["rg"],
             "diff": result["v1_linear"]["diff"],
             "int_diff": result["v1_linear"]["int_diff"],
             "factor": result["v1_linear"]["factor"],
         },
-        v2_logarithmic={
+        "v2_logarithmic": {
             "rg": result["v2_logarithmic"]["rg"],
             "diff": result["v2_logarithmic"]["diff"],
             "int_diff": result["v2_logarithmic"]["int_diff"],
             "factor": result["v2_logarithmic"]["factor"],
         },
-        game_count=result["game_count"],
-        coverstock_type=result["v2_logarithmic"].get("coverstock_type"),
-        v2_lambda=result["v2_logarithmic"]["lambda"],
-    )
+        "game_count": result["game_count"],
+        "coverstock_type": result["v2_logarithmic"].get("coverstock_type"),
+        "v2_lambda": result["v2_logarithmic"]["lambda"],
+    })
 
 
 # ── Oil Patterns ─────────────────────────────────────────────────────────

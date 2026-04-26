@@ -144,7 +144,11 @@ Creates persisted arsenals and membership:
 
 - `arsenals` — id (UUID), name, timestamps
 - `arsenal_balls` — arsenal_id, ball_id, game_count (for degradation-aware flows)
-- `arsenal_custom_balls` — custom ball rows tied to an arsenal (see script for schema)
+- `arsenal_custom_balls` — custom ball rows tied to an arsenal for user-defined specs (name/brand optional; rg/diff/int_diff required; includes `game_count`)
+
+Arsenal API requests now support mixed lists by discriminating each entry with `custom`:
+- Catalog item: `{ "custom": false, "ball_id": "B001", "game_count": 10 }`
+- Custom item: `{ "custom": true, "name": "Practice Ball", "rg": 2.52, "diff": 0.03, "int_diff": 0.01, "game_count": 8 }`
 
 ```bash
 python services/backend/scripts/migrate_arsenals.py

@@ -771,7 +771,8 @@ def get_recommendations_v2(
             seen = set()
             merged = []
             for item in items + knn_results:
-                bid = item["ball"]["ball_id"] if isinstance(item["ball"], dict) else item["ball"].ball_id
+                ball_obj = item["ball"]
+                bid = ball_obj["ball_id"] if isinstance(ball_obj, dict) else getattr(ball_obj, "ball_id")
                 if bid not in seen:
                     seen.add(bid)
                     merged.append(item)
@@ -833,13 +834,15 @@ def train_two_tower(
         if not catalog:
             return {"error": "No balls in catalog to train on"}
         result = train_model(
-            catalog_rows=catalog,
+            catalog=catalog,
             n_arsenals=n_arsenals,
             epochs=epochs,
             batch_size=batch_size,
             lr=lr,
             neg_ratio=neg_ratio,
         )
+        if result is None:
+            return {"error": "PyTorch not available for training"}
         return result
     except Exception as e:
         return {"error": str(e)}

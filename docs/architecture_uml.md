@@ -115,24 +115,23 @@ classDiagram
     }
 
     %% Relationships
-    App --> BagContext : provides
+    App --> BagContext : wraps_with_provider
     App --> Layout : renders
     Layout *-- ViewComponents : contains
     ViewComponents --> FrontendApiClient : calls
     ViewComponents --> FrontendPhysics : simulates
 
-    FrontendApiClient --> FastAPIApp : httpApiProxy
+    FrontendApiClient --> FastAPIApp : calls_http_api
     FastAPIApp --> ServiceLayer : delegates
-    FastAPIApp --> DbConnectionLayer : usesGetDb
-    ServiceLayer --> DbConnectionLayer : usesCursor
-    DbConnectionLayer --> PostgreSQL : queries
+    FastAPIApp --> DbConnectionLayer : injects(get_db)
+    ServiceLayer --> DbConnectionLayer : uses_cursor
+    DbConnectionLayer --> PostgreSQL : reads_writes
 
-    ServiceLayer --> RecommendationEngine : uses
-    ServiceLayer --> GapEngine : uses
-    ServiceLayer --> DegradationEngine : uses
-    ServiceLayer --> SlotAssignmentEngine : uses
-    ServiceLayer --> TwoTowerModel : v2 path
-    RecommendationEngine --> TwoTowerModel : hybrid/v2 integration
+    ServiceLayer --> RecommendationEngine : calls
+    ServiceLayer --> GapEngine : calls
+    ServiceLayer --> DegradationEngine : calls
+    ServiceLayer --> SlotAssignmentEngine : calls
+    ServiceLayer --> TwoTowerModel : orchestrates(v2/hybrid)
 ```
 
 ### Component Breakdown

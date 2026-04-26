@@ -247,14 +247,20 @@ export function SimulationView3D({ initialParams }: Props) {
     camera.lookAt(0, 0, LANE_LENGTH_M * 0.6);
     cameraRef.current = camera;
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    // Shadows disabled for render performance
-    renderer.shadowMap.enabled = false;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
-    rendererRef.current = renderer;
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      // Shadows disabled for render performance
+      renderer.shadowMap.enabled = false;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
+      rendererRef.current = renderer;
+    } catch (err) {
+      console.warn("WebGL not supported, skipping 3D rendering", err);
+      return;
+    }
 
     // ── Lighting (warm bowling alley atmosphere) ──
     scene.add(new THREE.AmbientLight(0x554040, 0.6));
@@ -546,7 +552,9 @@ export function SimulationView3D({ initialParams }: Props) {
     // Render loop
     const animate = () => {
       animFrameRef.current = requestAnimationFrame(animate);
-      renderer.render(scene, camera);
+      if (rendererRef.current) {
+        rendererRef.current.render(scene, camera);
+      }
     };
     animate();
 
@@ -563,7 +571,9 @@ export function SimulationView3D({ initialParams }: Props) {
     return () => {
       window.removeEventListener("resize", onResize);
       cancelAnimationFrame(animFrameRef.current);
-      renderer.dispose();
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+      }
     };
   }, [oilPatternIdx]);
 
@@ -656,6 +666,33 @@ export function SimulationView3D({ initialParams }: Props) {
       const camera = cameraRef.current;
       const pins = pinMeshesRef.current;
       if (!ball || !trail) {
+        setPhaseLabel(sim.pinsDown === 10 ? "STRIKE! \u2713" : `${sim.pinsDown} PINS`);
+        setSummary(sim);
+        const covType = selectedEntry?.type === "catalog"
+          ? (selectedEntry.ball as Ball).coverstock_type ?? undefined
+          : undefined;
+        const simAdvice = analyzeSimulation(
+          {
+            entryAngle: sim.entryAngle,
+            entryClass: sim.outcomeClass,
+            breakPt: `Board ${sim.breakpointBoard}`,
+            skidFt: sim.skidLengthFt,
+            hookFt: sim.hookLengthFt,
+            rollFt: sim.rollLengthFt,
+            outcome: sim.outcome,
+            outcomeClass: sim.outcomeClass,
+            hookPotential: 0,
+            patternLength: OIL_PATTERNS[oilPatternIdx].lengthFt,
+          },
+          {
+            rg: selectedEntry?.ball?.rg ?? 2.5,
+            diff: selectedEntry?.ball?.diff ?? 0.04,
+            coverstockType: covType,
+            gameCount: selectedEntry?.game_count,
+          },
+        );
+        setAdvice(simAdvice);
+        fetchRecommendations(simAdvice);
         setSimRunning(false);
         return;
       }

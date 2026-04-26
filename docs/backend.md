@@ -18,8 +18,8 @@ The app fails to start if `DATABASE_URL` is missing or empty. `ADMIN_KEY` is for
 ## Database
 
 - **Driver:** `psycopg` (binary). Connections use a context manager in `db.get_conn()`.
-- **Tables:** `balls` — see [Data collection](data-collection.md). Populated by `services/backend/scripts/seed_from_csv.py`. `arsenals` and `arsenal_balls` — user-owned ball sets with per-ball game count; create with `python services/backend/scripts/migrate_arsenals.py` (run after balls exist).
-- **Schema setup order:** (1) Run `seed_from_csv.py` to create and fill `balls`. (2) Run `migrate_arsenals.py` to create `arsenals` and `arsenal_balls`. Running them in the wrong order causes the `arsenal_balls` foreign key to `balls(ball_id)` to fail.
+- **Tables:** `balls` — see [Data collection](data-collection.md). Populated by `services/backend/scripts/seed_from_csv.py`. `arsenals`, `arsenal_balls`, and `arsenal_custom_balls` — user-owned sets with catalog balls and optional custom-ball specs; create with `python services/backend/scripts/migrate_arsenals.py` (run after balls exist).
+- **Schema setup order:** (1) Run `seed_from_csv.py` to create and fill `balls`. (2) Run `migrate_arsenals.py` to create `arsenals`, `arsenal_balls`, and `arsenal_custom_balls`. Running them in the wrong order causes the `arsenal_balls` foreign key to `balls(ball_id)` to fail.
 
 ## API endpoints
 
@@ -67,12 +67,16 @@ Fetch a single ball by ID.
 
 ### Arsenals CRUD (FR5 / spec)
 
-Persist arsenals (named ball sets with game count per ball) for degradation-aware recommendations and gap analysis.
+Persist arsenals (named ball sets with game count per ball) for degradation-aware recommendations and gap analysis. Each arsenal can contain:
+- **Catalog balls**: references by `ball_id`
+- **Custom balls**: user-entered specs (`rg`, `diff`, `int_diff`, optional metadata)
 
 **POST /arsenals** (201)
 
-- Body: `{ "name": "My arsenal", "balls": [ { "ball_id": "B001", "game_count": 50 }, ... ] }`
-- Creates an arsenal and its balls; each `ball_id` must exist in `balls`. Returns `{ "id": "<uuid>", "name": "...", "balls": [...] }`.
+- Body uses discriminated entries in `balls[]`:
+  - Catalog entry: `{ "custom": false, "ball_id": "B001", "game_count": 50 }`
+  - Custom entry: `{ "custom": true, "name": "Benchmark Custom", "brand": "Custom", "rg": 2.50, "diff": 0.04, "int_diff": 0.01, "game_count": 12 }`
+- Creates an arsenal and returns `{ "id", "name", "balls", "custom_balls" }`.
 
 **GET /arsenals**
 
@@ -80,11 +84,11 @@ Persist arsenals (named ball sets with game count per ball) for degradation-awar
 
 **GET /arsenals/{arsenal_id}**
 
-- Returns one arsenal with full `balls` list (`ball_id`, `game_count`). 404 if not found.
+- Returns one arsenal with `balls` (catalog entries) and `custom_balls` (user-defined entries). 404 if not found.
 
 **PATCH /arsenals/{arsenal_id}**
 
-- Body: `name`, `balls` (replaces existing). Validates `ball_id`s. Returns updated arsenal.
+- Body: `name`, `balls` (replaces existing; accepts both catalog + custom entries). Validates catalog `ball_id`s and custom-spec ranges. Returns updated arsenal.
 
 **DELETE /arsenals/{arsenal_id}** (204)
 
@@ -275,7 +279,10 @@ Defined in `services/backend/app/api_models.py`:
 
 - **Ball** — ball_id, name, brand, rg, diff, int_diff, symmetry, coverstock_type, surface_grit, surface_finish, release_date, status.
 - **BallsResponse** — items (list of Ball), count.
-- **ArsenalBallInput** — ball_id, game_count (default 0). **CreateArsenalRequest** — name, balls (list). **UpdateArsenalRequest** — name, balls. **ArsenalResponse** — id, name, balls (ball_id, game_count). **ArsenalSummary** — id, name, ball_count.
+- **ArsenalCatalogBallInput** / **ArsenalCustomBallInput** — discriminated by `custom`.
+- **CreateArsenalRequest** / **UpdateArsenalRequest** — `balls` accepts both catalog and custom entries.
+- **ArsenalResponse** — `id`, `name`, `balls`, `custom_balls`.
+- **ArsenalSummary** — id, name, ball_count.
 - **RecommendRequest** — arsenal_ball_ids, arsenal_id, game_counts, k; w_rg, w_diff, w_int (similarity weights); brand, coverstock_type, status (candidate filters); diversity_min_distance.
 - **RecommendationItem** — ball, score. **RecommendResponse** — items.
 - **RecommendV2Request** — extends v1-style fields with w_cover, method, metric, normalize, degradation_model (and same arsenal/k/filter/diversity fields).

@@ -3,7 +3,7 @@ import { Delaunay } from "d3-delaunay";
 import { useBag } from "../context/BagContext";
 import { listBalls } from "../api/balls";
 import { getGaps } from "../api/gaps";
-import { getSlotColor } from "../constants/slots";
+import { getSlotColor, SLOT_LABELS } from "../constants/slots";
 import type { Ball, CustomBall } from "../types/ball";
 import type { GapItem, GapZone } from "../types/ball";
 
@@ -24,13 +24,39 @@ const FIXED_RG_DOMAIN: [number, number] = [2.44, 2.78];
 const FIXED_DIFF_DOMAIN: [number, number] = [0.010, 0.065];
 
 /** Static slot zones in (rg, diff) for background shading (HTML prototype). */
-const SLOT_ZONES: { x: number; x2: number; y: number; y2: number; color: string }[] = [
-  { x: 2.44, x2: 2.52, y: 0.044, y2: 0.065, color: "rgba(255,92,56,0.05)" },
-  { x: 2.52, x2: 2.58, y: 0.036, y2: 0.065, color: "rgba(255,156,56,0.04)" },
-  { x: 2.52, x2: 2.62, y: 0.02, y2: 0.036, color: "rgba(232,255,60,0.03)" },
-  { x: 2.58, x2: 2.7, y: 0.015, y2: 0.042, color: "rgba(56,201,255,0.04)" },
-  { x: 2.64, x2: 2.78, y: 0.020, y2: 0.03, color: "rgba(184,56,255,0.04)" },
+const SLOT_ZONES: { x: number; x2: number; y: number; y2: number; color: string; label: string }[] = [
+  { x: 2.44, x2: 2.52, y: 0.044, y2: 0.065, color: "rgba(255,92,56,0.08)",   label: "Heavy Oil" },
+  { x: 2.52, x2: 2.58, y: 0.036, y2: 0.065, color: "rgba(255,156,56,0.07)",  label: "Med-Heavy" },
+  { x: 2.52, x2: 2.62, y: 0.02,  y2: 0.036, color: "rgba(232,255,60,0.06)",  label: "Benchmark" },
+  { x: 2.58, x2: 2.7,  y: 0.015, y2: 0.042, color: "rgba(56,201,255,0.07)",  label: "Med-Light" },
+  { x: 2.64, x2: 2.78, y: 0.020, y2: 0.03,  color: "rgba(184,56,255,0.07)",  label: "Spare" },
 ];
+
+/**
+ * Compute deterministic jitter offsets for balls that share identical (rg, diff)
+ * coordinates so they don't render as a single invisible stack.
+ */
+function computeJitter(balls: { rg: number; diff: number }[], xScale: (v: number) => number, yScale: (v: number) => number): Array<{ dx: number; dy: number }> {
+  const key = (b: { rg: number; diff: number }) => `${b.rg.toFixed(4)},${b.diff.toFixed(4)}`;
+  const counts: Record<string, number> = {};
+  const offsets: Array<{ dx: number; dy: number }> = [];
+  for (const b of balls) {
+    const k = key(b);
+    const idx = counts[k] ?? 0;
+    counts[k] = idx + 1;
+    if (idx === 0) {
+      offsets.push({ dx: 0, dy: 0 });
+    } else {
+      // spiral offsets: 16px radius, evenly distributed
+      const angle = (idx * 2.4) % (2 * Math.PI); // ~golden angle
+      const r = 16 + (idx - 1) * 6;
+      offsets.push({ dx: Math.cos(angle) * r, dy: Math.sin(angle) * r });
+    }
+  }
+  // We need x/y scale to ensure offsets don't break axis direction — jitter is in pixel space
+  void xScale; void yScale;
+  return offsets;
+}
 
 function scaleLinear(
   domain: [number, number],
@@ -125,7 +151,8 @@ export function GridView({ variant = "catalog" }: GridViewProps) {
   }, [variant]);
 
   useEffect(() => {
-    if (variant !== "arsenal" && !savedArsenalId && arsenalBallIds.length === 0) {
+    const catalogIds = arsenalBallIds.filter((id) => !id.startsWith("custom-"));
+    if (variant !== "arsenal" && !savedArsenalId && catalogIds.length === 0) {
       setGapZones([]);
       return;
     }
@@ -133,12 +160,20 @@ export function GridView({ variant = "catalog" }: GridViewProps) {
       setGapZones([]);
       return;
     }
+    // If only custom balls exist and no saved arsenal, skip gap fetch
+    if (!savedArsenalId && catalogIds.length === 0) {
+      setGapZones([]);
+      return;
+    }
     let cancelled = false;
+    const filteredGameCounts = Object.fromEntries(
+      Object.entries(gameCounts).filter(([id]) => !id.startsWith("custom-"))
+    );
     const body = savedArsenalId
       ? { arsenal_id: savedArsenalId, k: 10 }
       : {
-          arsenal_ball_ids: arsenalBallIds,
-          game_counts: Object.keys(gameCounts).length ? gameCounts : undefined,
+          arsenal_ball_ids: catalogIds,
+          game_counts: Object.keys(filteredGameCounts).length ? filteredGameCounts : undefined,
           k: 10,
         };
     getGaps(body)
@@ -227,8 +262,31 @@ export function GridView({ variant = "catalog" }: GridViewProps) {
   }
   if (isArsenal && balls.length === 0) {
     return (
-      <div className="grid-view grid-view-arsenal" ref={containerRef}>
-        <p className="grid-view-empty">Add balls to your bag to see the coverage map.</p>
+      <div className="grid-view grid-view-arsenal grid-view-onboarding" ref={containerRef}>
+        <div className="onboarding-steps">
+          <div className="onboarding-title">Get started in 3 steps</div>
+          <div className="onboarding-step">
+            <span className="onboarding-num">1</span>
+            <div>
+              <div className="onboarding-step-label">Browse the Catalog</div>
+              <div className="onboarding-step-desc">Go to the <strong>Catalog</strong> tab to search 1,360 balls by brand, coverstock, or spec.</div>
+            </div>
+          </div>
+          <div className="onboarding-step">
+            <span className="onboarding-num">2</span>
+            <div>
+              <div className="onboarding-step-label">Add balls to your bag</div>
+              <div className="onboarding-step-desc">Click <strong>Add to bag</strong> on any ball. Your bag holds up to 6 slots (a full arsenal).</div>
+            </div>
+          </div>
+          <div className="onboarding-step">
+            <span className="onboarding-num">3</span>
+            <div>
+              <div className="onboarding-step-label">See your coverage map</div>
+              <div className="onboarding-step-desc">Return here — this chart plots your balls in <strong>RG × Differential</strong> space and highlights any coverage gaps.</div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -325,63 +383,111 @@ export function GridView({ variant = "catalog" }: GridViewProps) {
             )}
 
             {/* Voronoi cells */}
-            {balls.map((ball, i) => {
-              const slot = isArsenal ? Math.min(i + 1, 5) : 0;
-              const slotColor = isArsenal ? getSlotColor(slot) + "18" : "none";
-              const strokeColor = isArsenal ? getSlotColor(slot) + "55" : "#ccc";
-              const inBag = arsenalBallIds.includes(ball.ball_id);
-              const isGapFiller = gapItems.some((g) => g.ball.ball_id === ball.ball_id);
-              const pointRadius = inBag || isArsenal ? 10 : isGapFiller ? 5 : 4;
-              const pointFill =
-                isArsenal ? getSlotColor(slot) + "cc" : inBag ? "#0a7ea4" : isGapFiller ? "#e09500" : "#333";
+            {(() => {
+              const jitter = computeJitter(balls, xScale, yScale);
+              return balls.map((ball, i) => {
+                const slot = isArsenal ? Math.min(i + 1, 5) : 0;
+                const slotColor = isArsenal ? getSlotColor(slot) + "20" : "none";
+                const strokeColor = isArsenal ? getSlotColor(slot) + "60" : "#ccc";
+                const inBag = arsenalBallIds.includes(ball.ball_id);
+                const isGapFiller = gapItems.some((g) => g.ball.ball_id === ball.ball_id);
+                const pointRadius = inBag || isArsenal ? 14 : isGapFiller ? 6 : 4;
+                const pointFill =
+                  isArsenal ? getSlotColor(slot) : inBag ? "#0a7ea4" : isGapFiller ? "#e09500" : "#444";
+                const { dx, dy } = jitter[i];
+                const cx = xScale(ball.rg) + dx;
+                const cy = yScale(ball.diff) + dy;
+                const slotLabel = isArsenal ? SLOT_LABELS[slot] ?? `Slot ${slot}` : "";
 
-              return (
-                <g key={ball.ball_id}>
-                  <path
-                    d={voronoi.renderCell(i)}
-                    fill={isArsenal ? slotColor : inBag ? "none" : "rgba(255, 180, 0, 0.12)"}
-                    stroke={isArsenal ? strokeColor : inBag ? "#ccc" : "#e09500"}
-                    strokeWidth={isArsenal ? 1.5 : inBag ? 0.5 : 0.8}
-                    className="grid-view-cell"
-                  />
-                  <g
-                    tabIndex={isArsenal ? undefined : 0}
-                    role={isArsenal ? "img" : "button"}
-                    aria-label={
-                      isArsenal
-                        ? `${ball.name ?? "Custom"}, Slot ${slot}. RG ${ball.rg}, Diff ${ball.diff}.`
-                        : `${ball.name ?? "Custom"}, ${ball.brand ?? ""}. RG ${ball.rg}, differential ${ball.diff}. ${inBag ? "In bag" : "Not in bag"}. Activate to ${inBag ? "remove from" : "add to"} bag.`
-                    }
-                    onClick={() => handlePointClick(ball)}
-                    onKeyDown={isArsenal ? undefined : (ev) => handlePointKeyDown(ev, ball)}
-                    onMouseEnter={() => setHoveredBall(ball)}
-                    onMouseLeave={() => setHoveredBall(null)}
-                    style={{ cursor: isArsenal ? "default" : "pointer" }}
-                  >
-                    <circle
-                      cx={xScale(ball.rg)}
-                      cy={yScale(ball.diff)}
-                      r={pointRadius}
-                      fill={pointFill}
-                      stroke={isArsenal ? getSlotColor(slot) : hoveredBall?.ball_id === ball.ball_id ? "#f90" : "none"}
-                      strokeWidth={2}
+                return (
+                  <g key={ball.ball_id}>
+                    <path
+                      d={voronoi.renderCell(i)}
+                      fill={isArsenal ? slotColor : inBag ? "none" : "rgba(255, 180, 0, 0.12)"}
+                      stroke={isArsenal ? strokeColor : inBag ? "#ccc" : "#e09500"}
+                      strokeWidth={isArsenal ? 1.5 : inBag ? 0.5 : 0.8}
+                      className="grid-view-cell"
                     />
-                    {isArsenal && (
-                      <text
-                        x={xScale(ball.rg)}
-                        y={yScale(ball.diff) + 3}
-                        textAnchor="middle"
-                        fill="#0a0a0f"
-                        fontSize={8}
-                        fontWeight="bold"
-                      >
-                        {slot}
-                      </text>
-                    )}
+                    <g
+                      tabIndex={isArsenal ? undefined : 0}
+                      role={isArsenal ? "img" : "button"}
+                      aria-label={
+                        isArsenal
+                          ? `${ball.name ?? "Custom"}, Slot ${slot} – ${slotLabel}. RG ${ball.rg}, Diff ${ball.diff}.`
+                          : `${ball.name ?? "Custom"}, ${ball.brand ?? ""}. RG ${ball.rg}, differential ${ball.diff}. ${inBag ? "In bag" : "Not in bag"}. Activate to ${inBag ? "remove from" : "add to"} bag.`
+                      }
+                      onClick={() => handlePointClick(ball)}
+                      onKeyDown={isArsenal ? undefined : (ev) => handlePointKeyDown(ev, ball)}
+                      onMouseEnter={() => setHoveredBall(ball)}
+                      onMouseLeave={() => setHoveredBall(null)}
+                      style={{ cursor: isArsenal ? "default" : "pointer" }}
+                    >
+                      {/* Outer glow ring */}
+                      {isArsenal && (
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={pointRadius + 5}
+                          fill="none"
+                          stroke={getSlotColor(slot)}
+                          strokeWidth={1}
+                          opacity={0.3}
+                        />
+                      )}
+                      {/* Main dot */}
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r={pointRadius}
+                        fill={pointFill}
+                        stroke={isArsenal ? "#0a0a0f" : hoveredBall?.ball_id === ball.ball_id ? "#f90" : "none"}
+                        strokeWidth={isArsenal ? 2 : 1.5}
+                      />
+                      {/* Slot number inside dot */}
+                      {isArsenal && (
+                        <text
+                          x={cx}
+                          y={cy + 4}
+                          textAnchor="middle"
+                          fill="#0a0a0f"
+                          fontSize={10}
+                          fontWeight="900"
+                          style={{ pointerEvents: "none" }}
+                        >
+                          {slot}
+                        </text>
+                      )}
+                      {/* Label pill outside dot */}
+                      {isArsenal && (
+                        <g style={{ pointerEvents: "none" }}>
+                          <rect
+                            x={cx - 28}
+                            y={cy - pointRadius - 20}
+                            width={56}
+                            height={16}
+                            rx={4}
+                            fill="rgba(10,10,15,0.85)"
+                            stroke={getSlotColor(slot)}
+                            strokeWidth={1}
+                          />
+                          <text
+                            x={cx}
+                            y={cy - pointRadius - 8}
+                            textAnchor="middle"
+                            fill={getSlotColor(slot)}
+                            fontSize={8}
+                            fontWeight="700"
+                            letterSpacing={0.5}
+                          >
+                            {slotLabel.toUpperCase()}
+                          </text>
+                        </g>
+                      )}
+                    </g>
                   </g>
-                </g>
-              );
-            })}
+                );
+              });
+            })()}
 
             {/* Axes */}
             <g className="grid-view-axes" aria-hidden="true">

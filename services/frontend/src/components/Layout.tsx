@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { listBalls } from "../api/balls";
+import { getGaps } from "../api/gaps";
 import { BallCatalog } from "./BallCatalog";
 import { RecommendationsPanel } from "./RecommendationsPanel";
 import { GapsPanel } from "./GapsPanel";
@@ -11,6 +12,71 @@ import { SimulationView } from "./SimulationView";
 import { SlotAssignmentPanel } from "./SlotAssignmentPanel";
 import { AnalysisView } from "./AnalysisView";
 import { SimulationView3D } from "./SimulationView3D";
+import { useBag } from "../context/BagContext";
+import { SLOT_LABELS, SLOT_COLORS } from "../constants/slots";
+import type { GapZone } from "../types/ball";
+
+/** Fetches gap zones and renders a pill row showing which slots are uncovered. */
+function GapCalloutBanner() {
+  const { arsenalBallIds, gameCounts, savedArsenalId, bag } = useBag();
+  const [zones, setZones] = useState<GapZone[]>([]);
+
+  useEffect(() => {
+    // Filter custom balls: backend has no record of them
+    const catalogIds = arsenalBallIds.filter((id) => !id.startsWith("custom-"));
+    if (bag.length === 0 && !savedArsenalId) { setZones([]); return; }
+    if (catalogIds.length === 0 && !savedArsenalId) { setZones([]); return; }
+    let cancelled = false;
+    const filteredGameCounts = Object.fromEntries(
+      Object.entries(gameCounts).filter(([id]) => !id.startsWith("custom-"))
+    );
+    const body = savedArsenalId
+      ? { arsenal_id: savedArsenalId, k: 5 }
+      : { arsenal_ball_ids: catalogIds, game_counts: Object.keys(filteredGameCounts).length ? filteredGameCounts : undefined, k: 5 };
+    getGaps(body)
+      .then((res) => { if (!cancelled) setZones(res.zones ?? []); })
+      .catch(() => { if (!cancelled) setZones([]); });
+    return () => { cancelled = true; };
+  }, [arsenalBallIds, gameCounts, savedArsenalId, bag.length]);
+
+  if (bag.length === 0 && !savedArsenalId) return null;
+
+  // Determine which slot names appear in the gap zones
+  const gapLabels = zones.map((z) => z.label);
+
+  // Check which of the 5 canonical slots are uncovered
+  const canonicalSlots = Object.entries(SLOT_LABELS) as [string, string][];
+  const uncoveredSlots = canonicalSlots.filter(([, label]) =>
+    gapLabels.some((gl) => gl.toLowerCase().includes(label.toLowerCase().split(" ")[0].toLowerCase()))
+  );
+
+  // If we have gap data and no uncovered slots, show full coverage
+  const hasFetched = zones.length > 0 || bag.length >= 5;
+  if (hasFetched && uncoveredSlots.length === 0 && bag.length > 0) {
+    return (
+      <div className="gap-callout-banner">
+        <span className="gap-callout-ok">✓ Full lane coverage</span>
+      </div>
+    );
+  }
+
+  if (uncoveredSlots.length === 0) return null;
+
+  return (
+    <div className="gap-callout-banner">
+      <span className="gap-callout-label">⚠ Missing coverage:</span>
+      {uncoveredSlots.map(([slotNum, label]) => (
+        <span
+          key={slotNum}
+          className="gap-callout-pill"
+          style={{ borderColor: SLOT_COLORS[Number(slotNum)], color: SLOT_COLORS[Number(slotNum)] }}
+        >
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 type Tab = "catalog" | "grid" | "simulation" | "sim3d" | "analysis" | "recommendations" | "gaps" | "database";
 
@@ -208,11 +274,12 @@ export function Layout() {
                     </svg>
                     <div className="panel-title">RG — Differential Coverage Map</div>
                   </div>
-                  <div className="panel-badge">VORONOI</div>
+                  <div className="panel-badge" title="Voronoi tessellation — divides the RG×Differential space into regions showing which slot each area of the chart belongs to.">COVERAGE MAP</div>
                 </div>
                 <div className="chart-body">
                   <GridView variant="arsenal" />
                 </div>
+                <GapCalloutBanner />
                 <div className="chart-legend">
                   <div className="legend-item">
                     <div className="legend-dot" style={{ background: "var(--accent2)" }} />

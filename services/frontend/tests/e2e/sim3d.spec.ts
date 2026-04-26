@@ -8,6 +8,8 @@ test.describe("TC-08: 3D Lane Simulation", () => {
   test("3D sim tab loads, runs simulation, and shows results", async ({
     page,
   }) => {
+    page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+    page.on('pageerror', err => console.log('PAGE ERROR:', err.message));
     await waitForAppLoad(page);
 
     // Add a ball from catalog

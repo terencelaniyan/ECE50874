@@ -270,6 +270,7 @@ def assign_slots(
             best_centroids = centroids
 
     # Map clusters to slot numbers
+    assert best_centroids is not None and best_labels is not None
     slot_numbers = _match_clusters_to_slots(best_centroids, mins, ranges)
 
     # Build assignments

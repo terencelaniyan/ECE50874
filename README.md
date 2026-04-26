@@ -1,5 +1,4 @@
-Bowling Bowl Grid – ECE 50874 Project
-=====================================
+# Bowling Bowl Grid – ECE 50874 Project
 
 ### What this is
 
@@ -7,7 +6,7 @@ This repository contains the code for the **Bowling Bowl Grid** project for **EC
 
 The system is organized into:
 
-- `services/backend/`: FastAPI backend that exposes HTTP APIs, talks to PostgreSQL, and implements the gap/degradation and recommendation logic.
+- `services/backend/`: FastAPI backend that exposes HTTP APIs, talks to PostgreSQL, and implements arsenal management (catalog + custom balls), gap/degradation, and recommendation logic.
 - `services/frontend/`: React + TypeScript + Vite SPA for interacting with the backend (see that directory for details).
 - `data/`: Data assets and experiment outputs (often git-ignored in practice).
 - `docs/`: Project documentation (API, frontend, data pipeline, recommendations, deployment, testing, simulation validation, course deliverables).
@@ -17,8 +16,7 @@ You can run the backend against a local PostgreSQL database (via Docker) and use
 
 ---
 
-Project structure
------------------
+## Project structure
 
 High-level layout:
 
@@ -31,7 +29,7 @@ High-level layout:
     - `degradation.py` – Degradation modeling logic for bowling balls.
     - `gap_engine.py` – Gap computation over the catalog/arsenal.
     - `recommendation_engine.py` – Recommendation logic on top of ball catalog and arsenal.
-    - `services.py` – Service layer used by routes (arsenals, gaps, recommendations v1/v2, slots, degradation, oil patterns, admin).
+    - `services.py` – Service layer used by routes (arsenals with custom-ball support, gaps, recommendations v1/v2, slots, degradation, oil patterns, admin).
     - `slot_assignment.py` – 6-ball slot clustering / silhouette.
     - `two_tower.py` – Two-tower model (**PyTorch**).
     - `synthetic_data.py` – Synthetic arsenal data for training.
@@ -61,8 +59,7 @@ For deeper technical details, start with the documents under `docs/`. With the b
 
 ---
 
-Prerequisites
--------------
+## Prerequisites
 
 To run the backend locally:
 
@@ -76,8 +73,7 @@ To work on the React + Vite frontend under `services/frontend/`, you will typica
 
 ---
 
-Backend – local development
----------------------------
+## Backend – local development
 
 Backend code lives under `services/backend/`.
 
@@ -186,10 +182,9 @@ Then open:
 
 ---
 
-Frontend – local development
----------------------------
+## Frontend – local development
 
-The frontend is a React + TypeScript SPA built with Vite. Tabs include **Grid** (Voronoi + recs/slots), **Catalog**, **Simulation** (2D), **3D Sim** (Rapier/Three.js), **Analysis** (video / pose / kinematics), and **Ball Database**. Recommendations and gaps also have dedicated panel components in code, but the main nav is the list above; ranked recs and slot assignment live on **Grid** via the Recs / Slots toggle. It talks to the backend for balls, arsenals, recommendations (v1/v2), slots, degradation compare, gaps, and oil patterns. See [docs/frontend.md](docs/frontend.md).
+The frontend is a React + TypeScript SPA built with Vite. Tabs include **Grid** (Voronoi + recs/slots), **Catalog**, **Simulation** (2D), **3D Sim** (Rapier/Three.js), **Analysis** (video / pose / kinematics), and **Ball Database**. Recommendations and gaps also have dedicated panel components in code, but the main nav is the list above; ranked recs and slot assignment live on **Grid** via the Recs / Slots toggle. It talks to the backend for balls, arsenals (including optional custom balls), recommendations (v1/v2), slots, degradation compare, gaps, and oil patterns. See [docs/frontend.md](docs/frontend.md).
 
 **Prerequisites:** Node.js (LTS) and npm.
 
@@ -231,8 +226,7 @@ See [docs/E2E_TEST_PLAN.md](docs/E2E_TEST_PLAN.md).
 
 ---
 
-Data and experiments
---------------------
+## Data and experiments
 
 The `data/` directory is intended for:
 
@@ -257,8 +251,7 @@ Large or sensitive files should **not** be committed to Git. Use `.gitignore` to
 
 ---
 
-Testing
--------
+## Testing
 
 Backend tests live under `services/backend/tests/`.
 
@@ -281,8 +274,7 @@ Frontend tests (Vitest): from `services/frontend/`, run `npm run test:run` or `n
 
 ---
 
-Development workflow
---------------------
+## Development workflow
 
 1. **Clone the repo**
 
@@ -292,7 +284,6 @@ Development workflow
    ```
 
 2. **Configure env and start PostgreSQL**
-
    - Copy `.env.template` to `.env` at the repo root and set `POSTGRES_PASSWORD`, `DATABASE_URL`, and other values (see **Backend – §3** and **§4**).
    - Start services (or DB only):
 
@@ -301,7 +292,6 @@ Development workflow
    ```
 
 3. **Set up the backend**
-
    - Create and activate a virtual environment under `services/backend/`.
    - Install dependencies with `pip install -r requirements.txt`.
    - Ensure a `.env` file (repo root and/or `services/backend/`) provides `DATABASE_URL` and other settings for **host-run** uvicorn (see **§3**).
@@ -309,19 +299,16 @@ Development workflow
    - Run `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`.
 
 4. **Set up the frontend**
-
    - The project includes a React + TypeScript + Vite app under `services/frontend/`.
    - Install dependencies (`npm install`) and run the dev server (`npm run dev`).
 
 5. **Run tests**
-
    - Backend: `pytest` from `services/backend/`.
    - Frontend: `npm run test:run` or `npm test` (watch) from `services/frontend/`; E2E: `npm run test:e2e` when API + DB are up.
 
 ---
 
-Additional documentation
-------------------------
+## Additional documentation
 
 For deeper details, see:
 
@@ -337,4 +324,3 @@ For deeper details, see:
 - `docs/simulation/` – simulation validation and analysis notes.
 
 Keep this `README.md` and the `docs/` folder up to date as the project evolves.
-
