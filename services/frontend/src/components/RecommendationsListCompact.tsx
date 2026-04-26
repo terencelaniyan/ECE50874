@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useBag } from "../context/BagContext";
 import { getRecommendations } from "../api/recommendations";
 import { getRecommendationsV2 } from "../api/recommendations-v2";
@@ -54,7 +54,7 @@ export function RecommendationsListCompact() {
 
   // Filter out custom ball IDs (those starting with "custom-") before hitting the
   // recommendations API — the backend DB has no record of them and returns a 404.
-  const catalogBallIds = arsenalBallIds.filter((id) => !id.startsWith("custom-"));
+  const catalogBallIds = useMemo(() => arsenalBallIds.filter((id) => !id.startsWith("custom-")), [arsenalBallIds]);
   const hasOnlyCustomBalls = arsenalBallIds.length > 0 && catalogBallIds.length === 0;
 
   const fetchRecsAndGaps = useCallback(async () => {
