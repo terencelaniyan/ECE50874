@@ -4,11 +4,13 @@ This is the FastAPI backend for Bowling Bowl Grid.
 It provides APIs for balls, arsenals, recommendations, slots, gaps, degradation, and oil patterns.
 
 Why this file exists:
+
 - Give backend-only setup and run steps in one place.
 - Reduce context switching for backend contributors.
 - Point to deeper docs when details are needed.
 
 How to use this file:
+
 - Follow the quickstart to run backend + DB locally.
 - Use the command reference for common tasks.
 - Use linked docs for API and data details.
@@ -44,6 +46,7 @@ cp .env.template .env
 ```
 
 Set at least:
+
 - `POSTGRES_PASSWORD`
 - `DATABASE_URL` (match password above)
 - `APP_ENV=development` for local work
@@ -92,6 +95,7 @@ python services/backend/scripts/migrate_oil_patterns.py
 ```
 
 Why order matters:
+
 - `arsenal_balls` references `balls`, so `seed_from_csv.py` must run first.
 
 ## Common commands

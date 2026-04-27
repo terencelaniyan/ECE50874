@@ -379,7 +379,7 @@ def test_degradation_compare_custom_specs_returns_200(client):
 
 def test_degradation_compare_minimal_games_near_no_degradation(client):
     """game_count=1 should produce very little degradation (factor near 1.0).
-    Note: game_count=0 currently causes an internal error (log(0) edge case)."""
+    game_count=0 is handled as a no-degradation baseline by the service."""
     response = client.post(
         "/degradation/compare",
         json={"rg": 2.50, "diff": 0.040, "int_diff": 0.015, "game_count": 1},

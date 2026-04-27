@@ -9,6 +9,7 @@
   With `DATABASE_URL` unset, integration tests are skipped by marker.
 
 - **Integration tests** (API suites such as `test_gaps_api.py`, `test_recommendations_api.py`, `test_arsenals_api.py`; marker `integration`): Require a running Postgres and `DATABASE_URL` in the environment, plus a seeded `balls` table and arsenal migrations. If `DATABASE_URL` is not set, these tests are skipped. To run only unit tests and skip integration:
+
   ```bash
   cd services/backend && python -m pytest tests/ -m "not integration" -v
   ```

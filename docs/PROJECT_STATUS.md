@@ -1,6 +1,6 @@
 # Project Status — Bowling Ball Grid Generator
 
-**Last reconciled:** 2026-04-26  
+**Last reconciled:** 2026-04-27  
 **Authors:** Sajan Kumar, Fahd Laniyan  
 **Course:** ECE 595/50874 — Advanced Software Engineering, Purdue University Indianapolis
 
@@ -104,7 +104,7 @@ cd services/frontend && npm run test:run
 cd services/frontend && npm run test:e2e
 ```
 
-As of last reconciliation: **156** backend tests collected; **17** Playwright tests across **12** spec files; **151** frontend Vitest tests across **22** files.
+As of last reconciliation: **158** backend tests collected; **17** Playwright tests across **12** spec files; **155** frontend Vitest tests across **22** files.
 
 ### 4.2 What still lacks coverage
 

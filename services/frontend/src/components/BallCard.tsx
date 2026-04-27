@@ -22,7 +22,7 @@ export function BallCard({ ball, onAdd, onAddToBag, inBag }: BallCardProps) {
   };
 
   return (
-    <li className="ball-card">
+    <article className="ball-card">
       <div className="ball-card-header">
         <strong>{ball.name}</strong>
         <span className="ball-card-brand">{ball.brand}</span>
@@ -57,6 +57,6 @@ export function BallCard({ ball, onAdd, onAddToBag, inBag }: BallCardProps) {
           {inBag ? "In bag" : "Add to bag"}
         </button>
       </div>
-    </li>
+    </article>
   );
 }
