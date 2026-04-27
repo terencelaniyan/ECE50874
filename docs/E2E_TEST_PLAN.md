@@ -1,7 +1,7 @@
 # End-to-End Test Plan — Bowling Ball Grid
 
-**Date:** 2026-04-22  
-**Status:** IMPLEMENTED (partial) — Playwright tests live under `services/frontend/tests/e2e/`. This document describes what runs today, how to run it, and what is still manual or backlog.
+**Date:** 2026-04-26  
+**Status:** IMPLEMENTED (expanded) — Playwright tests live under `services/frontend/tests/e2e/`. This document describes what runs today, how to run it, and what is still manual or backlog.
 
 ---
 
@@ -12,7 +12,7 @@ Unit and integration tests remain essential, but they do not replace a real brow
 - Vitest + MSW tests **mock** HTTP; they do not prove the UI and FastAPI agree on payloads and timing.
 - Backend integration tests exercise routes but **not** tab flows, canvas/SVG, or Rapier/Three.js startup.
 
-The Playwright suite closes part of that gap. Flows such as **save/load arsenal**, **Voronoi hover**, and **full REST matrices** for `/recommendations/v2`, `/slots`, and `/degradation/compare` are still **backlog** (see §5).
+The Playwright suite now covers app load, core catalog/grid/recommendation flows, slots, degradation, simulation (2D/3D), oil-patterns API, Ball Database behavior, arsenal save/load, grid Voronoi hover, and analysis-tab smoke. Remaining backlog is depth-oriented (see §5).
 
 ---
 
@@ -69,10 +69,14 @@ Spec files use `test.describe("TC-…")` titles. **TC numbers here match the rep
 | [catalog-add-ball.spec.ts](../services/frontend/tests/e2e/catalog-add-ball.spec.ts) | TC-02 | Catalog: ball cards, search/filter, **Add to bag**, slot count on Grid View |
 | [recommendations.spec.ts](../services/frontend/tests/e2e/recommendations.spec.ts) | TC-03 | Recommendations panel (Recs toggle, `.rec-list-compact`, KNN badge, `% MATCH`, **Add to bag**); **V2 / Hybrid method toggle** via UI |
 | [slots.spec.ts](../services/frontend/tests/e2e/slots.spec.ts) | TC-05 | Slot assignment panel (6-ball system, silhouette, coverage) wired to the UI |
-| [simulation.spec.ts](../services/frontend/tests/e2e/simulation.spec.ts) | TC-06 | 2D lane simulation tab: launch flow, phase/result expectations per test |
+| [simulation.spec.ts](../services/frontend/tests/e2e/simulation.spec.ts) | TC-06 | 2D lane simulation tab: launch flow, phase/result expectations, launch-to-results latency bound |
 | [degradation.spec.ts](../services/frontend/tests/e2e/degradation.spec.ts) | TC-07 | Arsenal degradation **V1 vs V2** toggle in the UI |
-| [sim3d.spec.ts](../services/frontend/tests/e2e/sim3d.spec.ts) | TC-08 | 3D lane view (Rapier/Three) smoke: physics load, **LAUNCH BALL** |
+| [sim3d.spec.ts](../services/frontend/tests/e2e/sim3d.spec.ts) | TC-08 | 3D lane view (Rapier/Three) smoke: physics init latency, launch flow, launch-to-results latency bound |
 | [oil-patterns.spec.ts](../services/frontend/tests/e2e/oil-patterns.spec.ts) | TC-09 | **API:** `GET http://localhost:8000/oil-patterns` — items, zones, `mu` ordering |
+| [ball-database.spec.ts](../services/frontend/tests/e2e/ball-database.spec.ts) | TC-10 | Ball Database tab: table load, search, coverstock filter, pagination state |
+| [arsenal-save-load.spec.ts](../services/frontend/tests/e2e/arsenal-save-load.spec.ts) | TC-11 | Arsenal lifecycle in UI: save named arsenal, clear bag, load arsenal, restore cards |
+| [grid-voronoi.spec.ts](../services/frontend/tests/e2e/grid-voronoi.spec.ts) | TC-12 | Grid coverage map: Voronoi cell render, hover tooltip, gap/callout visibility |
+| [analysis.spec.ts](../services/frontend/tests/e2e/analysis.spec.ts) | TC-13 | Analysis tab smoke: uploader render latency and invalid-file validation |
 
 Shared helpers: [helpers.ts](../services/frontend/tests/e2e/helpers.ts) (`waitForAppLoad`, `addBallFromCatalog`, tab navigation).
 
@@ -80,14 +84,13 @@ Shared helpers: [helpers.ts](../services/frontend/tests/e2e/helpers.ts) (`waitFo
 
 ## 5. Not yet automated (backlog)
 
-These were in the original proposal but **do not** have dedicated Playwright files (or only partially overlap):
+These remain **partially covered** or not yet automated to full depth:
 
 | Area | Suggested focus |
 |------|-----------------|
-| **Voronoi / grid** | Dots track arsenal count, axis labels, tooltips, cell updates when adding balls |
-| **Save / load arsenal** | Save modal, named arsenal, clear bag, load modal repopulates |
-| **Ball Database tab** | Table columns, coverstock filter, pagination |
-| **REST matrices** | Scripted `POST /recommendations/v2` (normalize, metric, degradation_model, two_tower fallback), `POST /slots`, `POST /degradation/compare` — optional `request` fixtures or CI job hitting API only; request/response shapes: [docs/backend.md](backend.md) |
+| **REST matrix depth** | Broaden `POST /recommendations/v2` (normalize, metric, degradation_model, two_tower fallback), `POST /slots`, and `POST /degradation/compare` permutations beyond current happy-path contract checks; request/response shapes: [docs/backend.md](backend.md) |
+| **Grid interaction depth** | Add deterministic add/remove-on-grid assertions when interacting with point/cell controls and keyboard activation paths |
+| **Analysis processing flow** | Add fixture-based end-to-end processing completion checks (upload -> processing -> kinematics/form results) once a stable test video fixture is committed |
 
 ---
 
@@ -116,7 +119,7 @@ The backend **Docker image** copies `app/` only ([services/backend/Dockerfile](.
 
 The repository already defines a dedicated `e2e` job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) and runs Playwright automatically on pushes/PRs to `main` and `master`.
 
-As of 2026-04-25, the CI E2E path is:
+As of 2026-04-26, the CI E2E path is:
 
 1. Start Postgres service and export `DATABASE_URL`.
 2. Install backend dependencies.
@@ -124,7 +127,7 @@ As of 2026-04-25, the CI E2E path is:
 4. Start FastAPI on port `8000`.
 5. Install frontend dependencies.
 6. Install Chromium via Playwright.
-7. Run `npm run test:e2e`.
+7. Run `npm run test:e2e:smoke` for push/PR events, or `npm run test:e2e:full` for scheduled runs.
 8. Upload Playwright HTML report artifact (`playwright-report`), with `if: always()` for post-failure debugging.
 
 This means E2E is now CI-enforced; remaining E2E work is about expanding coverage depth (see §5), not pipeline wiring.

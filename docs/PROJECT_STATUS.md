@@ -1,6 +1,6 @@
 # Project Status — Bowling Ball Grid Generator
 
-**Last reconciled:** 2026-04-25  
+**Last reconciled:** 2026-04-26  
 **Authors:** Sajan Kumar, Fahd Laniyan  
 **Course:** ECE 595/50874 — Advanced Software Engineering, Purdue University Indianapolis
 
@@ -104,23 +104,23 @@ cd services/frontend && npm run test:run
 cd services/frontend && npm run test:e2e
 ```
 
-As of last reconciliation: **121** backend tests collected; **11** Playwright tests across **8** spec files; frontend Vitest count — re-run `npm run test:run` for the current total (suites include `parametric-physics`, `phase-detector`, `decision-framework`, kinematics, etc.).
+As of last reconciliation: **156** backend tests collected; **17** Playwright tests across **12** spec files; **151** frontend Vitest tests across **22** files.
 
 ### 4.2 What still lacks coverage
 
 | Gap | Severity |
 |-----|----------|
-| Full-stack flows in E2E (grid hover, arsenal persistence, DB tab) | Medium |
-| v2 / slots / degradation / train-model **HTTP** integration | Medium |
-| Visual regression, a11y, load/latency benchmarks | Low |
+| Deep API matrix permutations for `/recommendations/v2`, `/slots`, `/degradation/compare`, and `/admin/train-model` HTTP integration | Medium |
+| Analysis upload -> processing -> results E2E with committed video fixture | Medium |
+| Visual regression, a11y, cross-browser, and load benchmarks | Low |
 
 ---
 
-### 4.3 CI enforcement snapshot (2026-04-25)
+### 4.3 CI enforcement snapshot (2026-04-26)
 
 - **Backend job:** starts Postgres service, exports `DATABASE_URL`, seeds balls + arsenal schema, runs unit (`-m "not integration"`) and integration (`-m "integration"`) pytest phases.
 - **Frontend job:** runs Vitest coverage (`npm run test:coverage`).
-- **E2E job:** starts Postgres + backend, installs Playwright Chromium, runs `npm run test:e2e`, uploads Playwright report artifact.
+- **E2E job:** starts Postgres + backend, installs Playwright Chromium, runs `npm run test:e2e:smoke` on PR/push and `npm run test:e2e:full` on scheduled runs, uploads Playwright report artifact.
 
 ---
 
@@ -128,8 +128,8 @@ As of last reconciliation: **121** backend tests collected; **11** Playwright te
 
 | Area | Implemented capability | Validation evidence available now | Validation gap / next step |
 |------|------------------------|----------------------------------|----------------------------|
-| Simulation (2D/3D) | Parametric lane model, phase detector, 3D Rapier worker, UI launch flow | Unit tests for physics helpers (`parametric-physics`, `phase-detector`), Playwright smoke/flow coverage for 2D + 3D tabs | Limited empirical validation against external ground truth trajectories or benchmark datasets |
-| Vision / Pose | MediaPipe worker pipeline, kinematics extraction, release heuristic, analysis UI | Unit tests for kinematics/math helpers and app-level integration smoke paths | No formal latency benchmark evidence in this status file; no controlled user study validating coaching quality |
+| Simulation (2D/3D) | Parametric lane model, phase detector, 3D Rapier worker, UI launch flow | Unit tests for physics helpers (`parametric-physics`, `phase-detector`), repeated-run determinism checks, and Playwright flow coverage for 2D + 3D tabs with coarse launch-to-results latency bounds | Limited empirical validation against external ground truth trajectories or benchmark datasets |
+| Vision / Pose | MediaPipe worker pipeline, kinematics extraction, release heuristic, analysis UI | Unit tests for kinematics/math helpers, deterministic and perturbation-stability checks, and Analysis tab Playwright smoke (uploader render + file validation) | No fixture-based full processing E2E in CI yet; no controlled user study validating coaching quality |
 
 This split is intentional: implemented functionality is broader than currently proven performance/accuracy, especially for simulation realism and pose-analysis outcomes.
 
@@ -233,7 +233,13 @@ Frontend tests span API clients, bag context, catalog, simulation helpers, decis
 
 ## 9. Informal usability evidence (optional add-on)
 
-No informal usability notes have been recorded in this document yet.
+No participant-based usability sessions have been recorded in this document yet.
+
+Current supporting evidence is test-oriented:
+
+1. **Analysis upload guardrails:** invalid-file path validated in Playwright (`analysis.spec.ts`).
+2. **Workflow latency sanity:** coarse timing bounds covered in simulation E2E (`simulation.spec.ts`, `sim3d.spec.ts`).
+3. **Task-completion coverage:** save/load arsenal, grid hover visibility, and database search/filter/pagination are now automated in Playwright.
 
 Suggested lightweight format before final submission:
 

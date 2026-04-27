@@ -1,6 +1,6 @@
 # Phase 1 Implementation Guide — 3D Physics Simulation
 
-**Date:** 2026-03-14 (spec); **status note:** 2026-04-22 — **Major items are implemented** in the repo (2D + 3D sim tabs, worker, phase detection, backend oil patterns API). This file remains the **proposal-aligned technical spec** (equations, validation targets, worker message shapes). For shipping status see [PROJECT_STATUS.md](./PROJECT_STATUS.md). For duplicate oil-pattern definitions in UI vs DB, see [TECH_DEBT.md](./TECH_DEBT.md).
+**Date:** 2026-03-14 (spec); **status note:** 2026-04-26 — **Major items are implemented** in the repo (2D + 3D sim tabs, worker, phase detection, backend oil patterns API). This file remains the **proposal-aligned technical spec** (equations, validation targets, worker message shapes). For shipping status see [PROJECT_STATUS.md](./PROJECT_STATUS.md). For duplicate oil-pattern definitions in UI vs DB, see [TECH_DEBT.md](./TECH_DEBT.md).
 
 ---
 

@@ -380,3 +380,31 @@ describe("documented model limitations (velocity-injection hook model)", () => {
     expect(r.entryClass).not.toBe("good");
   });
 });
+
+describe("repeatability and runtime sanity", () => {
+  it("returns identical outputs for the same simulation input across repeated runs", () => {
+    const repeatedResults = Array.from({ length: 5 }, () =>
+      computeTrajectory(BASELINE),
+    );
+
+    const first = repeatedResults[0];
+    for (const result of repeatedResults.slice(1)) {
+      expect(result.entryAngle).toBe(first.entryAngle);
+      expect(result.skidFt).toBe(first.skidFt);
+      expect(result.hookFt).toBe(first.hookFt);
+      expect(result.outcome).toBe(first.outcome);
+      expect(result.breakPt).toBe(first.breakPt);
+    }
+  });
+
+  it("keeps pure trajectory computation within a small runtime budget", () => {
+    const iterations = 200;
+    const startMs = performance.now();
+    for (let i = 0; i < iterations; i += 1) {
+      computeTrajectory(withOverrides({ revRate: 250 + (i % 150) }));
+    }
+    const elapsedMs = performance.now() - startMs;
+
+    expect(elapsedMs).toBeLessThan(500);
+  });
+});

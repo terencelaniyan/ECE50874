@@ -311,4 +311,4 @@ cd services/backend && uvicorn app.main:app --reload
 
 ## Tests
 
-From `services/backend/`: `python -m pytest tests/ -v`. Unit tests (gap_engine, degradation, etc.) need no database. Integration tests (gaps, recommendations, arsenals CRUD) are skipped when `DATABASE_URL` is unset; with Postgres and seeded `balls` (and `migrate_arsenals.py` run for arsenal tests) they run automatically. See `services/backend/tests/README.md` for details.
+From `services/backend/`: `python -m pytest tests/ -v`. Unit tests (gap_engine, degradation, recommendation/slot/two-tower engines, etc.) need no database. Integration tests (arsenals, recommendations v1/v2, gaps, slots, degradation compare, and workflow chains) are skipped when `DATABASE_URL` is unset; with Postgres and seeded `balls` (and `migrate_arsenals.py` run for arsenal tests) they run automatically. See `services/backend/tests/README.md` for details.

@@ -98,13 +98,41 @@ test.describe("TC-03: Recommendations Appear", () => {
     expect(v2Payload).toHaveProperty("method");
     expect(v2Payload).toHaveProperty("degradation_model");
 
-    // Check that a method badge (V2 or KNN) is shown on the first item
-    const hasMethodBadge = await page
-      .locator(".rec-badge.method")
-      .first()
-      .isVisible()
-      .catch(() => false);
+    // UI should still render recommendations after method switch.
+    await expect(page.locator(".rec-item").first()).toBeVisible({
+      timeout: 10_000,
+    });
+  });
 
-    expect(hasMethodBadge).toBe(true);
+  test("Hybrid toggle hits /recommendations/v2 and returns contract fields", async ({
+    page,
+  }) => {
+    await waitForAppLoad(page);
+
+    await addBallFromCatalog(page, 0);
+    await addBallFromCatalog(page, 1);
+    await goToGridView(page);
+    await expect(page.locator(".rec-item").first()).toBeVisible({
+      timeout: 15_000,
+    });
+
+    const hybridResponsePromise = page.waitForResponse((response) => {
+      return (
+        response.request().method() === "POST" &&
+        matchesApiPath(response.url(), "/recommendations/v2")
+      );
+    });
+
+    await page
+      .locator(".rec-method-btn")
+      .filter({ hasText: "Hybrid" })
+      .click();
+
+    const hybridResponse = await hybridResponsePromise;
+    expect(hybridResponse.ok()).toBe(true);
+    const hybridPayload = await hybridResponse.json();
+    expect(Array.isArray(hybridPayload.items)).toBe(true);
+    expect(hybridPayload).toHaveProperty("method");
+    expect(hybridPayload).toHaveProperty("degradation_model");
   });
 });

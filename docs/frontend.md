@@ -78,7 +78,7 @@ flowchart LR
 
 - **Unit / component:** Vitest. Config: `services/frontend/vitest.config.ts` (jsdom, React plugin, `src/test/setup.ts`, `@` → `src`).
 - **Commands:** `npm run test` (watch), `npm run test:run` (CI-style single run).
-- **E2E:** `npm run test:e2e` / `npm run test:e2e:ui` — Playwright, see [E2E_TEST_PLAN](E2E_TEST_PLAN.md).
+- **E2E:** `npm run test:e2e` (full local run), `npm run test:e2e:smoke` (fast subset), `npm run test:e2e:ui` (interactive UI mode) — Playwright, see [E2E_TEST_PLAN](E2E_TEST_PLAN.md).
 
 ## Build and run
 

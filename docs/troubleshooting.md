@@ -123,7 +123,7 @@ python -m pytest tests/ -m "integration" -v
 ## 5) Playwright E2E failures due to missing app state
 
 Symptom:
-- `npm run test:e2e` fails early.
+- `npm run test:e2e` or `npm run test:e2e:smoke` fails early.
 - Errors indicate backend unavailable or missing data.
 
 Likely causes:
@@ -145,7 +145,9 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 # terminal 3: e2e
 cd services/frontend
-npm run test:e2e
+npm run test:e2e:smoke
+# or full suite
+# npm run test:e2e
 ```
 
 ## 6) Port conflicts (8000, 5173, 5432)

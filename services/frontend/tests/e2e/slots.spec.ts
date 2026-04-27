@@ -7,6 +7,23 @@ import {
 } from "./helpers";
 
 test.describe("TC-05: Slot Assignment Panel", () => {
+  test("slots panel shows empty-state guidance when bag is empty", async ({
+    page,
+  }) => {
+    await waitForAppLoad(page);
+    await goToGridView(page);
+    await expect(page.getByText("0 / 6 SLOTS")).toBeVisible();
+
+    await page.locator(".right-panel-btn").filter({ hasText: "Slots" }).click();
+    await expect(
+      page.locator(".recs-panel-wrap .panel-badge").filter({ hasText: "6-BALL" }),
+    ).toBeVisible();
+    await expect(page.locator(".recs-empty")).toBeVisible();
+    await expect(
+      page.getByText("Add balls to your bag to see slot assignments."),
+    ).toBeVisible();
+  });
+
   test("switching to Slots panel shows slot assignments with silhouette score", async ({
     page,
   }) => {

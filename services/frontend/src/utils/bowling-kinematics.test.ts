@@ -391,6 +391,45 @@ describe("extractKinematics", () => {
     // Our synthetic landmarks have visibility=0.95, so confidence should be high
     expect(result!.confidence).toBeGreaterThan(0.8);
   });
+
+  it("returns stable kinematics for the same delivery sequence", () => {
+    const poses = buildDeliverySequence({ frames: 30, wristReleaseSpeed: 0.08 });
+    const first = extractKinematics(poses, { fps: 30 });
+    const second = extractKinematics(poses, { fps: 30 });
+
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    expect(second!.releaseFrameIndex).toBe(first!.releaseFrameIndex);
+    expect(second!.ballSpeedMph).toBeCloseTo(first!.ballSpeedMph, 6);
+    expect(second!.launchAngleDeg).toBeCloseTo(first!.launchAngleDeg, 6);
+    expect(second!.revRateRpm).toBeCloseTo(first!.revRateRpm, 6);
+    expect(second!.confidence).toBeCloseTo(first!.confidence, 6);
+  });
+
+  it("keeps kinematics stable under small landmark perturbations", () => {
+    const poses = buildDeliverySequence({ frames: 30, wristReleaseSpeed: 0.08 });
+    const baseline = extractKinematics(poses, { fps: 30 });
+    expect(baseline).not.toBeNull();
+
+    const perturbed = poses.map((frame, frameIndex) => ({
+      ...frame,
+      landmarks: frame.landmarks.map((landmark, landmarkIndex) => {
+        const jitter =
+          ((frameIndex + landmarkIndex) % 2 === 0 ? 1 : -1) * 0.0005;
+        return {
+          ...landmark,
+          x: landmark.x + jitter,
+          y: landmark.y + jitter,
+        };
+      }),
+    }));
+
+    const noisy = extractKinematics(perturbed, { fps: 30 });
+    expect(noisy).not.toBeNull();
+    expect(Math.abs(noisy!.ballSpeedMph - baseline!.ballSpeedMph)).toBeLessThan(5);
+    expect(Math.abs(noisy!.launchAngleDeg - baseline!.launchAngleDeg)).toBeLessThan(5);
+    expect(Math.abs(noisy!.revRateRpm - baseline!.revRateRpm)).toBeLessThan(200);
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
