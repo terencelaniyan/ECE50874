@@ -12,6 +12,7 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bowlingdb
       APP_ENV: development
@@ -38,22 +39,26 @@ jobs:
 
       - name: Install backend dependencies
         run: |
+          set -euo pipefail
           cd services/backend
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Seed database (balls + arsenals)
         run: |
+          set -euo pipefail
           python services/backend/scripts/seed_from_csv.py
           python services/backend/scripts/migrate_arsenals.py
 
       - name: Run backend unit tests
         run: |
+          set -euo pipefail
           cd services/backend
           python -m pytest tests/ -m "not integration" -v
 
       - name: Run backend integration tests
         run: |
+          set -euo pipefail
           cd services/backend
           python -m pytest tests/ -m "integration" -v --cov-append --cov-report=xml
       - name: Upload backend coverage artifact
@@ -65,6 +70,7 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -77,11 +83,13 @@ jobs:
 
       - name: Install frontend dependencies
         run: |
+          set -euo pipefail
           cd services/frontend
           npm ci
 
       - name: Run frontend tests with coverage
         run: |
+          set -euo pipefail
           cd services/frontend
           NODE_OPTIONS=--max-old-space-size=4096 npm run test:coverage
       - name: Upload frontend coverage artifact
@@ -93,6 +101,7 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     needs: [backend, frontend]
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bowlingdb
@@ -120,22 +129,26 @@ jobs:
 
       - name: Install backend dependencies
         run: |
+          set -euo pipefail
           cd services/backend
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Seed database (balls + arsenals)
         run: |
+          set -euo pipefail
           python services/backend/scripts/seed_from_csv.py
           python services/backend/scripts/migrate_arsenals.py
 
       - name: Start backend
         run: |
+          set -euo pipefail
           cd services/backend
           uvicorn app.main:app --host 0.0.0.0 --port 8000 &
 
       - name: Wait for backend readiness
         run: |
+          set -euo pipefail
           python - <<'PY'
           import json
           import time
@@ -176,23 +189,27 @@ jobs:
 
       - name: Install frontend dependencies
         run: |
+          set -euo pipefail
           cd services/frontend
           npm ci
 
       - name: Install Playwright Browsers
         run: |
+          set -euo pipefail
           cd services/frontend
           npx playwright install --with-deps chromium
 
       - name: Run smoke Playwright E2E tests
         if: github.event_name != 'schedule'
         run: |
+          set -euo pipefail
           cd services/frontend
           npm run test:e2e:smoke
 
       - name: Run full Playwright E2E tests
         if: github.event_name == 'schedule'
         run: |
+          set -euo pipefail
           cd services/frontend
           npm run test:e2e:full
 

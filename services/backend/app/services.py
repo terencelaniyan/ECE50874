@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, List, Optional, Tuple
 
 from psycopg import sql
@@ -20,6 +21,7 @@ SORT_COLUMNS = frozenset({
     "name", "brand", "release_date", "rg", "diff",
     "coverstock_type", "symmetry", "ball_id",
 })
+logger = logging.getLogger(__name__)
 
 
 def validate_ball_ids(cur, ball_ids: List[str]) -> None:
@@ -747,8 +749,8 @@ def get_recommendations_v2(
             if tt_items:
                 items = [{"ball": b, "score": s, "method": "two_tower", "reason": None} for b, s in tt_items]
                 actual_method = "two_tower"
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Two-tower recommendation path failed, falling back to KNN: %s", exc)
 
     # KNN fallback or explicit knn
     if not items or method == "hybrid":
@@ -800,6 +802,9 @@ def get_slot_assignments(
 ) -> dict:
     """Assign arsenal balls to the 6-ball slot system."""
     from .slot_assignment import assign_slots
+    if not arsenal_id and arsenal_ball_ids:
+        with conn.cursor() as cur:
+            validate_ball_ids(cur, arsenal_ball_ids)
     arsenal_rows, arsenal_ids = resolve_arsenal_rows(
         conn, arsenal_id, arsenal_ball_ids, game_counts
     )
@@ -845,6 +850,7 @@ def train_two_tower(
             return {"error": "PyTorch not available for training"}
         return result
     except Exception as e:
+        logger.exception("Two-tower training failed")
         return {"error": str(e)}
 
 

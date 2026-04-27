@@ -8,8 +8,12 @@ test.describe("TC-08: 3D Lane Simulation", () => {
   test("3D sim tab loads, runs simulation, and shows results", async ({
     page,
   }) => {
+    const pageErrors: string[] = [];
     page.on('console', msg => console.log('PAGE LOG:', msg.text()));
-    page.on('pageerror', err => console.log('PAGE ERROR:', err.message));
+    page.on('pageerror', err => {
+      pageErrors.push(err.message);
+      console.log('PAGE ERROR:', err.message);
+    });
     await waitForAppLoad(page);
 
     // Add a ball from catalog
@@ -52,5 +56,6 @@ test.describe("TC-08: 3D Lane Simulation", () => {
     await expect(page.getByText("Entry Angle", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Outcome", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Total Time", { exact: true })).toBeVisible();
+    expect(pageErrors).toEqual([]);
   });
 });

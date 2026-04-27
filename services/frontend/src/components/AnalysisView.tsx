@@ -43,6 +43,7 @@ export function AnalysisView({ onSimulateParams }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const workerRef = useRef<Worker | null>(null);
   const canvasExtractRef = useRef<HTMLCanvasElement | null>(null);
+  const processingFailedRef = useRef(false);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -54,78 +55,87 @@ export function AnalysisView({ onSimulateParams }: Props) {
 
   /** Extract frames from video and send to worker. */
   const processVideo = useCallback(async (file: File) => {
-    setPhase("uploading");
-    setError(null);
-    setFramePoses([]);
-    setKinematics(null);
-    setFormEval(null);
-
-    // Create object URL for video playback
-    const url = URL.createObjectURL(file);
-    setVideoUrl(url);
-
-    // Wait for video metadata
-    const vid = videoRef.current;
-    if (!vid) return;
-
-    vid.src = url;
-    await new Promise<void>((resolve) => {
-      vid.onloadedmetadata = () => resolve();
-    });
-
-    const w = vid.videoWidth;
-    const h = vid.videoHeight;
-    setVideoDimensions({ w, h });
-    const duration = vid.duration;
-    const totalFrames = Math.ceil(duration * FPS);
-
-    setPhase("processing");
-    setProgress({ processed: 0, total: Math.ceil(totalFrames / FRAME_SKIP) });
-
-    // Create offscreen canvas for frame extraction
-    if (!canvasExtractRef.current) {
-      canvasExtractRef.current = document.createElement("canvas");
-    }
-    const canvas = canvasExtractRef.current;
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d")!;
-
-    // Try Web Worker first, fall back to main-thread processing
-    let useWorker = false;
     try {
-      const worker = new Worker(
-        new URL("../workers/vision-worker.ts", import.meta.url),
-        { type: "module" },
-      );
-      workerRef.current = worker;
+      setPhase("uploading");
+      setError(null);
+      setFramePoses([]);
+      setKinematics(null);
+      setFormEval(null);
+      processingFailedRef.current = false;
 
-      const workerReady = await new Promise<boolean>((resolve) => {
-        const timeout = setTimeout(() => resolve(false), 10000);
-        worker.onmessage = (e: MessageEvent<WorkerMessage>) => {
-          if (e.data.type === "ready") {
-            clearTimeout(timeout);
-            resolve(true);
-          } else if (e.data.type === "error") {
-            clearTimeout(timeout);
-            resolve(false);
-          }
-        };
-        worker.postMessage({ type: "init" } satisfies WorkerMessage);
+      // Create object URL for video playback
+      const url = URL.createObjectURL(file);
+      setVideoUrl(url);
+
+      // Wait for video metadata
+      const vid = videoRef.current;
+      if (!vid) return;
+
+      vid.src = url;
+      await new Promise<void>((resolve) => {
+        vid.onloadedmetadata = () => resolve();
       });
 
-      useWorker = workerReady;
-    } catch {
-      useWorker = false;
-    }
+      const w = vid.videoWidth;
+      const h = vid.videoHeight;
+      setVideoDimensions({ w, h });
+      const duration = vid.duration;
+      const totalFrames = Math.ceil(duration * FPS);
 
-    if (useWorker) {
-      // Worker-based processing
-      await processWithWorker(vid, canvas, ctx, totalFrames, w, h);
-    } else {
-      // Main-thread fallback — process without MediaPipe, just extract frame timestamps
-      // This allows the UI to work even without MediaPipe
-      await processMainThread(vid, canvas, ctx, totalFrames);
+      setPhase("processing");
+      setProgress({ processed: 0, total: Math.ceil(totalFrames / FRAME_SKIP) });
+
+      // Create offscreen canvas for frame extraction
+      if (!canvasExtractRef.current) {
+        canvasExtractRef.current = document.createElement("canvas");
+      }
+      const canvas = canvasExtractRef.current;
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d")!;
+
+      // Try Web Worker first, fall back to main-thread processing
+      let useWorker = false;
+      try {
+        const worker = new Worker(
+          new URL("../workers/vision-worker.ts", import.meta.url),
+          { type: "module" },
+        );
+        workerRef.current = worker;
+
+        const workerReady = await new Promise<boolean>((resolve) => {
+          const timeout = setTimeout(() => resolve(false), 10000);
+          worker.onmessage = (e: MessageEvent<WorkerMessage>) => {
+            if (e.data.type === "ready") {
+              clearTimeout(timeout);
+              resolve(true);
+            } else if (e.data.type === "error") {
+              clearTimeout(timeout);
+              resolve(false);
+            }
+          };
+          worker.postMessage({ type: "init" } satisfies WorkerMessage);
+        });
+
+        useWorker = workerReady;
+      } catch {
+        useWorker = false;
+      }
+
+      if (useWorker) {
+        // Worker-based processing
+        await processWithWorker(vid, canvas, ctx, totalFrames, w, h);
+      } else {
+        // Main-thread fallback — process without MediaPipe, just extract frame timestamps
+        // This allows the UI to work even without MediaPipe
+        await processMainThread(vid, canvas, ctx, totalFrames);
+      }
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : "Video analysis failed unexpectedly.";
+      processingFailedRef.current = true;
+      setError(message);
+      setPhase("error");
     }
   }, []);
 
@@ -149,6 +159,10 @@ export function AnalysisView({ onSimulateParams }: Props) {
           poses.push(e.data.pose);
           processed++;
           setProgress({ processed, total: targetFrames });
+        } else if (e.data.type === "error") {
+          processingFailedRef.current = true;
+          setError(e.data.message);
+          setPhase("error");
         }
       };
 
@@ -181,8 +195,11 @@ export function AnalysisView({ onSimulateParams }: Props) {
         }
       }
 
+      if (processingFailedRef.current) return;
+
       // Wait for remaining results
       await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+      if (processingFailedRef.current) return;
 
       poses.sort((a, b) => a.frameIndex - b.frameIndex);
       finishAnalysis(poses);

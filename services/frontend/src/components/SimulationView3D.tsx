@@ -221,6 +221,7 @@ export function SimulationView3D({ initialParams }: Props) {
   const [summary, setSummary] = useState<SimulationSummary | null>(null);
   const [advice, setAdvice] = useState<SimulationAdvice | null>(null);
   const [recBalls, setRecBalls] = useState<RecommendV2Item[]>([]);
+  const [runtimeError, setRuntimeError] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialParams) {
@@ -580,11 +581,26 @@ export function SimulationView3D({ initialParams }: Props) {
   // ── Initialize Rapier WASM on main thread ────────────────────────────
   useEffect(() => {
     let cancelled = false;
-    import("../physics/bowling-physics").then(({ initRapier }) =>
-      initRapier().then((ok) => {
-        if (!cancelled) setPhysicsReady(ok);
-      }),
-    );
+    import("../physics/bowling-physics")
+      .then(({ initRapier }) => initRapier())
+      .then((ok) => {
+        if (cancelled) return;
+        setPhysicsReady(ok);
+        if (!ok) {
+          setRuntimeError("Failed to initialize physics engine.");
+          setPhaseLabel("ERROR");
+        }
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to load physics engine.";
+        setPhysicsReady(false);
+        setRuntimeError(message);
+        setPhaseLabel("ERROR");
+      });
     return () => { cancelled = true; };
   }, []);
 
@@ -619,6 +635,7 @@ export function SimulationView3D({ initialParams }: Props) {
     setPhaseLabel("SIMULATING\u2026");
     setSummary(null);
     setAdvice(null);
+    setRuntimeError(null);
 
     const selectedEntry = bag.find((e) => (e.ball.name ?? "Custom") === currentBall);
     const ball = selectedEntry?.ball;
@@ -650,8 +667,10 @@ export function SimulationView3D({ initialParams }: Props) {
         const result = await runBowlingSimulation(params);
         playTrajectory(result.trajectory, result.summary, selectedEntry);
       } catch (err) {
-        console.error("Rapier simulation failed:", err);
+        const message =
+          err instanceof Error ? err.message : "Simulation failed unexpectedly.";
         setPhaseLabel("ERROR");
+        setRuntimeError(message);
         setSimRunning(false);
       }
     }, 0);
@@ -922,6 +941,12 @@ export function SimulationView3D({ initialParams }: Props) {
         >
           {physicsReady ? "LAUNCH BALL" : "Loading physics\u2026"}
         </button>
+
+        {runtimeError && (
+          <div className="analysis-warning" role="alert">
+            {runtimeError}
+          </div>
+        )}
 
         {summary && (
           <div className="result-card">

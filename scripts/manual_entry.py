@@ -32,9 +32,7 @@ import argparse
 import csv
 import json
 import sys
-from datetime import date
 from pathlib import Path
-from typing import Optional
 
 CSV_COLUMNS = [
     "name",
@@ -67,7 +65,9 @@ def _prompt(label: str, *, required: bool = False, default: str = "") -> str:
         return val
 
 
-def _prompt_float(label: str, *, required: bool = False, default: float = 0.0) -> float:
+def _prompt_float(
+    label: str, *, required: bool = False, default: float = 0.0
+) -> float:
     while True:
         raw = _prompt(label, required=required, default=str(default))
         try:
@@ -129,23 +129,41 @@ def batch_from_json(path: str) -> None:
         sys.exit(1)
 
     rows: list[dict] = []
-    for rec in records:
-        int_diff = float(rec.get("int_diff", 0))
-        row = {
-            "name": rec["name"],
-            "brand": rec["brand"],
-            "rg": float(rec["rg"]),
-            "diff": float(rec["diff"]),
-            "int_diff": int_diff,
-            "symmetry": "Asymmetric" if int_diff > 0 else "Symmetric",
-            "coverstock_type": rec.get("coverstock_type", ""),
-            "surface_grit": rec.get("surface_grit", ""),
-            "surface_finish": rec.get("surface_finish", rec.get("surface_grit", "")),
-            "release_date": rec.get("release_date", ""),
-            "status": rec.get("status", "Active"),
-        }
+    for index, rec in enumerate(records, start=1):
+        if not isinstance(rec, dict):
+            print(
+                f"Error: record {index} must be a JSON object, got {type(rec).__name__}.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        try:
+            int_diff = float(rec.get("int_diff", 0))
+            row = {
+                "name": rec["name"],
+                "brand": rec["brand"],
+                "rg": float(rec["rg"]),
+                "diff": float(rec["diff"]),
+                "int_diff": int_diff,
+                "symmetry": "Asymmetric" if int_diff > 0 else "Symmetric",
+                "coverstock_type": rec.get("coverstock_type", ""),
+                "surface_grit": rec.get("surface_grit", ""),
+                "surface_finish": rec.get(
+                    "surface_finish", rec.get("surface_grit", "")
+                ),
+                "release_date": rec.get("release_date", ""),
+                "status": rec.get("status", "Active"),
+            }
+        except (KeyError, TypeError, ValueError) as exc:
+            print(
+                f"Error: invalid record {index} in {path}: {exc}.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         rows.append(row)
-        append_rows([row])
+
+    # Write once after full validation to avoid partial CSV writes.
+    append_rows(rows)
 
     print(f"[manual_entry] Imported {len(rows)} records from {path}")
 
