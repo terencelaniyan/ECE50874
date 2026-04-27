@@ -109,6 +109,9 @@ type Tab = "catalog" | "grid" | "simulation" | "sim3d" | "analysis" | "recommend
  */
 type RightPanel = "recs" | "slots";
 
+const DB_BADGE_MAX_ATTEMPTS = 5;
+const DB_BADGE_RETRY_DELAY_MS = 800;
+
 export function Layout() {
   const [tab, setTab] = useState<Tab>("grid");
   const [rightPanel, setRightPanel] = useState<RightPanel>("recs");
@@ -120,9 +123,35 @@ export function Layout() {
   } | null>(null);
 
   useEffect(() => {
-    listBalls({ limit: 1 })
-      .then((res) => setBallCount(res.count))
-      .catch(() => setBallCount(null));
+    let cancelled = false;
+
+    const loadBallCountWithRetry = async () => {
+      for (let attempt = 1; attempt <= DB_BADGE_MAX_ATTEMPTS; attempt += 1) {
+        try {
+          const response = await listBalls({ limit: 1 });
+          if (!cancelled) {
+            setBallCount(response.count);
+          }
+          return;
+        } catch {
+          if (attempt === DB_BADGE_MAX_ATTEMPTS) {
+            if (!cancelled) {
+              setBallCount(null);
+            }
+            return;
+          }
+          await new Promise((resolve) =>
+            setTimeout(resolve, DB_BADGE_RETRY_DELAY_MS),
+          );
+        }
+      }
+    };
+
+    void loadBallCountWithRetry();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const badgeText =

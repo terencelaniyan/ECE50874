@@ -3,6 +3,7 @@ import {
   waitForAppLoad,
   addBallFromCatalog,
   goToGridView,
+  matchesApiPath,
 } from "./helpers";
 
 test.describe("TC-05: Slot Assignment Panel", () => {
@@ -23,7 +24,7 @@ test.describe("TC-05: Slot Assignment Panel", () => {
     const slotsResponsePromise = page.waitForResponse((response) => {
       return (
         response.request().method() === "POST" &&
-        response.url().includes("/api/slots")
+        matchesApiPath(response.url(), "/slots")
       );
     });
     await page.locator(".right-panel-btn").filter({ hasText: "Slots" }).click();

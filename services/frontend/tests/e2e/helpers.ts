@@ -1,12 +1,55 @@
 import { type Page, expect } from "@playwright/test";
 
+const APP_LOAD_TIMEOUT_MS = 20_000;
+
+export function matchesApiPath(url: string, apiPath: string): boolean {
+  const normalizedApiPath = apiPath.startsWith("/") ? apiPath : `/${apiPath}`;
+  const normalizedWithProxyPrefix = `/api${normalizedApiPath}`;
+
+  try {
+    const requestUrl = new URL(url);
+    return (
+      requestUrl.pathname === normalizedApiPath ||
+      requestUrl.pathname === normalizedWithProxyPrefix
+    );
+  } catch {
+    return (
+      url.includes(normalizedApiPath) || url.includes(normalizedWithProxyPrefix)
+    );
+  }
+}
+
+export async function waitForBackendReady(page: Page) {
+  await expect
+    .poll(
+      async () => {
+        const healthResponse = await page.request.get("/api/health");
+        if (!healthResponse.ok()) return false;
+        const healthPayload = await healthResponse.json();
+        if (healthPayload?.status !== "ok") return false;
+
+        const ballsResponse = await page.request.get("/api/balls?limit=1");
+        if (!ballsResponse.ok()) return false;
+        const ballsPayload = await ballsResponse.json();
+
+        return typeof ballsPayload?.count === "number";
+      },
+      {
+        timeout: APP_LOAD_TIMEOUT_MS,
+        intervals: [500, 1_000, 2_000],
+      },
+    )
+    .toBe(true);
+}
+
 /**
  * Wait for the app to fully load by checking the DB badge shows a ball count.
  */
 export async function waitForAppLoad(page: Page) {
+  await waitForBackendReady(page);
   await page.goto("/");
   await expect(page.getByText(/DB: \d+ BALLS LOADED/)).toBeVisible({
-    timeout: 15_000,
+    timeout: APP_LOAD_TIMEOUT_MS,
   });
 }
 

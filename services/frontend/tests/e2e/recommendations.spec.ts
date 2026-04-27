@@ -3,6 +3,7 @@ import {
   waitForAppLoad,
   addBallFromCatalog,
   goToGridView,
+  matchesApiPath,
 } from "./helpers";
 
 test.describe("TC-03: Recommendations Appear", () => {
@@ -15,6 +16,14 @@ test.describe("TC-03: Recommendations Appear", () => {
     await addBallFromCatalog(page, 0);
     await addBallFromCatalog(page, 1);
 
+    // Register response wait before entering Grid View to avoid missing fast requests.
+    const recommendationsResponsePromise = page.waitForResponse((response) => {
+      return (
+        response.request().method() === "POST" &&
+        matchesApiPath(response.url(), "/recommendations")
+      );
+    });
+
     // Switch to Grid View
     await goToGridView(page);
     await expect(page.getByText("2 / 6 SLOTS")).toBeVisible();
@@ -24,13 +33,6 @@ test.describe("TC-03: Recommendations Appear", () => {
       page.locator(".right-panel-btn.active").filter({ hasText: "Recs" }),
     ).toBeVisible();
 
-    // Wait for recommendations to load
-    const recommendationsResponsePromise = page.waitForResponse((response) => {
-      return (
-        response.request().method() === "POST" &&
-        response.url().includes("/api/recommendations")
-      );
-    });
     await expect(page.locator(".rec-list-compact")).toBeVisible({
       timeout: 15_000,
     });
@@ -79,7 +81,7 @@ test.describe("TC-03: Recommendations Appear", () => {
     const v2ResponsePromise = page.waitForResponse((response) => {
       return (
         response.request().method() === "POST" &&
-        response.url().includes("/api/recommendations/v2")
+        matchesApiPath(response.url(), "/recommendations/v2")
       );
     });
     await page.locator(".rec-method-btn").filter({ hasText: "V2" }).click();
