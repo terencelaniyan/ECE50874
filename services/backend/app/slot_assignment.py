@@ -270,7 +270,8 @@ def assign_slots(
             best_centroids = centroids
 
     # Map clusters to slot numbers
-    assert best_centroids is not None and best_labels is not None
+    if best_centroids is None or best_labels is None:
+        raise RuntimeError("K-means clustering failed to produce results")
     slot_numbers = _match_clusters_to_slots(best_centroids, mins, ranges)
 
     # Build assignments

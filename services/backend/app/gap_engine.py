@@ -117,7 +117,8 @@ def compute_gaps(
     except QhullError:
         # Fallback when Voronoi fails (e.g. degenerate geometry).
         if arsenal_effective_rows is not None:
-            assert arsenal_points_arr is not None
+            if arsenal_points_arr is None:
+                raise RuntimeError("arsenal_points_arr is unexpectedly None in Voronoi fallback")
             ap_arr = arsenal_points_arr
         else:
             in_arsenal = [r for r in catalog_rows if r["ball_id"] in arsenal_ball_ids]
@@ -152,7 +153,8 @@ def compute_gaps(
             continue
         pt = points[site_idx]
         if has_arsenal:
-            assert arsenal_points_arr is not None
+            if arsenal_points_arr is None:
+                raise RuntimeError("arsenal_points_arr is unexpectedly None in gap scoring")
             score = min(_dist_2d(pt, ap) for ap in arsenal_points_arr)
         else:
             mean_pt = np.mean(points, axis=0)

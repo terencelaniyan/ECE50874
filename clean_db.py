@@ -25,7 +25,7 @@ with get_conn() as conn:
             print(f"Found {len(to_delete)} duplicates to delete.")
             # delete custom_balls and arsenal_balls via cascade if enabled, else manually
             cur.execute("DELETE FROM arsenal_balls WHERE arsenal_id = ANY(%s)", (to_delete,))
-            cur.execute("DELETE FROM custom_balls WHERE arsenal_id = ANY(%s)", (to_delete,))
+            cur.execute("DELETE FROM arsenal_custom_balls WHERE arsenal_id = ANY(%s)", (to_delete,))
             cur.execute("DELETE FROM arsenals WHERE id = ANY(%s)", (to_delete,))
             conn.commit()
             print("Deleted duplicates.")

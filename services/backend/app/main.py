@@ -3,6 +3,7 @@
 Routers/Controllers: HTTP only. Validate input, call service layer, return response.
 Business logic and database access live in services.py.
 """
+import hmac
 import os
 import logging
 import subprocess
@@ -540,7 +541,7 @@ ADMIN_KEY = os.environ.get("ADMIN_KEY")
 
 
 def _require_admin_key(x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key")) -> None:
-    if not ADMIN_KEY or x_admin_key != ADMIN_KEY:
+    if not ADMIN_KEY or not hmac.compare_digest(x_admin_key or "", ADMIN_KEY):
         raise HTTPException(status_code=403, detail="Invalid or missing X-Admin-Key")
 
 
