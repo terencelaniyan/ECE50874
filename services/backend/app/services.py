@@ -247,11 +247,14 @@ def list_balls(
     return rows, count
 
 
-def get_ball(conn, ball_id: str) -> Optional[dict]:
-    """Return ball row or None if not found."""
+def get_ball(conn, ball_id: str) -> dict:
+    """Return ball row or raise NotFoundError if not found."""
     with conn.cursor() as cur:
         cur.execute("SELECT * FROM balls WHERE ball_id = %s;", (ball_id,))
-        return cur.fetchone()
+        row = cur.fetchone()
+    if row is None:
+        raise NotFoundError(f"Ball not found: {ball_id}")
+    return row
 
 
 def create_arsenal(
@@ -841,27 +844,23 @@ def train_two_tower(
     neg_ratio: int = 3,
 ) -> dict:
     """Train the two-tower model on synthetic arsenal data."""
-    try:
-        from .two_tower import train_model
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM balls;")
-            catalog = cur.fetchall()
-        if not catalog:
-            return {"error": "No balls in catalog to train on"}
-        result = train_model(
-            catalog=catalog,
-            n_arsenals=n_arsenals,
-            epochs=epochs,
-            batch_size=batch_size,
-            lr=lr,
-            neg_ratio=neg_ratio,
-        )
-        if result is None:
-            return {"error": "PyTorch not available for training"}
-        return result
-    except Exception as e:
-        logger.exception("Two-tower training failed")
-        return {"error": str(e)}
+    from .two_tower import train_model
+    with conn.cursor() as cur:
+        cur.execute("SELECT * FROM balls;")
+        catalog = cur.fetchall()
+    if not catalog:
+        raise RuntimeError("No balls in catalog to train on")
+    result = train_model(
+        catalog=catalog,
+        n_arsenals=n_arsenals,
+        epochs=epochs,
+        batch_size=batch_size,
+        lr=lr,
+        neg_ratio=neg_ratio,
+    )
+    if result is None:
+        raise RuntimeError("PyTorch not available for training")
+    return result
 
 
 # ── Oil Patterns ────────────────────────────────────────────────────────

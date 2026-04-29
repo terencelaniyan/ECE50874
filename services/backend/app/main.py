@@ -8,6 +8,8 @@ import os
 import logging
 import subprocess
 import sys
+
+import psycopg.errors
 from pathlib import Path
 from typing import List, Optional
 
@@ -172,10 +174,7 @@ def get_ball(ball_id: str, db=Depends(get_db)):
     Raises:
         HTTPException: 404 if the ball is not found.
     """
-    row = svc_get_ball(db, ball_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail=f"Ball not found: {ball_id}")
-    return row
+    return svc_get_ball(db, ball_id)
 
 
 def _split_arsenal_balls(balls):
@@ -392,14 +391,17 @@ def gaps(req: GapRequest, db=Depends(get_db)):
             status_code=400,
             detail="Provide either arsenal_id or arsenal_ball_ids, not both",
         )
-    zones = svc_get_gaps(
-        db,
-        arsenal_id=req.arsenal_id,
-        arsenal_ball_ids=req.arsenal_ball_ids,
-        game_counts=req.game_counts,
-        k=req.k,
-        zone_threshold=req.zone_threshold,
-    )
+    try:
+        zones = svc_get_gaps(
+            db,
+            arsenal_id=req.arsenal_id,
+            arsenal_ball_ids=req.arsenal_ball_ids,
+            game_counts=req.game_counts,
+            k=req.k,
+            zone_threshold=req.zone_threshold,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
     return GapResponse.model_validate({"zones": zones})
 
 
@@ -455,12 +457,15 @@ def slot_assignment(req: SlotAssignRequest, db=Depends(get_db)):
             status_code=400,
             detail="Provide arsenal_id or at least one arsenal_ball_id",
         )
-    result = svc_get_slot_assignments(
-        db,
-        arsenal_id=req.arsenal_id,
-        arsenal_ball_ids=req.arsenal_ball_ids,
-        game_counts=req.game_counts,
-    )
+    try:
+        result = svc_get_slot_assignments(
+            db,
+            arsenal_id=req.arsenal_id,
+            arsenal_ball_ids=req.arsenal_ball_ids,
+            game_counts=req.game_counts,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
     return result
 
 
@@ -476,10 +481,7 @@ def degradation_compare(req: DegradationCompareRequest, db=Depends(get_db)):
         "coverstock_type": req.coverstock_type,
     }
     if req.ball_id:
-        row = svc_get_ball(db, req.ball_id)
-        if row is None:
-            raise HTTPException(status_code=404, detail=f"Ball not found: {req.ball_id}")
-        ball_row = dict(row)
+        ball_row = dict(svc_get_ball(db, req.ball_id))
 
     result = svc_get_degradation_comparison(ball_row, req.game_count)
 
@@ -515,9 +517,8 @@ def oil_patterns(db=Depends(get_db)):
     """List available oil patterns with friction zone data."""
     try:
         items = svc_list_oil_patterns(db)
-    except Exception:
-        logger.exception("Failed to list oil patterns from database; using fallback defaults")
-        # Table might not exist yet — return hardcoded defaults
+    except psycopg.errors.UndefinedTable:
+        logger.warning("oil_patterns table not found; returning built-in defaults")
         items = [
             {"id": 1, "name": "House Shot (38ft)", "length_ft": 38,
              "description": "Standard recreational pattern",
@@ -616,17 +617,16 @@ def refresh_catalog(_: None = Depends(_require_admin_key)):
 @app.post("/admin/train-model")
 def train_model(req: TrainModelRequest, db=Depends(get_db), _: None = Depends(_require_admin_key)):
     """Train the two-tower recommendation model on synthetic arsenal data."""
-    result = svc_train_two_tower(
-        db,
-        n_arsenals=req.n_arsenals,
-        epochs=req.epochs,
-        batch_size=req.batch_size,
-        lr=req.lr,
-        neg_ratio=req.neg_ratio,
-    )
-    if "error" in result:
-        return JSONResponse(
-            status_code=500,
-            content={"status": "error", "detail": result["error"]},
+    try:
+        result = svc_train_two_tower(
+            db,
+            n_arsenals=req.n_arsenals,
+            epochs=req.epochs,
+            batch_size=req.batch_size,
+            lr=req.lr,
+            neg_ratio=req.neg_ratio,
         )
+    except Exception as exc:
+        logger.exception("Two-tower training failed")
+        return JSONResponse(status_code=500, content={"status": "error", "detail": str(exc)})
     return {"status": "ok", **result}

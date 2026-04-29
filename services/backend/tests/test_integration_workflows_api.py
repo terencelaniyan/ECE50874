@@ -4,7 +4,6 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-pytestmark = pytest.mark.integration
 
 
 def _get_ball_ids(client: TestClient, limit: int = 3) -> list[str]:

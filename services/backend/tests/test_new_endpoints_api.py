@@ -1,13 +1,9 @@
-"""Integration tests for POST /recommendations/v2, POST /slots, POST /degradation/compare."""
+"""Tests for POST /recommendations/v2, POST /slots, POST /degradation/compare."""
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 import pytest
 from fastapi.testclient import TestClient
 
-pytestmark = pytest.mark.integration
 
 
 
