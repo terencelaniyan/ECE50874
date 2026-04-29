@@ -1,6 +1,6 @@
 # Project Status — Bowling Ball Grid Generator
 
-**Last reconciled:** 2026-04-27  
+**Last reconciled:** 2026-04-28  
 **Authors:** Sajan Kumar, Fahd Laniyan  
 **Course:** ECE 595/50874 — Advanced Software Engineering, Purdue University Indianapolis
 
@@ -68,8 +68,8 @@ Unified web platform with three modules:
 
 ### High value for grading / reliability
 
-1. **Playwright gaps** — Voronoi/grid interactions, save/load arsenal, Ball Database tab, optional API-only matrices. See [E2E_TEST_PLAN.md §5](./E2E_TEST_PLAN.md).
-2. **HTTP integration tests** — `POST /recommendations/v2`, `POST /slots`, `POST /degradation/compare`, `POST /admin/train-model` (today mostly unit-tested engines + v1 rec integration).
+1. **Expand E2E depth beyond current coverage** — core flows now include Voronoi/grid interaction, save/load arsenal, and Ball Database tab. Remaining depth work is broader negative-path and edge-case matrices. See [E2E_TEST_PLAN.md §5](./E2E_TEST_PLAN.md).
+2. **Broaden HTTP integration matrix** — targeted API integration exists for `POST /recommendations/v2`, `POST /slots`, `POST /degradation/compare`, and `POST /admin/train-model`; remaining work is higher-depth scenario/error matrices and data-shape boundary cases. See [integration-test-risk-matrix.md](./integration-test-risk-matrix.md) and [backend.md](./backend.md).
 3. **Two-tower reliability** — `setup_db.py` already runs `train_model.py`, but **PyTorch is not in** `services/backend/requirements.txt`, so a minimal `pip install -r requirements.txt` clone may skip successful training; Docker images also omit scripts/checkpoints by default. Ship or document `models/two_tower.pt`, add `torch` to deps, or surface a loud UI when two-tower is unavailable ([TECH_DEBT.md](./TECH_DEBT.md) §2).
 
 ### Medium / polish
@@ -104,13 +104,20 @@ cd services/frontend && npm run test:run
 cd services/frontend && npm run test:e2e
 ```
 
-As of last reconciliation: **158** backend tests collected; **17** Playwright tests across **12** spec files; **155** frontend Vitest tests across **22** files.
+As of last reconciliation: **179** backend tests collected; **18** Playwright tests across **12** spec files; **155** frontend Vitest tests across **22** files.
+
+Recent backend additions strengthened direct risk coverage in service/API-adjacent paths:
+
+- `test_admin_key.py` covers `POST /admin/*` key enforcement and timing-safe key comparison behavior.
+- `test_services_gaps.py` covers `get_gaps` validation rules for catalog IDs vs `custom-*` IDs.
+- `test_services_transactions.py` covers rollback/commit behavior for `create_arsenal` and `update_arsenal`.
+- `test_services.py` adds service-layer edge-case checks for validation, list/get shaping, and not-found handling.
 
 ### 4.2 What still lacks coverage
 
 | Gap | Severity |
 |-----|----------|
-| Deep API matrix permutations for `/recommendations/v2`, `/slots`, `/degradation/compare`, and `/admin/train-model` HTTP integration | Medium |
+| Broader scenario/error-path matrix depth for `/recommendations/v2`, `/slots`, `/degradation/compare`, and `/admin/train-model` (beyond current targeted integration and service coverage) | Medium |
 | Analysis upload -> processing -> results E2E with committed video fixture | Medium |
 | Visual regression, a11y, cross-browser, and load benchmarks | Low |
 
@@ -132,6 +139,8 @@ As of last reconciliation: **158** backend tests collected; **17** Playwright te
 | Vision / Pose | MediaPipe worker pipeline, kinematics extraction, release heuristic, analysis UI | Unit tests for kinematics/math helpers, deterministic and perturbation-stability checks, and Analysis tab Playwright smoke (uploader render + file validation) | No fixture-based full processing E2E in CI yet; no controlled user study validating coaching quality |
 
 This split is intentional: implemented functionality is broader than currently proven performance/accuracy, especially for simulation realism and pose-analysis outcomes.
+
+Related validation evidence notes: [simulation/physics-audit.md](./simulation/physics-audit.md), [simulation/pose-validation.md](./simulation/pose-validation.md).
 
 ---
 

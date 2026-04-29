@@ -217,10 +217,12 @@ npm run test:run
 
 Or `npm test` for watch mode.
 
-**End-to-end (Playwright):** requires seeded DB + backend on 8000 + Vite on 5173. From `services/frontend/`:
+**End-to-end (Playwright):** requires seeded DB + backend on 8000. The Playwright config auto-starts the Vite dev server on 5173 via `webServer`. From `services/frontend/`:
 
 ```bash
 npm run test:e2e
+npm run test:e2e:smoke
+npm run test:e2e:full
 npm run test:e2e:ui
 ```
 
@@ -270,9 +272,18 @@ pytest tests/test_gap_engine.py
 pytest tests/test_recommendation_engine.py -k "some_test_name"
 ```
 
-Frontend tests (Vitest): from `services/frontend/`, run `npm run test:run` or `npm test` (watch mode). Playwright: `npm run test:e2e` (see [docs/E2E_TEST_PLAN.md](docs/E2E_TEST_PLAN.md)).
+Recent backend test additions:
 
-**CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on push and pull requests to `main` and `master` (and on manual dispatch). It has three jobs: **backend** (Postgres service + seed + unit and integration pytest phases), **frontend** (Vitest coverage), and **e2e** (Postgres + backend startup + Playwright `npm run test:e2e` + Playwright report artifact upload).
+- `test_admin_key.py` validates admin guardrails for `POST /admin/*`, including 403 behavior for missing/invalid `X-Admin-Key` and timing-safe key checks through `hmac.compare_digest`.
+- `test_services_gaps.py` verifies `get_gaps` validation behavior for mixed catalog IDs and `custom-*` IDs so only real catalog IDs are validated.
+- `test_services_transactions.py` validates commit/rollback behavior for `create_arsenal` and `update_arsenal` success and failure paths.
+- `test_services.py` includes additional service-layer edge cases for validation, not-found handling, and list/get behavior.
+
+Frontend tests (Vitest): from `services/frontend/`, run `npm run test:run` or `npm test` (watch mode). Playwright: `npm run test:e2e` (or `test:e2e:smoke` / `test:e2e:full`) (see [docs/E2E_TEST_PLAN.md](docs/E2E_TEST_PLAN.md)).
+
+**CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on push/pull requests to `main` and `master`, on manual dispatch, and on a daily schedule. It has three jobs: **backend** (Postgres service + seed + unit and integration pytest phases), **frontend** (Vitest coverage), and **e2e** (Postgres + backend startup + Playwright smoke suite on push/PR/manual via `npm run test:e2e:smoke`, and full suite on schedule via `npm run test:e2e:full`, with Playwright report artifact upload).
+
+For current testing status and priority gaps, see [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) and [docs/integration-test-risk-matrix.md](docs/integration-test-risk-matrix.md).
 
 ---
 
@@ -306,7 +317,7 @@ Frontend tests (Vitest): from `services/frontend/`, run `npm run test:run` or `n
 
 5. **Run tests**
    - Backend: `pytest` from `services/backend/`.
-   - Frontend: `npm run test:run` or `npm test` (watch) from `services/frontend/`; E2E: `npm run test:e2e` when API + DB are up.
+   - Frontend: `npm run test:run` or `npm test` (watch) from `services/frontend/`; E2E: `npm run test:e2e` / `npm run test:e2e:smoke` / `npm run test:e2e:full` when API + DB are up.
 
 ---
 

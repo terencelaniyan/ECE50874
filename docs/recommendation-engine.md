@@ -115,7 +115,7 @@ The backend also exposes **POST /gaps**, which implements Voronoi-based **gap an
 
 ## V2 recommendations (`POST /recommendations/v2`)
 
-**Orchestration:** `services/backend/app/services.py` (e.g. `recommend_v2`) — resolves arsenal rows, applies degradation (`degradation.py`, v1 vs v2 model), loads candidates, then dispatches by **`method`**.
+**Orchestration:** `services/backend/app/services.py` (e.g. `get_recommendations`, `get_recommendations_v2`) — resolves arsenal rows, applies degradation (`degradation.py`, v1 vs v2 model), loads candidates, then dispatches by **`method`**.
 
 **Endpoint:** `POST /recommendations/v2` — same arsenal mutual-exclusion rules as v1 (`arsenal_id` **or** `arsenal_ball_ids` + `game_counts`). Full fields and errors: [Backend – POST /recommendations/v2](backend.md#post-recommendationsv2).
 

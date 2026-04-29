@@ -163,7 +163,7 @@ Voronoi-based gap analysis in RG–Differential space (per project spec). Identi
 | k                 | int             | 1–50        | Max number of gap suggestions. Default 10.                               |
 | zone_threshold    | float           | —           | (rg, diff) distance to group gap balls into same zone. Default 0.05.     |
 
-- Provide **either** `arsenal_id` **or** `arsenal_ball_ids` (not both). When game counts are present (via `arsenal_id` or `game_counts`), arsenal (rg, diff) positions are degradation-adjusted before gap scoring.
+- Do **not** provide both `arsenal_id` and `arsenal_ball_ids` in the same request. If neither is provided (or `arsenal_ball_ids` is empty), the request is treated as an empty arsenal and returns top global gaps. When game counts are present (via `arsenal_id` or `game_counts`), arsenal (rg, diff) positions are degradation-adjusted before gap scoring.
 - Each item is a ball that “owns” a Voronoi cell not covered by the arsenal. Higher `gap_score` = larger coverage hole.
 - Empty arsenal: all catalog balls are gaps; top-k by distance from global mean.
 
@@ -311,4 +311,14 @@ cd services/backend && uvicorn app.main:app --reload
 
 ## Tests
 
-From `services/backend/`: `python -m pytest tests/ -v`. Unit tests (gap_engine, degradation, recommendation/slot/two-tower engines, etc.) need no database. Integration tests (arsenals, recommendations v1/v2, gaps, slots, degradation compare, and workflow chains) are skipped when `DATABASE_URL` is unset; with Postgres and seeded `balls` (and `migrate_arsenals.py` run for arsenal tests) they run automatically. See `services/backend/tests/README.md` for details.
+From `services/backend/`: `python -m pytest tests/ -v`.
+
+- Unit tests (gap_engine, degradation, recommendation/slot/two-tower engines, etc.) need no database.
+- Integration tests (arsenals, recommendations v1/v2, gaps, slots, degradation compare, and workflow chains) are skipped when `DATABASE_URL` is unset; with Postgres and seeded `balls` (and `migrate_arsenals.py` run for arsenal tests) they run automatically.
+- Focused service/API safety coverage now includes:
+  - `test_admin_key.py`: admin auth guardrails for `POST /admin/*`, including 403 behavior for missing/invalid `X-Admin-Key` and timing-safe key comparison checks.
+  - `test_services_gaps.py`: `get_gaps` validation behavior for mixed catalog IDs and `custom-*` IDs, ensuring only catalog IDs go through ball-id validation.
+  - `test_services_transactions.py`: transaction safety in arsenal mutation flows (`create_arsenal` / `update_arsenal`) across commit and rollback paths.
+  - `test_services.py`: additional service-layer edge cases (validation no-op on empty IDs, not-found behavior, and list/get result shaping).
+
+See `services/backend/tests/README.md` for details.
