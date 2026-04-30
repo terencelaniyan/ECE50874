@@ -32,9 +32,11 @@ __pycache__/
 .pycache/
 
 .pytest_cache/
+.coverage
 .mypy_cache/
 .ruff_cache/
 htmlcov/
+coverage.xml
 *.egg-info/
 .eggs/
 .aider*
@@ -52,3 +54,12 @@ Thumbs.db
 *.swo
 *~
 
+# Cursor
+.cursor/
+
+# Service-generated runtime artifacts
+services/backend/.coverage
+services/frontend/playwright-report/
+services/frontend/test-results/
+services/frontend/dist/
+services/frontend/*.tsbuildinfo

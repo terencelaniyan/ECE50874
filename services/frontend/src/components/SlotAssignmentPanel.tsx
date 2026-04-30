@@ -25,7 +25,8 @@ export function SlotAssignmentPanel() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchSlots = useCallback(async () => {
-    if (!savedArsenalId && arsenalBallIds.length === 0) {
+    const catalogIds = arsenalBallIds.filter((id) => !id.startsWith("custom-"));
+    if (!savedArsenalId && catalogIds.length === 0) {
       setAssignments([]);
       setCoverage([]);
       setSilhouette(null);
@@ -34,9 +35,12 @@ export function SlotAssignmentPanel() {
     setLoading(true);
     setError(null);
     try {
+      const filteredGameCounts = savedArsenalId
+        ? gameCounts
+        : Object.fromEntries(Object.entries(gameCounts).filter(([id]) => !id.startsWith("custom-")));
       const body = savedArsenalId
         ? { arsenal_id: savedArsenalId }
-        : { arsenal_ball_ids: arsenalBallIds, game_counts: gameCounts };
+        : { arsenal_ball_ids: catalogIds, game_counts: filteredGameCounts };
       const res = await getSlotAssignments(body);
       setAssignments(res.assignments ?? []);
       setCoverage(res.slot_coverage ?? []);
@@ -55,8 +59,15 @@ export function SlotAssignmentPanel() {
     fetchSlots();
   }, [fetchSlots]);
 
-  if (!savedArsenalId && arsenalBallIds.length === 0) {
-    return <p className="recs-empty">Add balls to your bag to see slot assignments.</p>;
+  const catalogIds = arsenalBallIds.filter((id) => !id.startsWith("custom-"));
+  if (!savedArsenalId && catalogIds.length === 0) {
+    return (
+      <p className="recs-empty">
+        {arsenalBallIds.length === 0
+          ? "Add balls to your bag to see slot assignments."
+          : "Slot assignments require at least one catalog ball. Add a catalog ball or save your arsenal."}
+      </p>
+    );
   }
   if (loading) {
     return <p className="recs-loading" aria-live="polite">Loading slots…</p>;

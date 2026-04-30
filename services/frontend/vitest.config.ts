@@ -9,6 +9,27 @@ export default defineConfig({
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
     setupFiles: ["src/test/setup.ts"],
     globals: true,
+    pool: "threads",
+    poolOptions: {
+      threads: {
+        singleThread: true,
+      },
+    },
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "text-summary", "lcov"],
+      reportsDirectory: "./coverage",
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: [
+        "node_modules/**",
+        "src/test/**",
+        "src/workers/**",
+        "src/**/*.{test,spec}.{ts,tsx}",
+        "tests/**",
+        "**/*.d.ts",
+        "dist/**",
+      ],
+    },
   },
   resolve: {
     alias: {

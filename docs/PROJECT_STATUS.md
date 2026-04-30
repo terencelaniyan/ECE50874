@@ -1,6 +1,6 @@
 # Project Status — Bowling Ball Grid Generator
 
-**Last reconciled:** 2026-04-22  
+**Last reconciled:** 2026-04-28  
 **Authors:** Sajan Kumar, Fahd Laniyan  
 **Course:** ECE 595/50874 — Advanced Software Engineering, Purdue University Indianapolis
 
@@ -68,8 +68,8 @@ Unified web platform with three modules:
 
 ### High value for grading / reliability
 
-1. **Playwright gaps** — Voronoi/grid interactions, save/load arsenal, Ball Database tab, optional API-only matrices. See [E2E_TEST_PLAN.md §5](./E2E_TEST_PLAN.md).
-2. **HTTP integration tests** — `POST /recommendations/v2`, `POST /slots`, `POST /degradation/compare`, `POST /admin/train-model` (today mostly unit-tested engines + v1 rec integration).
+1. **Expand E2E depth beyond current coverage** — core flows now include Voronoi/grid interaction, save/load arsenal, and Ball Database tab. Remaining depth work is broader negative-path and edge-case matrices. See [E2E_TEST_PLAN.md §5](./E2E_TEST_PLAN.md).
+2. **Broaden HTTP integration matrix** — targeted API integration exists for `POST /recommendations/v2`, `POST /slots`, `POST /degradation/compare`, and `POST /admin/train-model`; remaining work is higher-depth scenario/error matrices and data-shape boundary cases. See [integration-test-risk-matrix.md](./integration-test-risk-matrix.md) and [backend.md](./backend.md).
 3. **Two-tower reliability** — `setup_db.py` already runs `train_model.py`, but **PyTorch is not in** `services/backend/requirements.txt`, so a minimal `pip install -r requirements.txt` clone may skip successful training; Docker images also omit scripts/checkpoints by default. Ship or document `models/two_tower.pt`, add `torch` to deps, or surface a loud UI when two-tower is unavailable ([TECH_DEBT.md](./TECH_DEBT.md) §2).
 
 ### Medium / polish
@@ -92,9 +92,9 @@ Unified web platform with three modules:
 | Layer | Tool | Notes |
 |-------|------|--------|
 | Backend unit | pytest | Engine + API-focused unit tests under `services/backend/tests/` |
-| Backend integration | pytest + httpx + Postgres | Needs `DATABASE_URL`; skipped in default CI |
+| Backend integration | pytest + httpx + Postgres | Requires `DATABASE_URL`; runs in CI backend job with Postgres service + seeded DB |
 | Frontend unit | Vitest + RTL + MSW | Under `services/frontend/src/**/*.test.ts(x)` |
-| E2E | Playwright | `services/frontend/tests/e2e/` — Chromium, Vite on 5173 + API on 8000 |
+| E2E | Playwright | `services/frontend/tests/e2e/` — Chromium, Vite on 5173 + API on 8000; runs in dedicated CI `e2e` job |
 
 **Counts:** Re-run after changes:
 
@@ -104,15 +104,43 @@ cd services/frontend && npm run test:run
 cd services/frontend && npm run test:e2e
 ```
 
-As of last reconciliation: **121** backend tests collected; **11** Playwright tests across **8** spec files; frontend Vitest count — re-run `npm run test:run` for the current total (suites include `parametric-physics`, `phase-detector`, `decision-framework`, kinematics, etc.).
+As of last reconciliation: **179** backend tests collected; **18** Playwright tests across **12** spec files; **155** frontend Vitest tests across **22** files.
+
+Recent backend additions strengthened direct risk coverage in service/API-adjacent paths:
+
+- `test_admin_key.py` covers `POST /admin/*` key enforcement and timing-safe key comparison behavior.
+- `test_services_gaps.py` covers `get_gaps` validation rules for catalog IDs vs `custom-*` IDs.
+- `test_services_transactions.py` covers rollback/commit behavior for `create_arsenal` and `update_arsenal`.
+- `test_services.py` adds service-layer edge-case checks for validation, list/get shaping, and not-found handling.
 
 ### 4.2 What still lacks coverage
 
 | Gap | Severity |
 |-----|----------|
-| Full-stack flows in E2E (grid hover, arsenal persistence, DB tab) | Medium |
-| v2 / slots / degradation / train-model **HTTP** integration | Medium |
-| Visual regression, a11y, load/latency benchmarks | Low |
+| Broader scenario/error-path matrix depth for `/recommendations/v2`, `/slots`, `/degradation/compare`, and `/admin/train-model` (beyond current targeted integration and service coverage) | Medium |
+| Analysis upload -> processing -> results E2E with committed video fixture | Medium |
+| Visual regression, a11y, cross-browser, and load benchmarks | Low |
+
+---
+
+### 4.3 CI enforcement snapshot (2026-04-26)
+
+- **Backend job:** starts Postgres service, exports `DATABASE_URL`, seeds balls + arsenal schema, runs unit (`-m "not integration"`) and integration (`-m "integration"`) pytest phases.
+- **Frontend job:** runs Vitest coverage (`npm run test:coverage`).
+- **E2E job:** starts Postgres + backend, installs Playwright Chromium, runs `npm run test:e2e:smoke` on PR/push and `npm run test:e2e:full` on scheduled runs, uploads Playwright report artifact.
+
+---
+
+### 4.4 Validation evidence split (Simulation / Vision)
+
+| Area | Implemented capability | Validation evidence available now | Validation gap / next step |
+|------|------------------------|----------------------------------|----------------------------|
+| Simulation (2D/3D) | Parametric lane model, phase detector, 3D Rapier worker, UI launch flow | Unit tests for physics helpers (`parametric-physics`, `phase-detector`), repeated-run determinism checks, and Playwright flow coverage for 2D + 3D tabs with coarse launch-to-results latency bounds | Limited empirical validation against external ground truth trajectories or benchmark datasets |
+| Vision / Pose | MediaPipe worker pipeline, kinematics extraction, release heuristic, analysis UI | Unit tests for kinematics/math helpers, deterministic and perturbation-stability checks, and Analysis tab Playwright smoke (uploader render + file validation) | No fixture-based full processing E2E in CI yet; no controlled user study validating coaching quality |
+
+This split is intentional: implemented functionality is broader than currently proven performance/accuracy, especially for simulation realism and pose-analysis outcomes.
+
+Related validation evidence notes: [simulation/physics-audit.md](./simulation/physics-audit.md), [simulation/pose-validation.md](./simulation/pose-validation.md).
 
 ---
 
@@ -190,10 +218,10 @@ As of last reconciliation: **121** backend tests collected; **11** Playwright te
 | Layer | Framework | Strategy |
 |-------|-----------|----------|
 | Backend unit tests | pytest | Direct function calls with in-memory dicts (no DB). Covers engine modules. |
-| Backend integration tests | pytest + httpx TestClient | HTTP round-trip against FastAPI with real PostgreSQL. Requires `DATABASE_URL`. Skipped in CI. |
+| Backend integration tests | pytest + httpx TestClient | HTTP round-trip against FastAPI with real PostgreSQL. Requires `DATABASE_URL`. Runs in current backend CI job (legacy table originally said skipped). |
 | Frontend unit tests | Vitest + Testing Library | Components + MSW stubs from `test/handlers.ts`. |
 | Frontend integration test | Vitest | App mount with `BagProvider`, smoke render. |
-| CI pipeline | GitHub Actions | Backend: `pytest tests/` (unit). Frontend: `npm run test:run` (Vitest). |
+| CI pipeline | GitHub Actions | Current workflow has three jobs: backend (unit + integration), frontend (Vitest coverage), and e2e (Playwright). |
 
 ---
 
@@ -209,3 +237,22 @@ As of last reconciliation: **121** backend tests collected; **11** Playwright te
 | Arsenals / gaps / recommendations API | `test_*_api.py` | Selected HTTP contracts |
 
 Frontend tests span API clients, bag context, catalog, simulation helpers, decision framework, kinematics, and integration smoke.
+
+---
+
+## 9. Informal usability evidence (optional add-on)
+
+No participant-based usability sessions have been recorded in this document yet.
+
+Current supporting evidence is test-oriented:
+
+1. **Analysis upload guardrails:** invalid-file path validated in Playwright (`analysis.spec.ts`).
+2. **Workflow latency sanity:** coarse timing bounds covered in simulation E2E (`simulation.spec.ts`, `sim3d.spec.ts`).
+3. **Task-completion coverage:** save/load arsenal, grid hover visibility, and database search/filter/pagination are now automated in Playwright.
+
+Suggested lightweight format before final submission:
+
+1. **Participants:** count + profile (e.g., classmates familiar with bowling / not familiar).
+2. **Tasks:** find recommendations, add/remove arsenal balls, run simulation, read analysis.
+3. **Observations:** completion blockers, confusing labels, missing affordances.
+4. **Actions taken:** concrete UI/doc tweaks resulting from observations.

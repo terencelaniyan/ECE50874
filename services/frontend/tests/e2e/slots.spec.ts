@@ -3,9 +3,27 @@ import {
   waitForAppLoad,
   addBallFromCatalog,
   goToGridView,
+  matchesApiPath,
 } from "./helpers";
 
 test.describe("TC-05: Slot Assignment Panel", () => {
+  test("slots panel shows empty-state guidance when bag is empty", async ({
+    page,
+  }) => {
+    await waitForAppLoad(page);
+    await goToGridView(page);
+    await expect(page.getByText("0 / 6 SLOTS")).toBeVisible();
+
+    await page.locator(".right-panel-btn").filter({ hasText: "Slots" }).click();
+    await expect(
+      page.locator(".recs-panel-wrap .panel-badge").filter({ hasText: "6-BALL" }),
+    ).toBeVisible();
+    await expect(page.locator(".recs-empty")).toBeVisible();
+    await expect(
+      page.getByText("Add balls to your bag to see slot assignments."),
+    ).toBeVisible();
+  });
+
   test("switching to Slots panel shows slot assignments with silhouette score", async ({
     page,
   }) => {
@@ -20,6 +38,12 @@ test.describe("TC-05: Slot Assignment Panel", () => {
     await expect(page.getByText("2 / 6 SLOTS")).toBeVisible();
 
     // Click the "Slots" toggle on the right panel
+    const slotsResponsePromise = page.waitForResponse((response) => {
+      return (
+        response.request().method() === "POST" &&
+        matchesApiPath(response.url(), "/slots")
+      );
+    });
     await page.locator(".right-panel-btn").filter({ hasText: "Slots" }).click();
 
     // The right panel badge should now say "6-BALL"
@@ -29,6 +53,13 @@ test.describe("TC-05: Slot Assignment Panel", () => {
 
     // Wait for slot panel content to load
     await expect(page.locator(".slot-panel")).toBeVisible({ timeout: 10_000 });
+    const slotsResponse = await slotsResponsePromise;
+    expect(slotsResponse.ok()).toBe(true);
+    const slotsPayload = await slotsResponse.json();
+    expect(Array.isArray(slotsPayload.assignments)).toBe(true);
+    expect(slotsPayload.assignments.length).toBeGreaterThanOrEqual(1);
+    expect(slotsPayload).toHaveProperty("silhouette_score");
+    expect(Array.isArray(slotsPayload.slot_coverage)).toBe(true);
 
     // Silhouette score should be displayed
     await expect(page.getByText("SILHOUETTE SCORE")).toBeVisible();

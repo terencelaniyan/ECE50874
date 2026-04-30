@@ -1,13 +1,9 @@
-"""Integration tests for POST /recommendations/v2, POST /slots, POST /degradation/compare."""
+"""Tests for POST /recommendations/v2, POST /slots, POST /degradation/compare."""
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 import pytest
 from fastapi.testclient import TestClient
 
-pytestmark = pytest.mark.integration
 
 
 
@@ -214,17 +210,45 @@ def test_slots_both_arsenal_id_and_ball_ids_returns_400(client):
     not os.getenv("DATABASE_URL", "").strip(),
     reason="DATABASE_URL not set; integration tests need Postgres with seeded balls",
 )
-def test_slots_invalid_ball_id_returns_empty_assignments(client):
-    """Unknown ball IDs are silently skipped — returns 200 with empty assignments."""
+def test_slots_invalid_ball_id_returns_400(client):
+    """Unknown ball IDs should be rejected with validation details."""
     response = client.post(
         "/slots",
         json={"arsenal_ball_ids": ["NONEXISTENT_BALL_XYZ"]},
     )
-    # Slot endpoint silently ignores unknown IDs (no balls found → empty result)
-    assert response.status_code == 200
+    assert response.status_code == 400
     data = response.json()
-    assert data["assignments"] == []
-    assert data["best_k"] == 0
+    assert "detail" in data
+    assert "missing" in data["detail"]
+    assert "NONEXISTENT_BALL_XYZ" in data["detail"]["missing"]
+
+
+@pytest.mark.skipif(
+    not os.getenv("DATABASE_URL", "").strip(),
+    reason="DATABASE_URL not set; integration tests need Postgres with seeded balls",
+)
+def test_recommendations_v2_invalid_arsenal_id_returns_404(client):
+    response = client.post(
+        "/recommendations/v2",
+        json={"arsenal_id": "550e8400-e29b-41d4-a716-446655440000", "k": 3},
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"] == "Arsenal not found"
+
+
+@pytest.mark.skipif(
+    not os.getenv("DATABASE_URL", "").strip(),
+    reason="DATABASE_URL not set; integration tests need Postgres with seeded balls",
+)
+def test_slots_invalid_arsenal_id_returns_404(client):
+    response = client.post(
+        "/slots",
+        json={"arsenal_id": "550e8400-e29b-41d4-a716-446655440000"},
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"] == "Arsenal not found"
 
 
 @pytest.mark.skipif(
@@ -351,7 +375,7 @@ def test_degradation_compare_custom_specs_returns_200(client):
 
 def test_degradation_compare_minimal_games_near_no_degradation(client):
     """game_count=1 should produce very little degradation (factor near 1.0).
-    Note: game_count=0 currently causes an internal error (log(0) edge case)."""
+    game_count=0 is handled as a no-degradation baseline by the service."""
     response = client.post(
         "/degradation/compare",
         json={"rg": 2.50, "diff": 0.040, "int_diff": 0.015, "game_count": 1},

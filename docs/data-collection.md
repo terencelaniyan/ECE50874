@@ -7,7 +7,7 @@ This document describes the bowling ball dataset, its schema, and how it is load
 - **Primary dataset:** `data/balls.csv`
 - **Origin:** Bowling This Month (BTM) ball comparison table.
 - **Reference URL:** https://www.bowlingthismonth.com/bowling-ball-reviews/ball-comparison-table/
-- **Optional:** `data/bowling_merged.csv` may be a source or derivative; the backend uses `data/balls.csv`.
+- `data/bowling_merged.csv` may be a source or derivative; the backend uses `data/balls.csv`.
 
 Data collection (scraping or manual export from BTM / Excel) is done outside this repo. The repo consumes the resulting CSV.
 
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS balls (
 1. Reads `DATABASE_URL` from environment (`.env` at repo root or in `services/backend/`).
 2. Reads `data/balls.csv` (path relative to repo root).
 3. Creates `balls` table if it does not exist.
-4. For each row: assigns `ball_id` as B001, B002, … from row order; parses `rg`, `diff`, `int_diff` as floats; `release_date` as date (or null); empty optional text fields as null.
+4. For each row: assigns `ball_id` as B001, B002, … from row order; parses `rg`, `diff`, `int_diff` as floats; `release_date` as date (or null); empty text fields as null.
 5. Upserts into `balls` by `ball_id` (INSERT with ON CONFLICT DO UPDATE).
 
 **Run from repo root:**
@@ -132,7 +132,7 @@ python scripts/manual_entry.py                        # interactive prompt
 python scripts/manual_entry.py --from-json input.json  # batch import
 ```
 
-JSON batch format: array of objects with `name`, `brand`, `rg`, `diff`, and optional `int_diff`, `coverstock_type`, `surface_grit`, `release_date`.
+JSON batch format: array of objects with `name`, `brand`, `rg`, `diff`, and `int_diff`, `coverstock_type`, `surface_grit`, `release_date`.
 
 ## User arsenals (migration)
 
@@ -144,7 +144,11 @@ Creates persisted arsenals and membership:
 
 - `arsenals` — id (UUID), name, timestamps
 - `arsenal_balls` — arsenal_id, ball_id, game_count (for degradation-aware flows)
-- `arsenal_custom_balls` — optional custom ball rows tied to an arsenal (see script for schema)
+- `arsenal_custom_balls` — custom ball rows tied to an arsenal for user-defined specs (name/brand optional; rg/diff/int_diff required; includes `game_count`)
+
+Arsenal API requests now support mixed lists by discriminating each entry with `custom`:
+- Catalog item: `{ "custom": false, "ball_id": "B001", "game_count": 10 }`
+- Custom item: `{ "custom": true, "name": "Practice Ball", "rg": 2.52, "diff": 0.03, "int_diff": 0.01, "game_count": 8 }`
 
 ```bash
 python services/backend/scripts/migrate_arsenals.py
@@ -172,4 +176,4 @@ From repo root, runs **in order**:
 2. `migrate_arsenals.py` — arsenal tables  
 3. `train_model.py` — two-tower training (`models/two_tower.pt`); needs a working **PyTorch** install for training to succeed (`torch` is not listed in `services/backend/requirements.txt`; see [TECH_DEBT](TECH_DEBT.md))
 
-Oil patterns remain a **separate** optional step (`migrate_oil_patterns.py`) after the above.
+Oil patterns remain a **separate** step (`migrate_oil_patterns.py`) after the above.

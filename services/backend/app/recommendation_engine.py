@@ -144,10 +144,10 @@ def recommend(
     scored: List[Tuple[Dict, float]] = []
 
     for i, cand in enumerate(work_candidates):
-        best = None
+        best = float("inf")
         for a in work_arsenal:
             d = dist(cand, a, w_rg=w_rg, w_diff=w_diff, w_int=w_int, w_cover=w_cover, metric=metric)
-            if best is None or d < best:
+            if d < best:
                 best = d
         # Store original (un-normalized) candidate row
         scored.append((candidate_rows[i], float(best)))

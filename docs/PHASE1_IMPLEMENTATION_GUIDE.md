@@ -1,6 +1,6 @@
 # Phase 1 Implementation Guide — 3D Physics Simulation
 
-**Date:** 2026-03-14 (spec); **status note:** 2026-04-22 — **Major items are implemented** in the repo (2D + 3D sim tabs, worker, phase detection, backend oil patterns API). This file remains the **proposal-aligned technical spec** (equations, validation targets, worker message shapes). For shipping status see [PROJECT_STATUS.md](./PROJECT_STATUS.md). For duplicate oil-pattern definitions in UI vs DB, see [TECH_DEBT.md](./TECH_DEBT.md).
+**Date:** 2026-03-14 (spec); **status note:** 2026-04-26 — **Major items are implemented** in the repo (2D + 3D sim tabs, worker, phase detection, backend oil patterns API). This file remains the **proposal-aligned technical spec** (equations, validation targets, worker message shapes). For shipping status see [PROJECT_STATUS.md](./PROJECT_STATUS.md). For duplicate oil-pattern definitions in UI vs DB, see [TECH_DEBT.md](./TECH_DEBT.md).
 
 ---
 
@@ -8,7 +8,7 @@
 
 ### Implemented in code (summary)
 
-- **2D tab (`SimulationView.tsx`):** Parametric lane + `parametric-physics.ts`, dynamic phase ratios, optional handoff from `AnalysisView`.
+- **2D tab (`SimulationView.tsx`):** Parametric lane + `parametric-physics.ts`, dynamic phase ratios, handoff from `AnalysisView`.
 - **3D tab (`SimulationView3D.tsx`):** Three.js scene + `physics-worker.ts` (Rapier3D WASM), dual-friction style stepping, phase labels in worker output.
 - **Phase detection:** `phase-detector.ts` (and worker-side phase) — skid / hook / roll from motion data, not a fixed 3:2:1.5 bar only.
 - **Oil patterns:** `GET /oil-patterns`; table via `services/backend/scripts/migrate_oil_patterns.py`. Some UI paths still embed parallel pattern data ([TECH_DEBT.md](./TECH_DEBT.md) §1).

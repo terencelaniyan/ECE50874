@@ -3,9 +3,13 @@
 Routers/Controllers: HTTP only. Validate input, call service layer, return response.
 Business logic and database access live in services.py.
 """
+import hmac
 import os
+import logging
 import subprocess
 import sys
+
+import psycopg.errors
 from pathlib import Path
 from typing import List, Optional
 
@@ -57,6 +61,7 @@ from .services import (
 )
 
 app = FastAPI(title="Bowling Ball Backend", version="2.0.0")
+logger = logging.getLogger(__name__)
 
 _DEV_ORIGINS = [
     "http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175",
@@ -75,6 +80,19 @@ app.add_middleware(
 _resolved = Path(__file__).resolve()
 # In Docker we have .../app/main.py (depth 2 under /app); locally .../services/backend/app/main.py (depth 4 under repo).
 REPO_ROOT = _resolved.parents[3] if len(_resolved.parents) > 3 else _resolved.parents[1]
+
+
+@app.exception_handler(NotFoundError)
+def not_found_exception_handler(_, exc: NotFoundError):
+    return JSONResponse(status_code=404, content={"detail": exc.message})
+
+
+@app.exception_handler(ValidationError)
+def validation_exception_handler(_, exc: ValidationError):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": {"message": exc.message, **exc.detail}},
+    )
 
 
 @app.get("/health")
@@ -156,10 +174,7 @@ def get_ball(ball_id: str, db=Depends(get_db)):
     Raises:
         HTTPException: 404 if the ball is not found.
     """
-    row = svc_get_ball(db, ball_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail=f"Ball not found: {ball_id}")
-    return row
+    return svc_get_ball(db, ball_id)
 
 
 def _split_arsenal_balls(balls):
@@ -189,13 +204,7 @@ def create_arsenal(req: CreateArsenalRequest, db=Depends(get_db)):
     Create a new bowling ball arsenal.
     """
     catalog_balls, custom_balls = _split_arsenal_balls(req.balls)
-    try:
-        data = svc_create_arsenal(db, req.name, catalog_balls, custom_balls=custom_balls)
-    except ValidationError as e:
-        raise HTTPException(
-            status_code=400,
-            detail={"message": e.message, **e.detail},
-        )
+    data = svc_create_arsenal(db, req.name, catalog_balls, custom_balls=custom_balls)
     return ArsenalResponse(
         id=data["id"],
         name=data["name"],
@@ -253,10 +262,7 @@ def get_arsenal(arsenal_id: str, db=Depends(get_db)):
     Raises:
         HTTPException: 404 if the arsenal is not found.
     """
-    try:
-        data = svc_get_arsenal(db, arsenal_id)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
+    data = svc_get_arsenal(db, arsenal_id)
     return ArsenalResponse(
         id=data["id"],
         name=data["name"],
@@ -294,19 +300,11 @@ def update_arsenal(arsenal_id: str, req: UpdateArsenalRequest, db=Depends(get_db
     Raises:
         HTTPException: 404 if not found, 400 if validation fails.
     """
-    try:
-        catalog_balls = None
-        custom_balls = None
-        if req.balls is not None:
-            catalog_balls, custom_balls = _split_arsenal_balls(req.balls)
-        svc_update_arsenal(db, arsenal_id, name=req.name, balls=catalog_balls, custom_balls=custom_balls)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except ValidationError as e:
-        raise HTTPException(
-            status_code=400,
-            detail={"message": e.message, **e.detail},
-        )
+    catalog_balls = None
+    custom_balls = None
+    if req.balls is not None:
+        catalog_balls, custom_balls = _split_arsenal_balls(req.balls)
+    svc_update_arsenal(db, arsenal_id, name=req.name, balls=catalog_balls, custom_balls=custom_balls)
     return get_arsenal(arsenal_id, db)
 
 
@@ -322,10 +320,7 @@ def delete_arsenal(arsenal_id: str, db=Depends(get_db)):
     Raises:
         HTTPException: 404 if the arsenal is not found.
     """
-    try:
-        svc_delete_arsenal(db, arsenal_id)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.message)
+    svc_delete_arsenal(db, arsenal_id)
 
 
 @app.post("/recommendations", response_model=RecommendResponse)
@@ -356,26 +351,20 @@ def recommendations(req: RecommendRequest, db=Depends(get_db)):
             status_code=400,
             detail="Provide arsenal_id or at least one arsenal_ball_id",
         )
-    try:
-        top = svc_get_recommendations(
-            db,
-            arsenal_id=req.arsenal_id,
-            arsenal_ball_ids=req.arsenal_ball_ids,
-            game_counts=req.game_counts,
-            k=req.k,
-            w_rg=req.w_rg,
-            w_diff=req.w_diff,
-            w_int=req.w_int,
-            brand=req.brand,
-            coverstock_type=req.coverstock_type,
-            status=req.status,
-            diversity_min_distance=req.diversity_min_distance,
-        )
-    except ValidationError as e:
-        raise HTTPException(
-            status_code=400,
-            detail={"message": e.message, **e.detail},
-        )
+    top = svc_get_recommendations(
+        db,
+        arsenal_id=req.arsenal_id,
+        arsenal_ball_ids=req.arsenal_ball_ids,
+        game_counts=req.game_counts,
+        k=req.k,
+        w_rg=req.w_rg,
+        w_diff=req.w_diff,
+        w_int=req.w_int,
+        brand=req.brand,
+        coverstock_type=req.coverstock_type,
+        status=req.status,
+        diversity_min_distance=req.diversity_min_distance,
+    )
     return {"items": [{"ball": ball, "score": score} for (ball, score) in top]}
 
 
@@ -411,12 +400,9 @@ def gaps(req: GapRequest, db=Depends(get_db)):
             k=req.k,
             zone_threshold=req.zone_threshold,
         )
-    except ValidationError as e:
-        raise HTTPException(
-            status_code=400,
-            detail={"message": e.message, **e.detail},
-        )
-    return GapResponse(zones=zones)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+    return GapResponse.model_validate({"zones": zones})
 
 
 # ── Recommendations (v2 — Two-Tower + Enhanced KNN) ─────────────────────
@@ -434,31 +420,25 @@ def recommendations_v2(req: RecommendV2Request, db=Depends(get_db)):
             status_code=400,
             detail="Provide arsenal_id or at least one arsenal_ball_id",
         )
-    try:
-        result = svc_get_recommendations_v2(
-            db,
-            arsenal_id=req.arsenal_id,
-            arsenal_ball_ids=req.arsenal_ball_ids,
-            game_counts=req.game_counts,
-            k=req.k,
-            w_rg=req.w_rg,
-            w_diff=req.w_diff,
-            w_int=req.w_int,
-            w_cover=req.w_cover,
-            method=req.method,
-            metric=req.metric,
-            normalize=req.normalize,
-            degradation_model=req.degradation_model,
-            brand=req.brand,
-            coverstock_type=req.coverstock_type,
-            status=req.status,
-            diversity_min_distance=req.diversity_min_distance,
-        )
-    except ValidationError as e:
-        raise HTTPException(
-            status_code=400,
-            detail={"message": e.message, **e.detail},
-        )
+    result = svc_get_recommendations_v2(
+        db,
+        arsenal_id=req.arsenal_id,
+        arsenal_ball_ids=req.arsenal_ball_ids,
+        game_counts=req.game_counts,
+        k=req.k,
+        w_rg=req.w_rg,
+        w_diff=req.w_diff,
+        w_int=req.w_int,
+        w_cover=req.w_cover,
+        method=req.method,
+        metric=req.metric,
+        normalize=req.normalize,
+        degradation_model=req.degradation_model,
+        brand=req.brand,
+        coverstock_type=req.coverstock_type,
+        status=req.status,
+        diversity_min_distance=req.diversity_min_distance,
+    )
     return result
 
 
@@ -484,11 +464,8 @@ def slot_assignment(req: SlotAssignRequest, db=Depends(get_db)):
             arsenal_ball_ids=req.arsenal_ball_ids,
             game_counts=req.game_counts,
         )
-    except ValidationError as e:
-        raise HTTPException(
-            status_code=400,
-            detail={"message": e.message, **e.detail},
-        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
     return result
 
 
@@ -504,36 +481,33 @@ def degradation_compare(req: DegradationCompareRequest, db=Depends(get_db)):
         "coverstock_type": req.coverstock_type,
     }
     if req.ball_id:
-        row = svc_get_ball(db, req.ball_id)
-        if row is None:
-            raise HTTPException(status_code=404, detail=f"Ball not found: {req.ball_id}")
-        ball_row = dict(row)
+        ball_row = dict(svc_get_ball(db, req.ball_id))
 
     result = svc_get_degradation_comparison(ball_row, req.game_count)
 
-    return DegradationCompareResponse(
-        original={
+    return DegradationCompareResponse.model_validate({
+        "original": {
             "rg": result["original"]["rg"],
             "diff": result["original"]["diff"],
             "int_diff": result["original"]["int_diff"],
             "factor": 1.0,
         },
-        v1_linear={
+        "v1_linear": {
             "rg": result["v1_linear"]["rg"],
             "diff": result["v1_linear"]["diff"],
             "int_diff": result["v1_linear"]["int_diff"],
             "factor": result["v1_linear"]["factor"],
         },
-        v2_logarithmic={
+        "v2_logarithmic": {
             "rg": result["v2_logarithmic"]["rg"],
             "diff": result["v2_logarithmic"]["diff"],
             "int_diff": result["v2_logarithmic"]["int_diff"],
             "factor": result["v2_logarithmic"]["factor"],
         },
-        game_count=result["game_count"],
-        coverstock_type=result["v2_logarithmic"].get("coverstock_type"),
-        v2_lambda=result["v2_logarithmic"]["lambda"],
-    )
+        "game_count": result["game_count"],
+        "coverstock_type": result["v2_logarithmic"].get("coverstock_type"),
+        "v2_lambda": result["v2_logarithmic"]["lambda"],
+    })
 
 
 # ── Oil Patterns ─────────────────────────────────────────────────────────
@@ -543,8 +517,8 @@ def oil_patterns(db=Depends(get_db)):
     """List available oil patterns with friction zone data."""
     try:
         items = svc_list_oil_patterns(db)
-    except Exception:
-        # Table might not exist yet — return hardcoded defaults
+    except psycopg.errors.UndefinedTable:
+        logger.warning("oil_patterns table not found; returning built-in defaults")
         items = [
             {"id": 1, "name": "House Shot (38ft)", "length_ft": 38,
              "description": "Standard recreational pattern",
@@ -568,7 +542,7 @@ ADMIN_KEY = os.environ.get("ADMIN_KEY")
 
 
 def _require_admin_key(x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key")) -> None:
-    if not ADMIN_KEY or x_admin_key != ADMIN_KEY:
+    if not ADMIN_KEY or not hmac.compare_digest(x_admin_key or "", ADMIN_KEY):
         raise HTTPException(status_code=403, detail="Invalid or missing X-Admin-Key")
 
 
@@ -643,17 +617,16 @@ def refresh_catalog(_: None = Depends(_require_admin_key)):
 @app.post("/admin/train-model")
 def train_model(req: TrainModelRequest, db=Depends(get_db), _: None = Depends(_require_admin_key)):
     """Train the two-tower recommendation model on synthetic arsenal data."""
-    result = svc_train_two_tower(
-        db,
-        n_arsenals=req.n_arsenals,
-        epochs=req.epochs,
-        batch_size=req.batch_size,
-        lr=req.lr,
-        neg_ratio=req.neg_ratio,
-    )
-    if "error" in result:
-        return JSONResponse(
-            status_code=500,
-            content={"status": "error", "detail": result["error"]},
+    try:
+        result = svc_train_two_tower(
+            db,
+            n_arsenals=req.n_arsenals,
+            epochs=req.epochs,
+            batch_size=req.batch_size,
+            lr=req.lr,
+            neg_ratio=req.neg_ratio,
         )
+    except Exception as exc:
+        logger.exception("Two-tower training failed")
+        return JSONResponse(status_code=500, content={"status": "error", "detail": str(exc)})
     return {"status": "ok", **result}

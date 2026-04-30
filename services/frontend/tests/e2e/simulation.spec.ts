@@ -41,6 +41,7 @@ test.describe("TC-06: Lane Simulation", () => {
       .selectOption("Sport Shot — Badger (52ft)");
 
     // Click LAUNCH BALL
+    const launchStartMs = Date.now();
     await page.getByRole("button", { name: "LAUNCH BALL" }).click();
 
     // Phase label should change to "SIMULATING..."
@@ -50,6 +51,8 @@ test.describe("TC-06: Lane Simulation", () => {
     await expect(page.getByText("Simulation Results")).toBeVisible({
       timeout: 10_000,
     });
+    const launchToResultsMs = Date.now() - launchStartMs;
+    expect(launchToResultsMs).toBeLessThan(10_000);
 
     // Verify key result rows (exact match to avoid hitting advice text)
     await expect(page.getByText("Entry Angle", { exact: true })).toBeVisible();

@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, List, Optional, Tuple
 
 from psycopg import sql
@@ -20,6 +21,7 @@ SORT_COLUMNS = frozenset({
     "name", "brand", "release_date", "rg", "diff",
     "coverstock_type", "symmetry", "ball_id",
 })
+logger = logging.getLogger(__name__)
 
 
 def validate_ball_ids(cur, ball_ids: List[str]) -> None:
@@ -245,11 +247,14 @@ def list_balls(
     return rows, count
 
 
-def get_ball(conn, ball_id: str) -> Optional[dict]:
-    """Return ball row or None if not found."""
+def get_ball(conn, ball_id: str) -> dict:
+    """Return ball row or raise NotFoundError if not found."""
     with conn.cursor() as cur:
         cur.execute("SELECT * FROM balls WHERE ball_id = %s;", (ball_id,))
-        return cur.fetchone()
+        row = cur.fetchone()
+    if row is None:
+        raise NotFoundError(f"Ball not found: {ball_id}")
+    return row
 
 
 def create_arsenal(
@@ -267,44 +272,48 @@ def create_arsenal(
     """
     custom_balls = custom_balls or []
     ball_ids = [b["ball_id"] for b in balls]
-    with conn.cursor() as cur:
-        if ball_ids:
-            validate_ball_ids(cur, ball_ids)
-        cur.execute(
-            "INSERT INTO arsenals (name) VALUES (%s) RETURNING id, name;",
-            (name,),
-        )
-        row = cur.fetchone()
-        arsenal_id = str(row["id"])
-        for b in balls:
+    try:
+        with conn.cursor() as cur:
+            if ball_ids:
+                validate_ball_ids(cur, ball_ids)
             cur.execute(
-                """
-                INSERT INTO arsenal_balls (arsenal_id, ball_id, game_count)
-                VALUES (%s::uuid, %s, %s);
-                """,
-                (arsenal_id, b["ball_id"], b["game_count"]),
+                "INSERT INTO arsenals (name) VALUES (%s) RETURNING id, name;",
+                (name,),
             )
-        for cb in custom_balls:
-            gc = cb.get("game_count", 0)
-            cur.execute(
-                """
-                INSERT INTO arsenal_custom_balls
-                (arsenal_id, name, brand, rg, diff, int_diff, surface_grit, surface_finish, game_count)
-                VALUES (%s::uuid, %s, %s, %s, %s, %s, %s, %s, %s);
-                """,
-                (
-                    arsenal_id,
-                    cb.get("name"),
-                    cb.get("brand"),
-                    float(cb["rg"]),
-                    float(cb["diff"]),
-                    float(cb["int_diff"]),
-                    cb.get("surface_grit"),
-                    cb.get("surface_finish"),
-                    gc if gc is not None else 0,
-                ),
-            )
-    conn.commit()
+            row = cur.fetchone()
+            arsenal_id = str(row["id"])
+            for b in balls:
+                cur.execute(
+                    """
+                    INSERT INTO arsenal_balls (arsenal_id, ball_id, game_count)
+                    VALUES (%s::uuid, %s, %s);
+                    """,
+                    (arsenal_id, b["ball_id"], b["game_count"]),
+                )
+            for cb in custom_balls:
+                gc = cb.get("game_count", 0)
+                cur.execute(
+                    """
+                    INSERT INTO arsenal_custom_balls
+                    (arsenal_id, name, brand, rg, diff, int_diff, surface_grit, surface_finish, game_count)
+                    VALUES (%s::uuid, %s, %s, %s, %s, %s, %s, %s, %s);
+                    """,
+                    (
+                        arsenal_id,
+                        cb.get("name"),
+                        cb.get("brand"),
+                        float(cb["rg"]),
+                        float(cb["diff"]),
+                        float(cb["int_diff"]),
+                        cb.get("surface_grit"),
+                        cb.get("surface_finish"),
+                        gc,
+                    ),
+                )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
     balls_out = [
         {"ball_id": b["ball_id"], "game_count": b["game_count"]} for b in balls
     ]
@@ -395,61 +404,65 @@ def update_arsenal(
     Update an arsenal's name and/or catalog and custom balls in one transaction.
     On any failure, the whole operation is rolled back.
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT id, name FROM arsenals WHERE id = %s::uuid;",
-            (arsenal_id,),
-        )
-        row = cur.fetchone()
-        if not row:
-            raise NotFoundError("Arsenal not found")
-        if name is not None:
+    try:
+        with conn.cursor() as cur:
             cur.execute(
-                "UPDATE arsenals SET name = %s WHERE id = %s::uuid;",
-                (name, arsenal_id),
-            )
-        if balls is not None:
-            ball_ids = [b["ball_id"] for b in balls]
-            if ball_ids:
-                validate_ball_ids(cur, ball_ids)
-            cur.execute(
-                "DELETE FROM arsenal_balls WHERE arsenal_id = %s::uuid;",
+                "SELECT id, name FROM arsenals WHERE id = %s::uuid;",
                 (arsenal_id,),
             )
-            for b in balls:
+            row = cur.fetchone()
+            if not row:
+                raise NotFoundError("Arsenal not found")
+            if name is not None:
                 cur.execute(
-                    """
-                    INSERT INTO arsenal_balls (arsenal_id, ball_id, game_count)
-                    VALUES (%s::uuid, %s, %s);
-                    """,
-                    (arsenal_id, b["ball_id"], b["game_count"]),
+                    "UPDATE arsenals SET name = %s WHERE id = %s::uuid;",
+                    (name, arsenal_id),
                 )
-        if custom_balls is not None:
-            cur.execute(
-                "DELETE FROM arsenal_custom_balls WHERE arsenal_id = %s::uuid;",
-                (arsenal_id,),
-            )
-            for cb in custom_balls:
-                gc = cb.get("game_count", 0)
+            if balls is not None:
+                ball_ids = [b["ball_id"] for b in balls]
+                if ball_ids:
+                    validate_ball_ids(cur, ball_ids)
                 cur.execute(
-                    """
-                    INSERT INTO arsenal_custom_balls
-                    (arsenal_id, name, brand, rg, diff, int_diff, surface_grit, surface_finish, game_count)
-                    VALUES (%s::uuid, %s, %s, %s, %s, %s, %s, %s, %s);
-                    """,
-                    (
-                        arsenal_id,
-                        cb.get("name"),
-                        cb.get("brand"),
-                        float(cb["rg"]),
-                        float(cb["diff"]),
-                        float(cb["int_diff"]),
-                        cb.get("surface_grit"),
-                        cb.get("surface_finish"),
-                        gc if gc is not None else 0,
-                    ),
+                    "DELETE FROM arsenal_balls WHERE arsenal_id = %s::uuid;",
+                    (arsenal_id,),
                 )
-    conn.commit()
+                for b in balls:
+                    cur.execute(
+                        """
+                        INSERT INTO arsenal_balls (arsenal_id, ball_id, game_count)
+                        VALUES (%s::uuid, %s, %s);
+                        """,
+                        (arsenal_id, b["ball_id"], b["game_count"]),
+                    )
+            if custom_balls is not None:
+                cur.execute(
+                    "DELETE FROM arsenal_custom_balls WHERE arsenal_id = %s::uuid;",
+                    (arsenal_id,),
+                )
+                for cb in custom_balls:
+                    gc = cb.get("game_count", 0)
+                    cur.execute(
+                        """
+                        INSERT INTO arsenal_custom_balls
+                        (arsenal_id, name, brand, rg, diff, int_diff, surface_grit, surface_finish, game_count)
+                        VALUES (%s::uuid, %s, %s, %s, %s, %s, %s, %s, %s);
+                        """,
+                        (
+                            arsenal_id,
+                            cb.get("name"),
+                            cb.get("brand"),
+                            float(cb["rg"]),
+                            float(cb["diff"]),
+                            float(cb["int_diff"]),
+                            cb.get("surface_grit"),
+                            cb.get("surface_finish"),
+                            gc,
+                        ),
+                    )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
 
 
 def delete_arsenal(conn, arsenal_id: str) -> None:
@@ -630,7 +643,9 @@ def get_gaps(
         cur.execute("SELECT * FROM balls;")
         catalog_rows = cur.fetchall()
         if not arsenal_id and arsenal_ids:
-            validate_ball_ids(cur, arsenal_ids)
+            real_ids = [bid for bid in arsenal_ids if not bid.startswith("custom-")]
+            if real_ids:
+                validate_ball_ids(cur, real_ids)
     arsenal_effective_rows = arsenal_rows if arsenal_rows else None
     top = compute_gaps(
         catalog_rows,
@@ -747,8 +762,8 @@ def get_recommendations_v2(
             if tt_items:
                 items = [{"ball": b, "score": s, "method": "two_tower", "reason": None} for b, s in tt_items]
                 actual_method = "two_tower"
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Two-tower recommendation path failed, falling back to KNN: %s", exc)
 
     # KNN fallback or explicit knn
     if not items or method == "hybrid":
@@ -771,7 +786,8 @@ def get_recommendations_v2(
             seen = set()
             merged = []
             for item in items + knn_results:
-                bid = item["ball"]["ball_id"] if isinstance(item["ball"], dict) else item["ball"].ball_id
+                ball_obj = item["ball"]
+                bid = ball_obj["ball_id"] if isinstance(ball_obj, dict) else getattr(ball_obj, "ball_id")
                 if bid not in seen:
                     seen.add(bid)
                     merged.append(item)
@@ -799,6 +815,9 @@ def get_slot_assignments(
 ) -> dict:
     """Assign arsenal balls to the 6-ball slot system."""
     from .slot_assignment import assign_slots
+    if not arsenal_id and arsenal_ball_ids:
+        with conn.cursor() as cur:
+            validate_ball_ids(cur, arsenal_ball_ids)
     arsenal_rows, arsenal_ids = resolve_arsenal_rows(
         conn, arsenal_id, arsenal_ball_ids, game_counts
     )
@@ -825,24 +844,23 @@ def train_two_tower(
     neg_ratio: int = 3,
 ) -> dict:
     """Train the two-tower model on synthetic arsenal data."""
-    try:
-        from .two_tower import train_model
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM balls;")
-            catalog = cur.fetchall()
-        if not catalog:
-            return {"error": "No balls in catalog to train on"}
-        result = train_model(
-            catalog_rows=catalog,
-            n_arsenals=n_arsenals,
-            epochs=epochs,
-            batch_size=batch_size,
-            lr=lr,
-            neg_ratio=neg_ratio,
-        )
-        return result
-    except Exception as e:
-        return {"error": str(e)}
+    from .two_tower import train_model
+    with conn.cursor() as cur:
+        cur.execute("SELECT * FROM balls;")
+        catalog = cur.fetchall()
+    if not catalog:
+        raise RuntimeError("No balls in catalog to train on")
+    result = train_model(
+        catalog=catalog,
+        n_arsenals=n_arsenals,
+        epochs=epochs,
+        batch_size=batch_size,
+        lr=lr,
+        neg_ratio=neg_ratio,
+    )
+    if result is None:
+        raise RuntimeError("PyTorch not available for training")
+    return result
 
 
 # ── Oil Patterns ────────────────────────────────────────────────────────

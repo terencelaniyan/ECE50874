@@ -221,6 +221,7 @@ export function SimulationView3D({ initialParams }: Props) {
   const [summary, setSummary] = useState<SimulationSummary | null>(null);
   const [advice, setAdvice] = useState<SimulationAdvice | null>(null);
   const [recBalls, setRecBalls] = useState<RecommendV2Item[]>([]);
+  const [runtimeError, setRuntimeError] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialParams) {
@@ -247,14 +248,20 @@ export function SimulationView3D({ initialParams }: Props) {
     camera.lookAt(0, 0, LANE_LENGTH_M * 0.6);
     cameraRef.current = camera;
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    // Shadows disabled for render performance
-    renderer.shadowMap.enabled = false;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
-    rendererRef.current = renderer;
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      // Shadows disabled for render performance
+      renderer.shadowMap.enabled = false;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
+      rendererRef.current = renderer;
+    } catch (err) {
+      console.warn("WebGL not supported, skipping 3D rendering", err);
+      return;
+    }
 
     // ── Lighting (warm bowling alley atmosphere) ──
     scene.add(new THREE.AmbientLight(0x554040, 0.6));
@@ -546,7 +553,9 @@ export function SimulationView3D({ initialParams }: Props) {
     // Render loop
     const animate = () => {
       animFrameRef.current = requestAnimationFrame(animate);
-      renderer.render(scene, camera);
+      if (rendererRef.current) {
+        rendererRef.current.render(scene, camera);
+      }
     };
     animate();
 
@@ -563,18 +572,35 @@ export function SimulationView3D({ initialParams }: Props) {
     return () => {
       window.removeEventListener("resize", onResize);
       cancelAnimationFrame(animFrameRef.current);
-      renderer.dispose();
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+      }
     };
   }, [oilPatternIdx]);
 
   // ── Initialize Rapier WASM on main thread ────────────────────────────
   useEffect(() => {
     let cancelled = false;
-    import("../physics/bowling-physics").then(({ initRapier }) =>
-      initRapier().then((ok) => {
-        if (!cancelled) setPhysicsReady(ok);
-      }),
-    );
+    import("../physics/bowling-physics")
+      .then(({ initRapier }) => initRapier())
+      .then((ok) => {
+        if (cancelled) return;
+        setPhysicsReady(ok);
+        if (!ok) {
+          setRuntimeError("Failed to initialize physics engine.");
+          setPhaseLabel("ERROR");
+        }
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to load physics engine.";
+        setPhysicsReady(false);
+        setRuntimeError(message);
+        setPhaseLabel("ERROR");
+      });
     return () => { cancelled = true; };
   }, []);
 
@@ -609,6 +635,7 @@ export function SimulationView3D({ initialParams }: Props) {
     setPhaseLabel("SIMULATING\u2026");
     setSummary(null);
     setAdvice(null);
+    setRuntimeError(null);
 
     const selectedEntry = bag.find((e) => (e.ball.name ?? "Custom") === currentBall);
     const ball = selectedEntry?.ball;
@@ -640,8 +667,10 @@ export function SimulationView3D({ initialParams }: Props) {
         const result = await runBowlingSimulation(params);
         playTrajectory(result.trajectory, result.summary, selectedEntry);
       } catch (err) {
-        console.error("Rapier simulation failed:", err);
+        const message =
+          err instanceof Error ? err.message : "Simulation failed unexpectedly.";
         setPhaseLabel("ERROR");
+        setRuntimeError(message);
         setSimRunning(false);
       }
     }, 0);
@@ -656,6 +685,33 @@ export function SimulationView3D({ initialParams }: Props) {
       const camera = cameraRef.current;
       const pins = pinMeshesRef.current;
       if (!ball || !trail) {
+        setPhaseLabel(sim.pinsDown === 10 ? "STRIKE! \u2713" : `${sim.pinsDown} PINS`);
+        setSummary(sim);
+        const covType = selectedEntry?.type === "catalog"
+          ? (selectedEntry.ball as Ball).coverstock_type ?? undefined
+          : undefined;
+        const simAdvice = analyzeSimulation(
+          {
+            entryAngle: sim.entryAngle,
+            entryClass: sim.outcomeClass,
+            breakPt: `Board ${sim.breakpointBoard}`,
+            skidFt: sim.skidLengthFt,
+            hookFt: sim.hookLengthFt,
+            rollFt: sim.rollLengthFt,
+            outcome: sim.outcome,
+            outcomeClass: sim.outcomeClass,
+            hookPotential: 0,
+            patternLength: OIL_PATTERNS[oilPatternIdx].lengthFt,
+          },
+          {
+            rg: selectedEntry?.ball?.rg ?? 2.5,
+            diff: selectedEntry?.ball?.diff ?? 0.04,
+            coverstockType: covType,
+            gameCount: selectedEntry?.game_count,
+          },
+        );
+        setAdvice(simAdvice);
+        fetchRecommendations(simAdvice);
         setSimRunning(false);
         return;
       }
@@ -885,6 +941,12 @@ export function SimulationView3D({ initialParams }: Props) {
         >
           {physicsReady ? "LAUNCH BALL" : "Loading physics\u2026"}
         </button>
+
+        {runtimeError && (
+          <div className="analysis-warning" role="alert">
+            {runtimeError}
+          </div>
+        )}
 
         {summary && (
           <div className="result-card">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useBag } from "../context/BagContext";
 import { getRecommendations } from "../api/recommendations";
 import { getRecommendationsV2 } from "../api/recommendations-v2";
@@ -8,12 +8,23 @@ import type { GapZone } from "../types/ball";
 
 type RecMethod = "knn" | "two_tower" | "hybrid";
 
-/** Derive match % from score (lower score = better). Best in list → 100%, worst → baseline. */
-function scoreToMatchPercent(score: number, minScore: number, maxScore: number): number {
-  if (maxScore <= minScore) return 100; // all items equal or single item
-  const pct = 100 * (1 - (score - minScore) / (maxScore - minScore));
-  return Math.max(5, Math.round(pct)); // floor at 5% so worst still shows a sliver
+/** Derive match % from score (lower score = better).
+ * Spreads scores to 60–99% so similar items show differentiated bars.
+ * When all scores are equal, items rank proportionally by position (rank 1 = 99%, last = 60%).
+ */
+function scoreToMatchPercent(score: number, minScore: number, maxScore: number, rank: number, total: number): number {
+  const RANGE_MAX = 99;
+  const RANGE_MIN = 60;
+  if (total <= 1) return RANGE_MAX;
+  // If all scores are identical, fall back to rank-based spread
+  if (Math.abs(maxScore - minScore) < 1e-9) {
+    const rankPct = 1 - (rank / (total - 1));
+    return Math.round(RANGE_MIN + rankPct * (RANGE_MAX - RANGE_MIN));
+  }
+  const pct = 1 - (score - minScore) / (maxScore - minScore);
+  return Math.max(RANGE_MIN, Math.min(RANGE_MAX, Math.round(RANGE_MIN + pct * (RANGE_MAX - RANGE_MIN))));
 }
+
 
 function getReasonText(
   item: RecommendationItem,
@@ -36,62 +47,68 @@ export function RecommendationsListCompact() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [method, setMethod] = useState<RecMethod>("knn");
-  const [actualMethod, setActualMethod] = useState<string | null>(null);
 
   const gapBallIds = new Set(
     (gapZones ?? []).flatMap((z) => z.balls.map((b) => b.ball.ball_id))
   );
 
+  // Filter out custom ball IDs (those starting with "custom-") before hitting the
+  // recommendations API — the backend DB has no record of them and returns a 404.
+  const catalogBallIds = useMemo(() => arsenalBallIds.filter((id) => !id.startsWith("custom-")), [arsenalBallIds]);
+  const hasOnlyCustomBalls = arsenalBallIds.length > 0 && catalogBallIds.length === 0;
+
   const fetchRecsAndGaps = useCallback(async () => {
-    if (!savedArsenalId && arsenalBallIds.length === 0) {
+    if (!savedArsenalId && catalogBallIds.length === 0) {
       setItems([]);
       setGapZones([]);
-      setActualMethod(null);
       return;
     }
     setLoading(true);
     setError(null);
     try {
+      const filteredGameCounts = savedArsenalId
+        ? gameCounts
+        : Object.fromEntries(
+            Object.entries(gameCounts).filter(([id]) => !id.startsWith("custom-"))
+          );
+
       const gapBody = savedArsenalId
         ? { arsenal_id: savedArsenalId, k: 10 }
         : {
-            arsenal_ball_ids: arsenalBallIds,
-            game_counts: Object.keys(gameCounts).length ? gameCounts : undefined,
+            arsenal_ball_ids: catalogBallIds,
+            game_counts: Object.keys(filteredGameCounts).length ? filteredGameCounts : undefined,
             k: 10,
           };
 
       if (method === "knn") {
         const recBody = savedArsenalId
           ? { arsenal_id: savedArsenalId, k: 10 }
-          : { arsenal_ball_ids: arsenalBallIds, game_counts: gameCounts, k: 10 };
+          : { arsenal_ball_ids: catalogBallIds, game_counts: filteredGameCounts, k: 10 };
         const [recRes, gapRes] = await Promise.all([
           getRecommendations(recBody),
           getGaps(gapBody),
         ]);
         setItems(recRes.items ?? []);
         setGapZones(gapRes.zones ?? []);
-        setActualMethod("knn");
       } else {
         const recBody = savedArsenalId
           ? { arsenal_id: savedArsenalId, k: 10, method }
-          : { arsenal_ball_ids: arsenalBallIds, game_counts: gameCounts, k: 10, method };
+          : { arsenal_ball_ids: catalogBallIds, game_counts: filteredGameCounts, k: 10, method };
         const [recRes, gapRes] = await Promise.all([
           getRecommendationsV2(recBody),
           getGaps(gapBody),
         ]);
         setItems(recRes.items ?? []);
         setGapZones(gapRes.zones ?? []);
-        setActualMethod(recRes.method);
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load");
       setItems([]);
       setGapZones([]);
-      setActualMethod(null);
     } finally {
       setLoading(false);
     }
-  }, [arsenalBallIds, gameCounts, savedArsenalId, method]);
+  }, [catalogBallIds, gameCounts, savedArsenalId, method]);
 
   useEffect(() => {
     fetchRecsAndGaps();
@@ -100,6 +117,15 @@ export function RecommendationsListCompact() {
   if (!savedArsenalId && arsenalBallIds.length === 0) {
     return (
       <p className="recs-empty">Add balls to your bag to get recommendations.</p>
+    );
+  }
+
+  if (hasOnlyCustomBalls && !savedArsenalId) {
+    return (
+      <p className="recs-empty">
+        Recommendations require at least one catalog ball. Custom-only arsenals cannot be
+        matched against the database — add a catalog ball or save your arsenal first.
+      </p>
     );
   }
 
@@ -115,9 +141,7 @@ export function RecommendationsListCompact() {
           {m === "knn" ? "KNN" : m === "two_tower" ? "V2" : "Hybrid"}
         </button>
       ))}
-      {actualMethod && actualMethod !== method && (
-        <span className="rec-fallback-badge">KNN fallback</span>
-      )}
+
     </div>
   );
 
@@ -162,7 +186,7 @@ export function RecommendationsListCompact() {
       <ul className="rec-list-compact" aria-label="Recommendations">
         {validItems.map((item, i) => {
           const isGapFill = gapBallIds.has(item.ball.ball_id);
-          const matchPct = scoreToMatchPercent(item.score, minScore, maxScore);
+          const matchPct = scoreToMatchPercent(item.score, minScore, maxScore, i, validItems.length);
           const isV2 = "method" in item;
           const reason = isV2 && (item as RecommendV2Item).reason
             ? (item as RecommendV2Item).reason!
@@ -180,8 +204,8 @@ export function RecommendationsListCompact() {
                   {isGapFill ? "GAP FILL" : "REPLACEMENT"}
                 </div>
                 <div className={`rec-badge method method-${itemMethod}`}>
-                  {itemMethod === "knn" ? "KNN" : itemMethod === "two_tower" ? "V2" : "HYBRID"}
-                </div>
+                    {itemMethod === "knn" ? "KNN" : itemMethod === "two_tower" ? "V2" : "HYBRID"}
+                  </div>
               </div>
               <div className="rec-name">{item.ball.name}</div>
               <div className="rec-reason">{reason}</div>

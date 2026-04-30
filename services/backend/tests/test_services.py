@@ -83,10 +83,102 @@ def test_resolve_arsenal_rows_ad_hoc():
     mock_cur.fetchall.return_value = [
         {"ball_id": "b1", "rg": 2.50, "diff": 0.05, "surface_grit": "2000 Grit"}
     ]
-    
+
     rows, ids = services.resolve_arsenal_rows(mock_conn, None, ["b1"], {"b1": 50})
     assert ids == ["b1"]
     assert len(rows) == 1
     # Check if degradation was applied
     assert rows[0]["rg"] != 2.50
+
+
+# ── validate_ball_ids edge cases ─────────────────────────────────────────────
+
+def test_validate_ball_ids_empty_list_is_noop():
+    """validate_ball_ids with an empty list should not execute any SQL."""
+    mock_cur = MagicMock()
+    services.validate_ball_ids(mock_cur, [])
+    mock_cur.execute.assert_not_called()
+
+
+# ── get_ball ─────────────────────────────────────────────────────────────────
+
+def test_get_ball_raises_not_found():
+    """get_ball raises NotFoundError when the ball does not exist."""
+    mock_conn = MagicMock()
+    mock_cur = mock_conn.cursor.return_value.__enter__.return_value
+    mock_cur.fetchone.return_value = None
+
+    with pytest.raises(NotFoundError):
+        services.get_ball(mock_conn, "NONEXISTENT")
+
+
+# ── list_arsenals ─────────────────────────────────────────────────────────────
+
+def test_list_arsenals_returns_formatted_list():
+    """list_arsenals maps DB rows to dicts with id, name, and ball_count."""
+    mock_conn = MagicMock()
+    mock_cur = mock_conn.cursor.return_value.__enter__.return_value
+    mock_cur.fetchall.return_value = [
+        {"id": "uuid-1", "name": "My Arsenal", "ball_count": 3},
+        {"id": "uuid-2", "name": "Spare Kit", "ball_count": 1},
+    ]
+
+    result = services.list_arsenals(mock_conn)
+
+    assert len(result) == 2
+    assert result[0] == {"id": "uuid-1", "name": "My Arsenal", "ball_count": 3}
+    assert result[1] == {"id": "uuid-2", "name": "Spare Kit", "ball_count": 1}
+
+
+def test_list_arsenals_empty_db_returns_empty_list():
+    mock_conn = MagicMock()
+    mock_cur = mock_conn.cursor.return_value.__enter__.return_value
+    mock_cur.fetchall.return_value = []
+
+    result = services.list_arsenals(mock_conn)
+    assert result == []
+
+
+# ── get_arsenal ───────────────────────────────────────────────────────────────
+
+def test_get_arsenal_not_found():
+    """get_arsenal raises NotFoundError when the arsenal does not exist."""
+    mock_conn = MagicMock()
+    mock_cur = mock_conn.cursor.return_value.__enter__.return_value
+    mock_cur.fetchone.return_value = None
+
+    with pytest.raises(NotFoundError):
+        services.get_arsenal(mock_conn, "missing-uuid")
+
+
+def test_get_arsenal_success_returns_balls():
+    """get_arsenal returns id, name, balls, and custom_balls."""
+    mock_conn = MagicMock()
+    mock_cur = mock_conn.cursor.return_value.__enter__.return_value
+    mock_cur.fetchone.return_value = {"id": "aa-bb", "name": "Test Arsenal"}
+    # First fetchall → arsenal_balls rows; second → custom_balls (via _get_arsenal_custom_balls)
+    mock_cur.fetchall.side_effect = [
+        [{"ball_id": "b1", "game_count": 10}],
+        [],
+    ]
+
+    result = services.get_arsenal(mock_conn, "aa-bb")
+
+    assert result["id"] == "aa-bb"
+    assert result["name"] == "Test Arsenal"
+    assert len(result["balls"]) == 1
+    assert result["balls"][0] == {"ball_id": "b1", "game_count": 10}
+    assert result["custom_balls"] == []
+
+
+def test_get_arsenal_success_with_no_balls():
+    """get_arsenal works when arsenal has zero catalog or custom balls."""
+    mock_conn = MagicMock()
+    mock_cur = mock_conn.cursor.return_value.__enter__.return_value
+    mock_cur.fetchone.return_value = {"id": "aa-bb", "name": "Empty"}
+    mock_cur.fetchall.side_effect = [[], []]
+
+    result = services.get_arsenal(mock_conn, "aa-bb")
+    assert result["balls"] == []
+    assert result["custom_balls"] == []
 

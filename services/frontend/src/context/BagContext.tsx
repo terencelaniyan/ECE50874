@@ -8,6 +8,7 @@ import {
 } from "react";
 import type { Ball, CustomBall } from "../types/ball";
 import type { BagEntry } from "../types/ball";
+import { BAG_CAPACITY } from "../constants/slots";
 
 interface BagContextValue {
   bag: BagEntry[];
@@ -15,6 +16,8 @@ interface BagContextValue {
   addToBag: (ball: Ball, gameCount?: number) => void;
   addCustomToBag: (ball: CustomBall, gameCount?: number) => void;
   removeFromBag: (ballId: string) => void;
+  clearBag: () => void;
+  reorderBag: (startIndex: number, endIndex: number) => void;
   setGameCount: (ballId: string, gameCount: number) => void;
   setBag: (entries: BagEntry[]) => void;
   setSavedArsenalId: (id: string | null) => void;
@@ -42,6 +45,10 @@ export function BagProvider({ children }: { children: ReactNode }) {
 
   const addToBag = useCallback((ball: Ball, gameCount = 0) => {
     setBagState((prev) => {
+      if (prev.length >= BAG_CAPACITY) {
+        alert(`Your bag is full! You can only have up to ${BAG_CAPACITY} balls.`);
+        return prev;
+      }
       if (prev.some((e) => e.ball.ball_id === ball.ball_id)) return prev;
       return [...prev, { type: "catalog", ball, game_count: gameCount }];
     });
@@ -49,6 +56,10 @@ export function BagProvider({ children }: { children: ReactNode }) {
 
   const addCustomToBag = useCallback((ball: CustomBall, gameCount = 0) => {
     setBagState((prev) => {
+      if (prev.length >= BAG_CAPACITY) {
+        alert(`Your bag is full! You can only have up to ${BAG_CAPACITY} balls.`);
+        return prev;
+      }
       if (prev.some((e) => e.ball.ball_id === ball.ball_id)) return prev;
       return [...prev, { type: "custom", ball, game_count: gameCount }];
     });
@@ -56,6 +67,20 @@ export function BagProvider({ children }: { children: ReactNode }) {
 
   const removeFromBag = useCallback((ballId: string) => {
     setBagState((prev) => prev.filter((e) => e.ball.ball_id !== ballId));
+  }, []);
+
+  const clearBag = useCallback(() => {
+    setBagState([]);
+    setSavedArsenalId(null);
+  }, []);
+
+  const reorderBag = useCallback((startIndex: number, endIndex: number) => {
+    setBagState((prev) => {
+      const result = Array.from(prev);
+      const [removed] = result.splice(startIndex, 1);
+      result.splice(endIndex, 0, removed);
+      return result;
+    });
   }, []);
 
   const setGameCount = useCallback((ballId: string, gameCount: number) => {
@@ -83,6 +108,8 @@ export function BagProvider({ children }: { children: ReactNode }) {
       addToBag,
       addCustomToBag,
       removeFromBag,
+      clearBag,
+      reorderBag,
       setGameCount,
       setBag,
       setSavedArsenalId,
@@ -95,6 +122,8 @@ export function BagProvider({ children }: { children: ReactNode }) {
       addToBag,
       addCustomToBag,
       removeFromBag,
+      clearBag,
+      reorderBag,
       setGameCount,
       setBag,
       arsenalBallIds,

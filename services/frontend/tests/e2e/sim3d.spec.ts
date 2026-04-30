@@ -8,6 +8,12 @@ test.describe("TC-08: 3D Lane Simulation", () => {
   test("3D sim tab loads, runs simulation, and shows results", async ({
     page,
   }) => {
+    const pageErrors: string[] = [];
+    page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+    page.on('pageerror', err => {
+      pageErrors.push(err.message);
+      console.log('PAGE ERROR:', err.message);
+    });
     await waitForAppLoad(page);
 
     // Add a ball from catalog
@@ -29,20 +35,27 @@ test.describe("TC-08: 3D Lane Simulation", () => {
     // Wait for physics worker to be ready
     // Button starts as "Loading physics..." (disabled), becomes "LAUNCH BALL" (enabled)
     const launchBtn = page.locator(".sim-btn");
+    const physicsInitStartMs = Date.now();
     await expect(launchBtn).toBeEnabled({ timeout: 20_000 });
     await expect(launchBtn).toContainText("LAUNCH BALL");
+    const physicsInitMs = Date.now() - physicsInitStartMs;
+    expect(physicsInitMs).toBeLessThan(20_000);
 
     // Click LAUNCH BALL
+    const launchStartMs = Date.now();
     await launchBtn.click();
 
     // Wait for results card (simulation takes a moment)
     await expect(page.getByText("Simulation Results").first()).toBeVisible({
       timeout: 15_000,
     });
+    const launchToResultsMs = Date.now() - launchStartMs;
+    expect(launchToResultsMs).toBeLessThan(15_000);
 
     // Verify key results
     await expect(page.getByText("Entry Angle", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Outcome", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Total Time", { exact: true })).toBeVisible();
+    expect(pageErrors).toEqual([]);
   });
 });

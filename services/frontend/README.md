@@ -1,6 +1,6 @@
 # Bowling Bowl Grid – Frontend
 
-React + TypeScript + Vite SPA for the Bowling Bowl Grid project. Browse the ball catalog, build an arsenal, view the RG–Differential coverage map, and get recommendations and gap analysis. Full documentation: [docs/frontend.md](../../docs/frontend.md).
+React + TypeScript + Vite SPA for the Bowling Bowl Grid project. Browse the ball catalog, build an arsenal (catalog + custom entries), view the RG–Differential coverage map, and get recommendations and gap analysis. Full documentation: [docs/frontend.md](../../docs/frontend.md).
 
 **Quick commands** (from this directory):
 

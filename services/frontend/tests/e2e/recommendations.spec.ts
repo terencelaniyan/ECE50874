@@ -3,6 +3,7 @@ import {
   waitForAppLoad,
   addBallFromCatalog,
   goToGridView,
+  matchesApiPath,
 } from "./helpers";
 
 test.describe("TC-03: Recommendations Appear", () => {
@@ -15,6 +16,14 @@ test.describe("TC-03: Recommendations Appear", () => {
     await addBallFromCatalog(page, 0);
     await addBallFromCatalog(page, 1);
 
+    // Register response wait before entering Grid View to avoid missing fast requests.
+    const recommendationsResponsePromise = page.waitForResponse((response) => {
+      return (
+        response.request().method() === "POST" &&
+        matchesApiPath(response.url(), "/recommendations")
+      );
+    });
+
     // Switch to Grid View
     await goToGridView(page);
     await expect(page.getByText("2 / 6 SLOTS")).toBeVisible();
@@ -24,10 +33,16 @@ test.describe("TC-03: Recommendations Appear", () => {
       page.locator(".right-panel-btn.active").filter({ hasText: "Recs" }),
     ).toBeVisible();
 
-    // Wait for recommendations to load
     await expect(page.locator(".rec-list-compact")).toBeVisible({
       timeout: 15_000,
     });
+    const recommendationsResponse = await recommendationsResponsePromise;
+    expect(recommendationsResponse.ok()).toBe(true);
+    const recommendationsPayload = await recommendationsResponse.json();
+    expect(Array.isArray(recommendationsPayload.items)).toBe(true);
+    expect(recommendationsPayload.items.length).toBeGreaterThan(0);
+    expect(recommendationsPayload.items[0]).toHaveProperty("ball");
+    expect(recommendationsPayload.items[0]).toHaveProperty("score");
 
     // At least one recommendation item should appear
     const recItems = page.locator(".rec-item");
@@ -63,6 +78,12 @@ test.describe("TC-03: Recommendations Appear", () => {
     });
 
     // Click V2 method toggle button
+    const v2ResponsePromise = page.waitForResponse((response) => {
+      return (
+        response.request().method() === "POST" &&
+        matchesApiPath(response.url(), "/recommendations/v2")
+      );
+    });
     await page.locator(".rec-method-btn").filter({ hasText: "V2" }).click();
 
     // Recommendations should reload; wait for the list to appear again.
@@ -70,19 +91,48 @@ test.describe("TC-03: Recommendations Appear", () => {
     await expect(page.locator(".rec-item").first()).toBeVisible({
       timeout: 15_000,
     });
+    const v2Response = await v2ResponsePromise;
+    expect(v2Response.ok()).toBe(true);
+    const v2Payload = await v2Response.json();
+    expect(Array.isArray(v2Payload.items)).toBe(true);
+    expect(v2Payload).toHaveProperty("method");
+    expect(v2Payload).toHaveProperty("degradation_model");
 
-    // Check that either V2 badges appear, or a KNN fallback badge is shown
-    const hasV2Badge = await page
-      .locator(".rec-badge.method-two_tower")
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const hasFallbackBadge = await page
-      .locator(".rec-fallback-badge")
-      .isVisible()
-      .catch(() => false);
+    // UI should still render recommendations after method switch.
+    await expect(page.locator(".rec-item").first()).toBeVisible({
+      timeout: 10_000,
+    });
+  });
 
-    // One of these must be true
-    expect(hasV2Badge || hasFallbackBadge).toBe(true);
+  test("Hybrid toggle hits /recommendations/v2 and returns contract fields", async ({
+    page,
+  }) => {
+    await waitForAppLoad(page);
+
+    await addBallFromCatalog(page, 0);
+    await addBallFromCatalog(page, 1);
+    await goToGridView(page);
+    await expect(page.locator(".rec-item").first()).toBeVisible({
+      timeout: 15_000,
+    });
+
+    const hybridResponsePromise = page.waitForResponse((response) => {
+      return (
+        response.request().method() === "POST" &&
+        matchesApiPath(response.url(), "/recommendations/v2")
+      );
+    });
+
+    await page
+      .locator(".rec-method-btn")
+      .filter({ hasText: "Hybrid" })
+      .click();
+
+    const hybridResponse = await hybridResponsePromise;
+    expect(hybridResponse.ok()).toBe(true);
+    const hybridPayload = await hybridResponse.json();
+    expect(Array.isArray(hybridPayload.items)).toBe(true);
+    expect(hybridPayload).toHaveProperty("method");
+    expect(hybridPayload).toHaveProperty("degradation_model");
   });
 });

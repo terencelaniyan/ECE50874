@@ -16,7 +16,7 @@
 # ===========================================================================
 
 from contextlib import contextmanager
-from typing import Generator
+from typing import Generator, Any, Dict
 
 import psycopg
 from psycopg import Connection
@@ -25,12 +25,12 @@ from psycopg.rows import dict_row
 from .config import DATABASE_URL
 
 
-def _connect() -> Connection:
+def _connect() -> Connection[Dict[str, Any]]:
     """Open psycopg connection with dict_row; single place for connection config."""
     return psycopg.connect(DATABASE_URL, row_factory=dict_row)
 
 
-def get_db() -> Generator[Connection, None, None]:
+def get_db() -> Generator[Connection[Dict[str, Any]], None, None]:
     """FastAPI dependency: yield one connection per request; closed after response."""
     conn = _connect()
     try:

@@ -1,5 +1,4 @@
-Bowling Bowl Grid – ECE 50874 Project
-=====================================
+# Bowling Bowl Grid – ECE 50874 Project
 
 ### What this is
 
@@ -7,7 +6,7 @@ This repository contains the code for the **Bowling Bowl Grid** project for **EC
 
 The system is organized into:
 
-- `services/backend/`: FastAPI backend that exposes HTTP APIs, talks to PostgreSQL, and implements the gap/degradation and recommendation logic.
+- `services/backend/`: FastAPI backend that exposes HTTP APIs, talks to PostgreSQL, and implements arsenal management (catalog + custom balls), gap/degradation, and recommendation logic.
 - `services/frontend/`: React + TypeScript + Vite SPA for interacting with the backend (see that directory for details).
 - `data/`: Data assets and experiment outputs (often git-ignored in practice).
 - `docs/`: Project documentation (API, frontend, data pipeline, recommendations, deployment, testing, simulation validation, course deliverables).
@@ -17,12 +16,12 @@ You can run the backend against a local PostgreSQL database (via Docker) and use
 
 ---
 
-Project structure
------------------
+## Project structure
 
 High-level layout:
 
 - `services/backend/`
+  - `README.md` – Backend-only local setup, run/test commands, and troubleshooting links.
   - `app/`
     - `main.py` – FastAPI application (`app`) exposing the HTTP API.
     - `api_models.py` – Pydantic models for requests/responses.
@@ -31,9 +30,9 @@ High-level layout:
     - `degradation.py` – Degradation modeling logic for bowling balls.
     - `gap_engine.py` – Gap computation over the catalog/arsenal.
     - `recommendation_engine.py` – Recommendation logic on top of ball catalog and arsenal.
-    - `services.py` – Service layer used by routes (arsenals, gaps, recommendations v1/v2, slots, degradation, oil patterns, admin).
+    - `services.py` – Service layer used by routes (arsenals with custom-ball support, gaps, recommendations v1/v2, slots, degradation, oil patterns, admin).
     - `slot_assignment.py` – 6-ball slot clustering / silhouette.
-    - `two_tower.py` – Two-tower model (optional **PyTorch**).
+    - `two_tower.py` – Two-tower model (**PyTorch**).
     - `synthetic_data.py` – Synthetic arsenal data for training.
     - `exceptions.py` – HTTP-facing errors.
   - `requirements.txt` – Python backend dependencies (see [docs/TECH_DEBT.md](docs/TECH_DEBT.md): **PyTorch** is not pinned; needed for two-tower training).
@@ -44,6 +43,7 @@ High-level layout:
 - `docs/`
   - `backend.md` – Backend architecture and API details.
   - `frontend.md` – Frontend architecture, structure, and usage.
+  - `troubleshooting.md` – Common local/CI-like failures with command-first fixes.
   - `data-collection.md` – Data collection pipeline and formats.
   - `recommendation-engine.md` – Recommendation engine design and math.
   - `deploy.md` – Production single-server deploy (.env, Caddy, seeding).
@@ -61,8 +61,7 @@ For deeper technical details, start with the documents under `docs/`. With the b
 
 ---
 
-Prerequisites
--------------
+## Prerequisites
 
 To run the backend locally:
 
@@ -76,8 +75,7 @@ To work on the React + Vite frontend under `services/frontend/`, you will typica
 
 ---
 
-Backend – local development
----------------------------
+## Backend – local development
 
 Backend code lives under `services/backend/`.
 
@@ -102,16 +100,33 @@ pip install -r requirements.txt
 
 ### 3. Configure environment
 
-Create a `.env` file in `services/backend/` (or wherever `config.py` expects it). At minimum, define:
+**Where settings are read:** the backend loads `DATABASE_URL` and related variables in this order (see `services/backend/app/config.py`):
+
+1. Process environment (e.g. variables injected by Docker Compose).
+2. `services/backend/.env`
+3. Repository root `.env` (next to `docker-compose.yml`)
+
+For local development you can use either (2) or (3). **Docker Compose** reads a `.env` file at the **repository root** for substitutions in `docker-compose.yml` (`POSTGRES_PASSWORD`, `DATABASE_URL`, `APP_ENV`, `ADMIN_KEY`), so keep a root `.env` when using Compose.
+
+**First-time setup:** copy [.env.template](.env.template) to `.env` at the repo root, set real values, and do not commit `.env`. Use a `DATABASE_URL` whose password matches `POSTGRES_PASSWORD`. For production deployment, see [docs/deploy.md](docs/deploy.md).
+
+**`DATABASE_URL` depends on how the backend runs:**
+
+- **Backend in Compose:** use hostname `postgres` (the DB service name), e.g. `postgresql://postgres:YOUR_PASSWORD@postgres:5432/bowlingdb`, with `YOUR_PASSWORD` equal to `POSTGRES_PASSWORD`.
+- **Backend on your machine** (`uvicorn` on the host): use `localhost` (or `127.0.0.1`) and a port where PostgreSQL is reachable. The default `docker-compose.yml` does **not** publish Postgres on the host; add `docker-compose.override.yml` with `ports: ["5433:5432"]` on `postgres` and point `DATABASE_URL` at `@localhost:5433/...` if you want the DB only in Docker while running scripts or uvicorn locally.
+
+Example when Postgres is available on the host at port 5432 (your own install or a published port):
 
 ```bash
 APP_ENV=development
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/bowlingdb
 ```
 
-The example URL matches the credentials and database name from `docker-compose.yml`. If you use a different Postgres setup, update `DATABASE_URL` accordingly.
+Adjust user, password, host, and port to match your database.
 
 ### 4. Start PostgreSQL via Docker (recommended)
+
+Before `docker compose up`, ensure the **repo root** `.env` defines at least `POSTGRES_PASSWORD` and a `DATABASE_URL` the backend container can use (hostname `postgres`, same password). Set `ADMIN_KEY` if you use admin-only API routes from the containerized backend.
 
 From the repo root:
 
@@ -142,10 +157,10 @@ This runs **in order**: (1) `seed_from_csv.py` — `balls` from `data/balls.csv`
 ```bash
 python services/backend/scripts/seed_from_csv.py
 python services/backend/scripts/migrate_arsenals.py
-# optional: python services/backend/scripts/train_model.py
+python services/backend/scripts/train_model.py
 ```
 
-**Oil patterns (optional):** not run by `setup_db.py`. For DB-backed `oil_patterns` used by `GET /oil-patterns`:
+**Oil patterns:** not run by `setup_db.py`. For DB-backed `oil_patterns` used by `GET /oil-patterns`:
 
 ```bash
 python services/backend/scripts/migrate_oil_patterns.py
@@ -169,10 +184,9 @@ Then open:
 
 ---
 
-Frontend – local development
----------------------------
+## Frontend – local development
 
-The frontend is a React + TypeScript SPA built with Vite. Tabs include **Grid** (Voronoi + recs/slots), **Catalog**, **Simulation** (2D), **3D Sim** (Rapier/Three.js), **Analysis** (video / pose / kinematics), and **Ball Database**. It talks to the backend for balls, arsenals, recommendations (v1/v2), slots, degradation compare, gaps, and oil patterns. See [docs/frontend.md](docs/frontend.md).
+The frontend is a React + TypeScript SPA built with Vite. Tabs include **Grid** (Voronoi + recs/slots), **Catalog**, **Simulation** (2D), **3D Sim** (Rapier/Three.js), **Analysis** (video / pose / kinematics), and **Ball Database**. Recommendations and gaps also have dedicated panel components in code, but the main nav is the list above; ranked recs and slot assignment live on **Grid** via the Recs / Slots toggle. It talks to the backend for balls, arsenals (including optional custom balls), recommendations (v1/v2), slots, degradation compare, gaps, and oil patterns. See [docs/frontend.md](docs/frontend.md).
 
 **Prerequisites:** Node.js (LTS) and npm.
 
@@ -203,10 +217,12 @@ npm run test:run
 
 Or `npm test` for watch mode.
 
-**End-to-end (Playwright):** requires seeded DB + backend on 8000 + Vite on 5173. From `services/frontend/`:
+**End-to-end (Playwright):** requires seeded DB + backend on 8000. The Playwright config auto-starts the Vite dev server on 5173 via `webServer`. From `services/frontend/`:
 
 ```bash
 npm run test:e2e
+npm run test:e2e:smoke
+npm run test:e2e:full
 npm run test:e2e:ui
 ```
 
@@ -214,8 +230,7 @@ See [docs/E2E_TEST_PLAN.md](docs/E2E_TEST_PLAN.md).
 
 ---
 
-Data and experiments
---------------------
+## Data and experiments
 
 The `data/` directory is intended for:
 
@@ -240,8 +255,7 @@ Large or sensitive files should **not** be committed to Git. Use `.gitignore` to
 
 ---
 
-Testing
--------
+## Testing
 
 Backend tests live under `services/backend/tests/`.
 
@@ -258,12 +272,22 @@ pytest tests/test_gap_engine.py
 pytest tests/test_recommendation_engine.py -k "some_test_name"
 ```
 
-Frontend tests (Vitest): from `services/frontend/`, run `npm run test:run` or `npm test` (watch mode). Playwright: `npm run test:e2e` (see [docs/E2E_TEST_PLAN.md](docs/E2E_TEST_PLAN.md)).
+Recent backend test additions:
+
+- `test_admin_key.py` validates admin guardrails for `POST /admin/*`, including 403 behavior for missing/invalid `X-Admin-Key` and timing-safe key checks through `hmac.compare_digest`.
+- `test_services_gaps.py` verifies `get_gaps` validation behavior for mixed catalog IDs and `custom-*` IDs so only real catalog IDs are validated.
+- `test_services_transactions.py` validates commit/rollback behavior for `create_arsenal` and `update_arsenal` success and failure paths.
+- `test_services.py` includes additional service-layer edge cases for validation, not-found handling, and list/get behavior.
+
+Frontend tests (Vitest): from `services/frontend/`, run `npm run test:run` or `npm test` (watch mode). Playwright: `npm run test:e2e` (or `test:e2e:smoke` / `test:e2e:full`) (see [docs/E2E_TEST_PLAN.md](docs/E2E_TEST_PLAN.md)).
+
+**CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on push/pull requests to `main` and `master`, on manual dispatch, and on a daily schedule. It has three jobs: **backend** (Postgres service + seed + unit and integration pytest phases), **frontend** (Vitest coverage), and **e2e** (Postgres + backend startup + Playwright smoke suite on push/PR/manual via `npm run test:e2e:smoke`, and full suite on schedule via `npm run test:e2e:full`, with Playwright report artifact upload).
+
+For current testing status and priority gaps, see [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) and [docs/integration-test-risk-matrix.md](docs/integration-test-risk-matrix.md).
 
 ---
 
-Development workflow
---------------------
+## Development workflow
 
 1. **Clone the repo**
 
@@ -272,39 +296,40 @@ Development workflow
    cd ECE50874
    ```
 
-2. **Start PostgreSQL**
+2. **Configure env and start PostgreSQL**
+   - Copy `.env.template` to `.env` at the repo root and set `POSTGRES_PASSWORD`, `DATABASE_URL`, and other values (see **Backend – §3** and **§4**).
+   - Start services (or DB only):
 
    ```bash
    docker compose up -d
    ```
 
 3. **Set up the backend**
-
    - Create and activate a virtual environment under `services/backend/`.
    - Install dependencies with `pip install -r requirements.txt`.
-   - Create a `.env` file with `DATABASE_URL` and other settings.
-   - Apply the database schema (`python services/backend/scripts/setup_db.py`, or `seed_from_csv.py` then `migrate_arsenals.py` manually; optional `migrate_oil_patterns.py`; see §5 above).
+   - Ensure a `.env` file (repo root and/or `services/backend/`) provides `DATABASE_URL` and other settings for **host-run** uvicorn (see **§3**).
+   - Apply the database schema (`python services/backend/scripts/setup_db.py`, or `seed_from_csv.py` then `migrate_arsenals.py` manually; `migrate_oil_patterns.py`; see §5 above).
    - Run `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`.
 
-4. **Set up the frontend (optional)**
-
+4. **Set up the frontend**
    - The project includes a React + TypeScript + Vite app under `services/frontend/`.
    - Install dependencies (`npm install`) and run the dev server (`npm run dev`).
 
 5. **Run tests**
-
    - Backend: `pytest` from `services/backend/`.
-   - Frontend: `npm run test:run` or `npm test` (watch) from `services/frontend/`; E2E: `npm run test:e2e` when API + DB are up.
+   - Frontend: `npm run test:run` or `npm test` (watch) from `services/frontend/`; E2E: `npm run test:e2e` / `npm run test:e2e:smoke` / `npm run test:e2e:full` when API + DB are up.
 
 ---
 
-Additional documentation
-------------------------
+## Additional documentation
 
 For deeper details, see:
 
+- `services/backend/README.md` – backend contributor quickstart and command reference.
+- `CONTRIBUTING.md` – branch/PR workflow, test expectations, and definition-of-done.
 - `docs/backend.md` – backend modules, routing, and configuration.
 - `docs/frontend.md` – frontend architecture, structure, and usage.
+- `docs/troubleshooting.md` – symptom → cause → fix runbook for common failures.
 - `docs/data-collection.md` – data sources, schemas, and pipelines.
 - `docs/recommendation-engine.md` – algorithms, metrics, and implementation notes.
 - `docs/deploy.md` – production deployment.
@@ -315,4 +340,3 @@ For deeper details, see:
 - `docs/simulation/` – simulation validation and analysis notes.
 
 Keep this `README.md` and the `docs/` folder up to date as the project evolves.
-

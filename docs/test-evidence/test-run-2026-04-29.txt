@@ -1,0 +1,422 @@
+=== ENV ===
+Generated (UTC): 2026-04-29T23:39:15Z
+Generated (local): 2026-04-29T19:39:15-0400
+Repo: /Users/fahdlaniyan/Documents/ECE50874
+Git SHA: 072b912dbb0f9c183467c29a45a8647bd1af1ee8
+Git branch: Test
+Git status (short):
+   M services/backend/models/ball_embeddings.json
+   M services/backend/models/two_tower.pt
+  ?? docs/test-evidence/
+uname -a: Darwin Fahds-MacBook-Pro-4.local 25.4.0 Darwin Kernel Version 25.4.0: Thu Mar 19 19:30:44 PDT 2026; root:xnu-12377.101.15~1/RELEASE_ARM64_T6000 arm64
+sw_vers: ProductName:		macOS ProductVersion:		26.4.1 BuildVersion:		25E253 
+python: Python 3.12.12
+python path: /Users/fahdlaniyan/.pyenv/shims/python
+node: v25.8.0
+npm: 11.11.0
+psql client: psql (PostgreSQL) 16.13 (Homebrew)
+DATABASE_URL (used for integration + e2e): postgresql://postgres:postgres@localhost:5432/bowlingdb
+
+
+==========================================================================
+=== BACKEND UNIT (pytest -m "not integration") ===
+==========================================================================
+Started (UTC): 2026-04-29T23:39:26Z
+CWD: services/backend
+CMD: python -m pytest tests/ -m "not integration" -v
+
+============================= test session starts ==============================
+platform darwin -- Python 3.12.12, pytest-8.4.2, pluggy-1.6.0 -- /Users/fahdlaniyan/miniforge3/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/fahdlaniyan/Documents/ECE50874/services/backend
+configfile: pytest.ini
+plugins: cov-5.0.0, anyio-4.11.0, asyncio-1.3.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 185 items / 6 deselected / 179 selected
+
+tests/test_admin_api.py::test_admin_endpoints_require_admin_key[/admin/refresh-catalog-None] PASSED [  0%]
+tests/test_admin_api.py::test_admin_endpoints_require_admin_key[/admin/train-model-payload1] PASSED [  1%]
+tests/test_admin_key.py::test_no_key_header_returns_403_when_admin_key_configured PASSED [  1%]
+tests/test_admin_key.py::test_wrong_key_header_returns_403 PASSED        [  2%]
+tests/test_admin_key.py::test_empty_string_key_returns_403 PASSED        [  2%]
+tests/test_admin_key.py::test_require_admin_key_uses_compare_digest PASSED [  3%]
+tests/test_admin_key.py::test_require_admin_key_passes_with_correct_key PASSED [  3%]
+tests/test_admin_key.py::test_require_admin_key_raises_when_admin_key_env_unset PASSED [  4%]
+tests/test_admin_key.py::test_train_model_also_requires_admin_key PASSED [  5%]
+tests/test_degradation.py::test_zero_games_no_change PASSED              [  5%]
+tests/test_degradation.py::test_negative_games_no_change PASSED          [  6%]
+tests/test_degradation.py::test_87_games_factor_078 PASSED               [  6%]
+tests/test_degradation.py::test_more_than_max_games_caps_factor PASSED   [  7%]
+tests/test_degradation.py::test_copy_unchanged_fields PASSED             [  7%]
+tests/test_degradation.py::test_v1_factor_monotone_in_game_count PASSED  [  8%]
+tests/test_degradation.py::test_v1_int_diff_none_becomes_zero PASSED     [  8%]
+tests/test_degradation.py::test_get_lambda_known_coverstocks PASSED      [  9%]
+tests/test_degradation.py::test_get_lambda_case_insensitive PASSED       [ 10%]
+tests/test_degradation.py::test_get_lambda_none_and_empty_return_default PASSED [ 10%]
+tests/test_degradation.py::test_get_lambda_unknown_returns_default PASSED [ 11%]
+tests/test_degradation.py::test_lambda_ordering PASSED                   [ 11%]
+tests/test_degradation.py::test_apply_degradation_v2_zero_games PASSED   [ 12%]
+tests/test_degradation.py::test_apply_degradation_v2_active_games PASSED [ 12%]
+tests/test_degradation.py::test_apply_degradation_v2_formula_exact PASSED [ 13%]
+tests/test_degradation.py::test_floor_clamp_never_negative_extreme PASSED [ 13%]
+tests/test_degradation.py::test_floor_clamp_consistent_across_coverstocks PASSED [ 14%]
+tests/test_degradation.py::test_v2_factor_monotone_in_game_count PASSED  [ 15%]
+tests/test_degradation.py::test_solid_reactive_degrades_faster_than_plastic_v2 PASSED [ 15%]
+tests/test_degradation.py::test_v2_solid_degrades_more_than_v1_at_moderate_games PASSED [ 16%]
+tests/test_degradation.py::test_v2_plastic_degrades_less_than_v1_cap PASSED [ 16%]
+tests/test_degradation.py::test_compare_models_structure PASSED          [ 17%]
+tests/test_degradation.py::test_compare_models_original_matches_input PASSED [ 17%]
+tests/test_degradation.py::test_compare_models_coverstock_preserved PASSED [ 18%]
+tests/test_degradation.py::test_compare_models_v1_le_original PASSED     [ 18%]
+tests/test_degradation.py::test_compare_models_zero_games_factors_one PASSED [ 19%]
+tests/test_gap_engine.py::test_empty_catalog_returns_empty PASSED        [ 20%]
+tests/test_gap_engine.py::test_all_balls_in_arsenal_returns_empty PASSED [ 20%]
+tests/test_gap_engine.py::test_small_catalog_returns_non_arsenal_sorted_by_gap_score_desc PASSED [ 21%]
+tests/test_gap_engine.py::test_empty_arsenal_returns_sorted_by_distance_from_mean PASSED [ 21%]
+tests/test_gap_engine.py::test_duplicate_rg_diff_deterministic PASSED    [ 22%]
+tests/test_gap_engine.py::test_k_respected PASSED                        [ 22%]
+tests/test_gap_engine.py::test_tie_break_by_ball_id_deterministic PASSED [ 23%]
+tests/test_gap_engine.py::test_fallback_and_main_path_same_ball_set PASSED [ 24%]
+tests/test_gap_engine.py::test_arsenal_effective_rows_used_for_scoring PASSED [ 24%]
+tests/test_gap_engine.py::test_group_gaps_by_zone_empty_returns_empty PASSED [ 25%]
+tests/test_gap_engine.py::test_group_gaps_by_zone_one_item_one_zone PASSED [ 25%]
+tests/test_gap_engine.py::test_group_gaps_by_zone_two_within_threshold_one_zone PASSED [ 26%]
+tests/test_gap_engine.py::test_group_gaps_by_zone_two_beyond_threshold_two_zones PASSED [ 26%]
+tests/test_gap_engine.py::test_group_gaps_by_zone_threshold_boundary PASSED [ 27%]
+tests/test_gap_engine.py::test_label_zone_low_rg PASSED                  [ 27%]
+tests/test_gap_engine.py::test_label_zone_mid_rg PASSED                  [ 28%]
+tests/test_gap_engine.py::test_label_zone_high_rg PASSED                 [ 29%]
+tests/test_gap_engine.py::test_label_zone_low_mid_high_diff PASSED       [ 29%]
+tests/test_gap_engine.py::test_label_zone_combos PASSED                  [ 30%]
+tests/test_gap_engine.py::test_zone_description_non_empty_for_known_labels PASSED [ 30%]
+tests/test_gap_engine.py::test_zone_description_always_non_empty PASSED  [ 31%]
+tests/test_gaps_api.py::test_gaps_both_arsenal_id_and_ball_ids_returns_400 PASSED [ 31%]
+tests/test_gaps_api.py::test_gaps_empty_arsenal_returns_200_and_zones SKIPPED [ 32%]
+tests/test_gaps_api.py::test_gaps_invalid_arsenal_id_returns_400_with_missing SKIPPED [ 32%]
+tests/test_integration_workflows_api.py::test_arsenal_lifecycle_drives_recs_gaps_and_slots SKIPPED [ 33%]
+tests/test_integration_workflows_api.py::test_recommendations_v2_method_matrix_returns_contract[v1-knn] SKIPPED [ 34%]
+tests/test_integration_workflows_api.py::test_recommendations_v2_method_matrix_returns_contract[v1-two_tower] SKIPPED [ 34%]
+tests/test_integration_workflows_api.py::test_recommendations_v2_method_matrix_returns_contract[v1-hybrid] SKIPPED [ 35%]
+tests/test_integration_workflows_api.py::test_recommendations_v2_method_matrix_returns_contract[v2-knn] SKIPPED [ 35%]
+tests/test_integration_workflows_api.py::test_recommendations_v2_method_matrix_returns_contract[v2-two_tower] SKIPPED [ 36%]
+tests/test_integration_workflows_api.py::test_recommendations_v2_method_matrix_returns_contract[v2-hybrid] SKIPPED [ 36%]
+tests/test_integration_workflows_api.py::test_error_contracts_are_consistent_across_endpoints PASSED [ 37%]
+tests/test_new_endpoints_api.py::test_recommendations_v2_neither_arsenal_id_nor_ball_ids_returns_400 PASSED [ 37%]
+tests/test_new_endpoints_api.py::test_recommendations_v2_both_arsenal_id_and_ball_ids_returns_400 PASSED [ 38%]
+tests/test_new_endpoints_api.py::test_recommendations_v2_invalid_k_returns_422 PASSED [ 39%]
+tests/test_new_endpoints_api.py::test_recommendations_v2_invalid_method_value_returns_422_or_ok PASSED [ 39%]
+tests/test_new_endpoints_api.py::test_recommendations_v2_invalid_ball_id_returns_400 SKIPPED [ 40%]
+tests/test_new_endpoints_api.py::test_recommendations_v2_knn_method_returns_200 SKIPPED [ 40%]
+tests/test_new_endpoints_api.py::test_recommendations_v2_two_tower_method_returns_200 SKIPPED [ 41%]
+tests/test_new_endpoints_api.py::test_recommendations_v2_hybrid_method_returns_200 SKIPPED [ 41%]
+tests/test_new_endpoints_api.py::test_recommendations_v2_l1_vs_l2_metric SKIPPED [ 42%]
+tests/test_new_endpoints_api.py::test_slots_neither_arsenal_id_nor_ball_ids_returns_400 PASSED [ 43%]
+tests/test_new_endpoints_api.py::test_slots_both_arsenal_id_and_ball_ids_returns_400 PASSED [ 43%]
+tests/test_new_endpoints_api.py::test_slots_invalid_ball_id_returns_400 SKIPPED [ 44%]
+tests/test_new_endpoints_api.py::test_recommendations_v2_invalid_arsenal_id_returns_404 SKIPPED [ 44%]
+tests/test_new_endpoints_api.py::test_slots_invalid_arsenal_id_returns_404 SKIPPED [ 45%]
+tests/test_new_endpoints_api.py::test_slots_valid_request_returns_200 SKIPPED [ 45%]
+tests/test_new_endpoints_api.py::test_slots_with_game_counts SKIPPED     [ 46%]
+tests/test_new_endpoints_api.py::test_slots_via_arsenal_id SKIPPED (...) [ 46%]
+tests/test_new_endpoints_api.py::test_degradation_compare_defaults_returns_200 PASSED [ 47%]
+tests/test_new_endpoints_api.py::test_degradation_compare_custom_specs_returns_200 PASSED [ 48%]
+tests/test_new_endpoints_api.py::test_degradation_compare_minimal_games_near_no_degradation PASSED [ 48%]
+tests/test_new_endpoints_api.py::test_degradation_compare_invalid_rg_returns_422 PASSED [ 49%]
+tests/test_new_endpoints_api.py::test_degradation_compare_invalid_diff_returns_422 PASSED [ 49%]
+tests/test_new_endpoints_api.py::test_degradation_compare_invalid_game_count_returns_422 PASSED [ 50%]
+tests/test_new_endpoints_api.py::test_degradation_compare_game_count_exceeds_max_returns_422 PASSED [ 50%]
+tests/test_new_endpoints_api.py::test_degradation_compare_with_ball_id_returns_200 SKIPPED [ 51%]
+tests/test_new_endpoints_api.py::test_degradation_compare_nonexistent_ball_id_returns_404 SKIPPED [ 51%]
+tests/test_recommendation_engine.py::test_dist_same_ball_zero PASSED     [ 52%]
+tests/test_recommendation_engine.py::test_dist_different_balls_positive PASSED [ 53%]
+tests/test_recommendation_engine.py::test_dist_weights PASSED            [ 53%]
+tests/test_recommendation_engine.py::test_recommend_empty_arsenal_returns_empty PASSED [ 54%]
+tests/test_recommendation_engine.py::test_recommend_empty_candidates_returns_empty PASSED [ 54%]
+tests/test_recommendation_engine.py::test_recommend_returns_sorted_by_score_ascending PASSED [ 55%]
+tests/test_recommendation_engine.py::test_recommend_k_respected PASSED   [ 55%]
+tests/test_recommendation_engine.py::test_recommend_fewer_than_k_candidates_returns_all PASSED [ 56%]
+tests/test_recommendation_engine.py::test_recommend_score_is_min_distance_to_arsenal PASSED [ 56%]
+tests/test_recommendation_engine.py::test_recommend_with_weights_changes_ordering PASSED [ 57%]
+tests/test_recommendation_engine.py::test_recommend_diversity_excludes_very_similar PASSED [ 58%]
+tests/test_recommendations_api.py::test_recommendations_neither_arsenal_id_nor_ball_ids_returns_400 PASSED [ 58%]
+tests/test_recommendations_api.py::test_recommendations_both_arsenal_id_and_ball_ids_returns_400 PASSED [ 59%]
+tests/test_recommendations_api.py::test_recommendations_invalid_ball_id_returns_400_with_missing SKIPPED [ 59%]
+tests/test_recommendations_api.py::test_recommendations_valid_request_returns_200_and_items SKIPPED [ 60%]
+tests/test_services.py::test_validate_ball_ids_success PASSED            [ 60%]
+tests/test_services.py::test_validate_ball_ids_missing PASSED            [ 61%]
+tests/test_services.py::test_load_arsenal_balls_not_found PASSED         [ 62%]
+tests/test_services.py::test_load_arsenal_balls_success PASSED           [ 62%]
+tests/test_services.py::test_check_health PASSED                         [ 63%]
+tests/test_services.py::test_get_ball_found PASSED                       [ 63%]
+tests/test_services.py::test_delete_arsenal_not_found PASSED             [ 64%]
+tests/test_services.py::test_delete_arsenal_success PASSED               [ 64%]
+tests/test_services.py::test_resolve_arsenal_rows_ad_hoc PASSED          [ 65%]
+tests/test_services.py::test_validate_ball_ids_empty_list_is_noop PASSED [ 65%]
+tests/test_services.py::test_get_ball_raises_not_found PASSED            [ 66%]
+tests/test_services.py::test_list_arsenals_returns_formatted_list PASSED [ 67%]
+tests/test_services.py::test_list_arsenals_empty_db_returns_empty_list PASSED [ 67%]
+tests/test_services.py::test_get_arsenal_not_found PASSED                [ 68%]
+tests/test_services.py::test_get_arsenal_success_returns_balls PASSED    [ 68%]
+tests/test_services.py::test_get_arsenal_success_with_no_balls PASSED    [ 69%]
+tests/test_services_gaps.py::test_get_gaps_does_not_validate_custom_prefixed_ids PASSED [ 69%]
+tests/test_services_gaps.py::test_get_gaps_skips_validate_when_all_ids_are_custom PASSED [ 70%]
+tests/test_services_gaps.py::test_get_gaps_validates_real_ids_when_mixed PASSED [ 70%]
+tests/test_services_gaps.py::test_get_gaps_skips_validate_when_arsenal_id_provided PASSED [ 71%]
+tests/test_services_gaps.py::test_get_gaps_returns_zones_with_labels PASSED [ 72%]
+tests/test_services_transactions.py::test_create_arsenal_commits_on_success PASSED [ 72%]
+tests/test_services_transactions.py::test_create_arsenal_rollback_on_insert_error PASSED [ 73%]
+tests/test_services_transactions.py::test_create_arsenal_rollback_on_ball_insert_error PASSED [ 73%]
+tests/test_services_transactions.py::test_create_arsenal_validate_raises_triggers_rollback PASSED [ 74%]
+tests/test_services_transactions.py::test_update_arsenal_commits_on_success PASSED [ 74%]
+tests/test_services_transactions.py::test_update_arsenal_rollback_on_update_error PASSED [ 75%]
+tests/test_services_transactions.py::test_update_arsenal_not_found_raises_not_found_error PASSED [ 75%]
+tests/test_services_transactions.py::test_update_arsenal_rollback_on_ball_replace_error PASSED [ 76%]
+tests/test_slot_assignment.py::test_empty_arsenal_returns_empty_assignments PASSED [ 77%]
+tests/test_slot_assignment.py::test_single_ball_gets_assigned PASSED     [ 77%]
+tests/test_slot_assignment.py::test_two_balls_different_slots PASSED     [ 78%]
+tests/test_slot_assignment.py::test_full_6_ball_arsenal PASSED           [ 78%]
+tests/test_slot_assignment.py::test_slot_coverage_tracks_filled_vs_empty PASSED [ 79%]
+tests/test_slot_assignment.py::test_assignment_includes_metadata PASSED  [ 79%]
+tests/test_slot_assignment.py::test_canonical_slot_centers_map_to_correct_slots PASSED [ 80%]
+tests/test_slot_assignment.py::test_diverse_arsenal_has_higher_slot_diversity_than_homogeneous PASSED [ 81%]
+tests/test_slot_assignment.py::test_slot_1_lower_rg_than_slot_5 PASSED   [ 81%]
+tests/test_slot_assignment.py::test_slot_1_higher_diff_than_slot_5 PASSED [ 82%]
+tests/test_slot_assignment.py::test_strong_ball_assigned_lower_slot_number_than_spare PASSED [ 82%]
+tests/test_slot_assignment.py::test_kmeans_single_cluster PASSED         [ 83%]
+tests/test_slot_assignment.py::test_kmeans_two_clusters PASSED           [ 83%]
+tests/test_slot_assignment.py::test_kmeans_fewer_points_than_k PASSED    [ 84%]
+tests/test_slot_assignment.py::test_kmeans_best_k_for_well_separated_clusters PASSED [ 84%]
+tests/test_slot_assignment.py::test_silhouette_single_point PASSED       [ 85%]
+tests/test_slot_assignment.py::test_silhouette_single_cluster PASSED     [ 86%]
+tests/test_slot_assignment.py::test_silhouette_well_separated_clusters PASSED [ 86%]
+tests/test_slot_assignment.py::test_silhouette_overlapping_clusters_lower_than_separated PASSED [ 87%]
+tests/test_slot_assignment.py::test_normalize_features PASSED            [ 87%]
+tests/test_slot_assignment.py::test_normalize_features_zero_range_no_crash PASSED [ 88%]
+tests/test_two_tower.py::test_ball_to_features_returns_5_floats PASSED   [ 88%]
+tests/test_two_tower.py::test_ball_to_features_handles_none PASSED       [ 89%]
+tests/test_two_tower.py::test_arsenal_to_features_returns_15_floats PASSED [ 89%]
+tests/test_two_tower.py::test_arsenal_to_features_empty PASSED           [ 90%]
+tests/test_two_tower.py::test_encode_coverstock_known_types PASSED       [ 91%]
+tests/test_two_tower.py::test_encode_coverstock_case_insensitive PASSED  [ 91%]
+tests/test_two_tower.py::test_encode_coverstock_unknown PASSED           [ 92%]
+tests/test_two_tower.py::test_encode_brand_known PASSED                  [ 92%]
+tests/test_two_tower.py::test_encode_brand_unknown PASSED                [ 93%]
+tests/test_two_tower.py::test_ball_fits_slot_1 PASSED                    [ 93%]
+tests/test_two_tower.py::test_ball_doesnt_fit_wrong_slot PASSED          [ 94%]
+tests/test_two_tower.py::test_ball_fits_slot_5_spare PASSED              [ 94%]
+tests/test_two_tower.py::test_generate_synthetic_arsenals_produces_data PASSED [ 95%]
+tests/test_two_tower.py::test_generate_synthetic_arsenals_deterministic PASSED [ 96%]
+tests/test_two_tower.py::test_generate_synthetic_arsenals_empty_catalog PASSED [ 96%]
+tests/test_two_tower.py::test_get_two_tower_recommendations_no_model PASSED [ 97%]
+tests/test_two_tower.py::test_get_two_tower_recommendations_empty_arsenal PASSED [ 97%]
+tests/test_two_tower.py::test_get_two_tower_recommendations_empty_candidates PASSED [ 98%]
+tests/test_two_tower.py::test_torch_model_forward PASSED                 [ 98%]
+tests/test_two_tower.py::test_torch_embeddings_normalized PASSED         [ 99%]
+tests/test_two_tower.py::test_train_model_small PASSED                   [100%]
+
+--------- coverage: platform darwin, python 3.12.12-final-0 ----------
+Name                           Stmts   Miss  Cover   Missing
+------------------------------------------------------------
+app/config.py                     15      3    80%   30, 34, 49
+app/db.py                         19      4    79%   45-49
+app/degradation.py                67      2    97%   58, 89
+app/gap_engine.py                114      5    96%   120-122, 129, 157
+app/main.py                      149     65    56%   87, 92, 106, 147-159, 177, 182-198, 206-208, 246-247, 265-266, 303-308, 323, 354-368, 394-405, 460-469, 484, 518-536, 555-614, 620-632
+app/recommendation_engine.py      72     19    74%   40, 72, 78-89, 139-142, 179
+app/services.py                  338    154    54%   77, 88, 104-115, 187-247, 294-295, 424, 429-430, 438-444, 491-501, 506, 520-528, 531, 579-606, 668, 680-699, 727, 740-741, 743-744, 746-747, 759-766, 786-795, 817-826, 847-863, 870-873
+app/slot_assignment.py           125      1    99%   274
+app/two_tower.py                 188     26    86%   38-39, 136, 143, 273-274, 287-288, 317-319, 354-374, 394
+------------------------------------------------------------
+TOTAL                           1358    279    79%
+
+4 files skipped due to complete coverage.
+Coverage HTML written to dir htmlcov
+
+
+================ 155 passed, 24 skipped, 6 deselected in 4.93s =================
+
+Finished (UTC): 2026-04-29T23:39:34Z
+Exit code: 0
+
+==========================================================================
+=== BACKEND INTEGRATION (pytest -m "integration") ===
+==========================================================================
+Started (UTC): 2026-04-29T23:39:58Z
+CWD: services/backend
+ENV: DATABASE_URL=postgresql://postgres:postgres@localhost:5432/bowlingdb APP_ENV=development
+CMD: python -m pytest tests/ -m "integration" -v
+
+============================= test session starts ==============================
+platform darwin -- Python 3.12.12, pytest-8.4.2, pluggy-1.6.0 -- /Users/fahdlaniyan/miniforge3/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/fahdlaniyan/Documents/ECE50874/services/backend
+configfile: pytest.ini
+plugins: cov-5.0.0, anyio-4.11.0, asyncio-1.3.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 185 items / 179 deselected / 6 selected
+
+tests/test_arsenals_api.py::test_create_arsenal_empty_returns_201_and_id PASSED [ 16%]
+tests/test_arsenals_api.py::test_create_arsenal_with_balls_and_get PASSED [ 33%]
+tests/test_arsenals_api.py::test_list_arsenals_includes_created PASSED   [ 50%]
+tests/test_arsenals_api.py::test_update_arsenal_and_delete PASSED        [ 66%]
+tests/test_arsenals_api.py::test_create_arsenal_invalid_ball_id_returns_400 PASSED [ 83%]
+tests/test_arsenals_api.py::test_create_arsenal_with_custom_ball_and_get PASSED [100%]
+
+--------- coverage: platform darwin, python 3.12.12-final-0 ----------
+Name                           Stmts   Miss  Cover   Missing
+------------------------------------------------------------
+app/config.py                     15      3    80%   30, 34, 49
+app/db.py                         19      4    79%   45-49
+app/degradation.py                67     51    24%   43-45, 50-59, 72-76, 88-91, 109-118, 131-151, 159-161
+app/gap_engine.py                114     98    14%   38-53, 69, 91-165, 177-197, 202-216, 221-233
+app/main.py                      149     62    58%   106, 177, 344-368, 389-405, 413-442, 450-469, 477-488, 518-536, 545-546, 555-614, 620-632
+app/recommendation_engine.py      72     61    15%   39-48, 63-73, 78-89, 132-156, 174-186
+app/services.py                  338    212    37%   39, 59-93, 104-115, 149-152, 195-196, 198-199, 201-202, 204-205, 207-213, 252-257, 415, 443-444, 463-465, 485, 491-501, 506, 519-542, 579-606, 639-661, 668, 679-700, 723-800, 817-826, 833, 847-863, 870-873
+app/slot_assignment.py           125    115     8%   52-57, 71-98, 108-137, 152-183, 213-299
+app/synthetic_data.py             82     68    17%   49-60, 65-70, 99-129, 147-151, 164-170, 179-184, 196-208
+app/two_tower.py                 188    141    25%   38-39, 59-60, 70-71, 77-78, 88-89, 95-97, 105-107, 110, 113, 135-228, 261-291, 295, 309-319, 328-342, 354-374, 392-395
+------------------------------------------------------------
+TOTAL                           1358    815    40%
+
+3 files skipped due to complete coverage.
+Coverage HTML written to dir htmlcov
+
+
+====================== 6 passed, 179 deselected in 3.12s =======================
+
+Finished (UTC): 2026-04-29T23:40:04Z
+Exit code: 0
+
+==========================================================================
+=== FRONTEND VITEST (npm run test:run) ===
+==========================================================================
+Started (UTC): 2026-04-29T23:40:14Z
+CWD: services/frontend
+ENV: NODE_OPTIONS=--max-old-space-size=4096
+CMD: npm run test:run
+
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> bowling-bowl-grid-frontend@1.0.0 test:run
+> vitest run
+
+
+ RUN  v2.1.9 /Users/fahdlaniyan/Documents/ECE50874/services/frontend
+
+(node:20098) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/utils/bowling-kinematics.test.ts (32 tests) 10ms
+ ✓ src/utils/parametric-physics.test.ts (36 tests) 8ms
+ ✓ src/utils/bowling-physics-sim.test.ts (9 tests) 6ms
+ ✓ src/api/client.test.ts (13 tests) 3ms
+ ✓ src/components/VirtualBag.test.tsx (5 tests) 150ms
+ ✓ src/components/RecommendationsPanel.test.tsx (5 tests) 72ms
+ ✓ src/context/BagContext.test.tsx (7 tests) 14ms
+ ✓ src/components/Layout.test.tsx (3 tests) 32ms
+ ✓ src/utils/decision-framework.test.ts (8 tests) 1ms
+ ✓ src/Layout.integration.test.tsx (1 test) 91ms
+ ✓ src/components/BallCatalog.test.tsx (5 tests) 659ms
+   ✓ BallCatalog > calls listBalls with q when search input changes 314ms
+   ✓ BallCatalog > calls listBalls with brand when Brand input changes 312ms
+ ✓ src/api/balls.test.ts (4 tests) 2ms
+ ✓ src/api/arsenals.test.ts (5 tests) 1ms
+ ✓ src/api/gaps.test.ts (2 tests) 1ms
+ ✓ src/components/BallCard.test.tsx (3 tests) 6ms
+ ✓ src/api/contracts.integration.test.ts (3 tests) 1ms
+ ✓ src/utils/phase-detector.test.ts (5 tests) 1ms
+ ✓ src/App.integration.test.tsx (1 test) 31ms
+ ✓ src/api/degradation.test.ts (2 tests) 1ms
+ ✓ src/api/recommendations-v2.test.ts (2 tests) 1ms
+ ✓ src/api/slots.test.ts (2 tests) 0ms
+ ✓ src/api/recommendations.test.ts (2 tests) 1ms
+
+ Test Files  22 passed (22)
+      Tests  155 passed (155)
+   Start at  19:40:14
+   Duration  2.10s (transform 305ms, setup 214ms, collect 356ms, tests 1.09s, environment 298ms, prepare 46ms)
+
+npm notice
+npm notice New minor version of npm available! 11.11.0 -> 11.13.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.13.0
+npm notice To update run: npm install -g npm@11.13.0
+npm notice
+
+Finished (UTC): 2026-04-29T23:40:16Z
+Exit code: 0
+
+==========================================================================
+=== E2E PREP ===
+==========================================================================
+Started (UTC): 2026-04-29T23:44:18Z
+
+[playwright install chromium]
+Chrome Headless Shell 145.0.7632.6 (playwright chromium-headless-shell v1208) downloaded
+Cache: ~/Library/Caches/ms-playwright (chromium-1208, chromium_headless_shell-1208, ffmpeg-1011)
+
+[backend startup]
+Note: an existing docker-compose stack is already running and serves the backend on :8000.
+      We use that instead of spawning a duplicate uvicorn (would collide on port 8000).
+docker ps:
+ece50874-frontend-1	ece50874-frontend	0.0.0.0:3000->80/tcp, [::]:3000->80/tcp	Up 4 minutes
+ece50874-backend-1	ece50874-backend	0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp	Up 4 minutes
+ece50874-caddy-1	caddy:alpine	0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp	Up 4 minutes
+ece50874-postgres-1	postgres:16-alpine	0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp	Up 4 minutes
+
+[health probe]
+curl -sS http://localhost:8000/health -> {"status":"ok","db":1}
+curl -sS 'http://localhost:8000/balls?limit=1' (count field) -> 1360
+
+Finished (UTC): 2026-04-29T23:44:18Z
+Exit code: 0
+
+==========================================================================
+=== E2E SMOKE (npm run test:e2e:smoke) ===
+==========================================================================
+Started (UTC): 2026-04-29T23:44:40Z
+CWD: services/frontend
+CMD: npm run test:e2e:smoke
+Backend: http://localhost:8000 (docker-compose ece50874-backend-1)
+Frontend: Playwright auto-starts Vite on http://localhost:5173 (per playwright.config.ts)
+
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> bowling-bowl-grid-frontend@1.0.0 test:e2e:smoke
+> playwright test tests/e2e/recommendations.spec.ts tests/e2e/slots.spec.ts tests/e2e/degradation.spec.ts
+
+[WebServer] npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 6 tests using 1 worker
+(node:21406) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21406) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+······
+  6 passed (14.3s)
+::notice title=🎭 Playwright Run Summary::  6 passed (14.3s)
+
+Finished (UTC): 2026-04-29T23:44:56Z
+Exit code: 0
+
+==========================================================================
+=== SUMMARY ===
+==========================================================================
+Generated (UTC): 2026-04-29T23:45:33Z
+Git SHA: 072b912dbb0f9c183467c29a45a8647bd1af1ee8 (branch: Test)
+
+Suite                        | Exit code | Result
+-----------------------------+-----------+-----------------------------------------
+Backend unit (pytest)        | 0         | 155 passed, 24 skipped, 6 deselected
+Backend integration (pytest) | 0         | 6 passed, 179 deselected
+Frontend Vitest              | 0         | 22 files, 155 passed
+Playwright e2e smoke         | 0         | 6 passed (recommendations + slots + degradation)
+
+Totals (executed): 322 passed, 24 skipped, 0 failed.
+Skipped (24) are conditional cases in services/backend/tests (e.g. torch-dependent test_two_tower.py paths).
+Deselected counts simply reflect the marker filter (-m 'integration' vs 'not integration'); same 185 collected tests partitioned across the two backend runs.
+
+Cleanup:
+  - No uvicorn or vite process was left running by this session.
+  - Port 8000 remains owned by the pre-existing docker-compose stack (ece50874-backend-1).
+  - Port 5173 is free.
+
+=== END ===

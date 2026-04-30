@@ -1,7 +1,7 @@
 # End-to-End Test Plan — Bowling Ball Grid
 
-**Date:** 2026-04-22  
-**Status:** IMPLEMENTED (partial) — Playwright tests live under `services/frontend/tests/e2e/`. This document describes what runs today, how to run it, and what is still manual or backlog.
+**Date:** 2026-04-26  
+**Status:** IMPLEMENTED (expanded) — Playwright tests live under `services/frontend/tests/e2e/`. This document describes what runs today, how to run it, and what is still manual or backlog.
 
 ---
 
@@ -12,7 +12,7 @@ Unit and integration tests remain essential, but they do not replace a real brow
 - Vitest + MSW tests **mock** HTTP; they do not prove the UI and FastAPI agree on payloads and timing.
 - Backend integration tests exercise routes but **not** tab flows, canvas/SVG, or Rapier/Three.js startup.
 
-The Playwright suite closes part of that gap. Flows such as **save/load arsenal**, **Voronoi hover**, and **full REST matrices** for `/recommendations/v2`, `/slots`, and `/degradation/compare` are still **backlog** (see §5).
+The Playwright suite now covers app load, core catalog/grid/recommendation flows, slots, degradation, simulation (2D/3D), oil-patterns API, Ball Database behavior, arsenal save/load, grid Voronoi hover, and analysis-tab smoke. Remaining backlog is depth-oriented (see §5).
 
 ---
 
@@ -36,7 +36,7 @@ The Playwright suite closes part of that gap. Flows such as **save/load arsenal*
 
 ### Prerequisites
 
-1. **PostgreSQL** with a seeded `balls` table (typical clone: `data/balls.csv` + `python services/backend/scripts/setup_db.py` from repo root — runs **seed**, **migrate_arsenals**, then **train_model**; see [data-collection.md](data-collection.md)). Alternatively run `seed_from_csv.py` then `migrate_arsenals.py` per [README.md](../README.md). Optional: `python services/backend/scripts/migrate_oil_patterns.py` if you need DB-backed `oil_patterns` beyond API fallbacks. The smoke test waits for copy like `DB: N BALLS LOADED` on the UI.
+1. **PostgreSQL** with a seeded `balls` table (typical clone: `data/balls.csv` + `python services/backend/scripts/setup_db.py` from repo root — runs **seed**, **migrate_arsenals**, then **train_model**; see [data-collection.md](data-collection.md)). Alternatively run `seed_from_csv.py` then `migrate_arsenals.py` per [README.md](../README.md). `python services/backend/scripts/migrate_oil_patterns.py` if you need DB-backed `oil_patterns` beyond API fallbacks. The smoke test waits for copy like `DB: N BALLS LOADED` on the UI.
 2. **Backend** on port **8000** (e.g. `cd services/backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`, or start the `backend` service via Docker Compose and expose 8000).
 
 ### Commands
@@ -69,10 +69,14 @@ Spec files use `test.describe("TC-…")` titles. **TC numbers here match the rep
 | [catalog-add-ball.spec.ts](../services/frontend/tests/e2e/catalog-add-ball.spec.ts) | TC-02 | Catalog: ball cards, search/filter, **Add to bag**, slot count on Grid View |
 | [recommendations.spec.ts](../services/frontend/tests/e2e/recommendations.spec.ts) | TC-03 | Recommendations panel (Recs toggle, `.rec-list-compact`, KNN badge, `% MATCH`, **Add to bag**); **V2 / Hybrid method toggle** via UI |
 | [slots.spec.ts](../services/frontend/tests/e2e/slots.spec.ts) | TC-05 | Slot assignment panel (6-ball system, silhouette, coverage) wired to the UI |
-| [simulation.spec.ts](../services/frontend/tests/e2e/simulation.spec.ts) | TC-06 | 2D lane simulation tab: launch flow, phase/result expectations per test |
+| [simulation.spec.ts](../services/frontend/tests/e2e/simulation.spec.ts) | TC-06 | 2D lane simulation tab: launch flow, phase/result expectations, launch-to-results latency bound |
 | [degradation.spec.ts](../services/frontend/tests/e2e/degradation.spec.ts) | TC-07 | Arsenal degradation **V1 vs V2** toggle in the UI |
-| [sim3d.spec.ts](../services/frontend/tests/e2e/sim3d.spec.ts) | TC-08 | 3D lane view (Rapier/Three) smoke: physics load, **LAUNCH BALL** |
+| [sim3d.spec.ts](../services/frontend/tests/e2e/sim3d.spec.ts) | TC-08 | 3D lane view (Rapier/Three) smoke: physics init latency, launch flow, launch-to-results latency bound |
 | [oil-patterns.spec.ts](../services/frontend/tests/e2e/oil-patterns.spec.ts) | TC-09 | **API:** `GET http://localhost:8000/oil-patterns` — items, zones, `mu` ordering |
+| [ball-database.spec.ts](../services/frontend/tests/e2e/ball-database.spec.ts) | TC-10 | Ball Database tab: table load, search, coverstock filter, pagination state |
+| [arsenal-save-load.spec.ts](../services/frontend/tests/e2e/arsenal-save-load.spec.ts) | TC-11 | Arsenal lifecycle in UI: save named arsenal, clear bag, load arsenal, restore cards |
+| [grid-voronoi.spec.ts](../services/frontend/tests/e2e/grid-voronoi.spec.ts) | TC-12 | Grid coverage map: Voronoi cell render, hover tooltip, gap/callout visibility |
+| [analysis.spec.ts](../services/frontend/tests/e2e/analysis.spec.ts) | TC-13 | Analysis tab smoke: uploader render latency and invalid-file validation |
 
 Shared helpers: [helpers.ts](../services/frontend/tests/e2e/helpers.ts) (`waitForAppLoad`, `addBallFromCatalog`, tab navigation).
 
@@ -80,14 +84,13 @@ Shared helpers: [helpers.ts](../services/frontend/tests/e2e/helpers.ts) (`waitFo
 
 ## 5. Not yet automated (backlog)
 
-These were in the original proposal but **do not** have dedicated Playwright files (or only partially overlap):
+These remain **partially covered** or not yet automated to full depth:
 
 | Area | Suggested focus |
 |------|-----------------|
-| **Voronoi / grid** | Dots track arsenal count, axis labels, tooltips, cell updates when adding balls |
-| **Save / load arsenal** | Save modal, named arsenal, clear bag, load modal repopulates |
-| **Ball Database tab** | Table columns, coverstock filter, pagination |
-| **REST matrices** | Scripted `POST /recommendations/v2` (normalize, metric, degradation_model, two_tower fallback), `POST /slots`, `POST /degradation/compare` — optional `request` fixtures or CI job hitting API only; request/response shapes: [docs/backend.md](backend.md) |
+| **REST matrix depth** | Broaden `POST /recommendations/v2` (normalize, metric, degradation_model, two_tower fallback), `POST /slots`, and `POST /degradation/compare` permutations beyond current happy-path contract checks; request/response shapes: [docs/backend.md](backend.md) |
+| **Grid interaction depth** | Add deterministic add/remove-on-grid assertions when interacting with point/cell controls and keyboard activation paths |
+| **Analysis processing flow** | Add fixture-based end-to-end processing completion checks (upload -> processing -> kinematics/form results) once a stable test video fixture is committed |
 
 ---
 
@@ -102,7 +105,7 @@ These were in the original proposal but **do not** have dedicated Playwright fil
 docker compose up -d postgres
 # Point DATABASE_URL at the running instance (see README for port overrides).
 python services/backend/scripts/setup_db.py
-# Optional: DB oil_patterns rows (not part of setup_db.py)
+# DB oil_patterns rows (not part of setup_db.py)
 # python services/backend/scripts/migrate_oil_patterns.py
 ```
 
@@ -112,56 +115,22 @@ The backend **Docker image** copies `app/` only ([services/backend/Dockerfile](.
 
 ---
 
-## 7. CI integration (example)
+## 7. CI integration (current workflow)
 
-This repository may or may not define a workflow; below is a **template** for a job that runs Playwright against Vite + API:
+The repository already defines a dedicated `e2e` job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) and runs Playwright automatically on pushes/PRs to `main` and `master`.
 
-```yaml
-e2e:
-  runs-on: ubuntu-latest
-  services:
-    postgres:
-      image: postgres:16-alpine
-      env:
-        POSTGRES_PASSWORD: postgres
-        POSTGRES_DB: bowlingdb
-      ports:
-        - 5432:5432
-  steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
-      with:
-        python-version: "3.12"
-    - uses: actions/setup-node@v4
-      with:
-        node-version: "20"
-        cache: npm
-        cache-dependency-path: services/frontend/package-lock.json
-    - name: Install backend deps and seed DB
-      run: |
-        pip install -r services/backend/requirements.txt
-        export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/bowlingdb
-        python services/backend/scripts/setup_db.py
-    - name: Start FastAPI
-      run: |
-        cd services/backend && uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-        sleep 3
-    - name: Install frontend deps and Playwright
-      run: |
-        cd services/frontend && npm ci
-        npx playwright install --with-deps chromium
-    - name: Run E2E
-      run: cd services/frontend && npm run test:e2e
-      env:
-        CI: true
-    - uses: actions/upload-artifact@v4
-      if: failure()
-      with:
-        name: playwright-report
-        path: services/frontend/playwright-report/
-```
+As of 2026-04-26, the CI E2E path is:
 
-Adjust Postgres networking, `DATABASE_URL`, and artifact paths to match your pipeline.
+1. Start Postgres service and export `DATABASE_URL`.
+2. Install backend dependencies.
+3. Seed DB (`seed_from_csv.py`) and apply arsenal migration (`migrate_arsenals.py`).
+4. Start FastAPI on port `8000`.
+5. Install frontend dependencies.
+6. Install Chromium via Playwright.
+7. Run `npm run test:e2e:smoke` for push/PR events, or `npm run test:e2e:full` for scheduled runs.
+8. Upload Playwright HTML report artifact (`playwright-report`), with `if: always()` for post-failure debugging.
+
+This means E2E is now CI-enforced; remaining E2E work is about expanding coverage depth (see §5), not pipeline wiring.
 
 ---
 

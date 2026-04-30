@@ -2,7 +2,18 @@ import os
 from unittest.mock import MagicMock, patch
 
 import pytest
+import psycopg
 from fastapi.testclient import TestClient
+
+def _can_connect_to_db(database_url: str) -> bool:
+    if not database_url:
+        return False
+    try:
+        with psycopg.connect(database_url, connect_timeout=1):
+            pass
+        return True
+    except Exception:
+        return False
 
 
 def pytest_configure(config):
@@ -18,6 +29,22 @@ def pytest_configure(config):
 def _needs_db():
     # Backward compat: skip when no db url (unused by current tests).
     return not os.getenv("DATABASE_URL", "").strip()
+
+
+def pytest_collection_modifyitems(config, items):
+    db_url = os.getenv("DATABASE_URL", "").strip()
+    reachable = _can_connect_to_db(db_url)
+    if reachable:
+        return
+    skip_integration = pytest.mark.skip(
+        reason=(
+            "integration tests require reachable Postgres; "
+            "DATABASE_URL is unset or unreachable"
+        )
+    )
+    for item in items:
+        if "integration" in item.keywords:
+            item.add_marker(skip_integration)
 
 
 @pytest.fixture
@@ -64,7 +91,9 @@ def client():
     from app.main import app
     from app.db import get_db
 
-    if os.getenv("DATABASE_URL", "").strip():
+    db_url = os.getenv("DATABASE_URL", "").strip()
+
+    if db_url and _can_connect_to_db(db_url):
         yield TestClient(app)
         return
 
